@@ -30,7 +30,7 @@ export type PresetId =
   | 'gemini'
   | 'deepseek'
   | 'mistral'
-  | 'opencode'
+  | 'opencode-go'
   | 'openrouter'
   | 'ollama'
   | 'custom';

@@ -58,9 +58,21 @@ function migrateV01(stored: unknown): unknown {
   return { ...old, profiles: settings.profiles, activeProfileId: settings.activeProfileId };
 }
 
+/** The first profiles build seeded OpenCode Zen; it is replaced by OpenCode Go. */
+function migrateZenToGo(stored: unknown): unknown {
+  const settings = stored as { profiles?: { preset?: string; name?: string; baseUrl?: string }[] } | undefined;
+  for (const profile of settings?.profiles ?? []) {
+    if (profile.preset !== 'opencode') continue;
+    profile.preset = 'opencode-go';
+    profile.baseUrl = '';
+    if (profile.name === 'OpenCode Zen') profile.name = 'OpenCode Go';
+  }
+  return stored;
+}
+
 export async function loadSettings(): Promise<Settings> {
   const stored = await browser.storage.local.get(KEY);
-  const parsed = settingsSchema.safeParse(migrateV01(stored[KEY]));
+  const parsed = settingsSchema.safeParse(migrateZenToGo(migrateV01(stored[KEY])));
   if (!parsed.success || parsed.data.profiles.length === 0) return defaultSettings();
   const settings = parsed.data;
   if (!settings.profiles.some((profile) => profile.id === settings.activeProfileId)) {

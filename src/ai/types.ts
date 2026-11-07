@@ -13,6 +13,8 @@ export interface CompletionRequest {
   temperature?: number;
   maxOutputTokens?: number;
   signal?: AbortSignal;
+  /** Stable id for one conversation or operation, sent when the provider wants one. */
+  sessionId?: string;
 }
 
 export interface ProviderConfig {
@@ -24,6 +26,7 @@ export interface ProviderConfig {
   apiKey?: string;
   needsKey?: boolean;
   headers?: Record<string, string>;
+  sessionHeader?: string;
 }
 
 /** Wire format for one protocol: build HTTP requests and read results back out. */

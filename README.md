@@ -12,14 +12,14 @@ Milestone M1 (P0) works in Chromium. It has not been tested in Helium yet; see [
 | --- | --- |
 | F01 Command palette (⌘K, ⇧⌘K fallback, toolbar) | Done |
 | F02 Tidy Tabs + Undo | Done |
-| F03 BYOK providers with saved profiles: OpenAI, Anthropic, Gemini, DeepSeek, Mistral, OpenCode Zen, OpenRouter, Ollama, custom OpenAI-compatible | Done (wire formats unit-tested; live calls only against a mock) |
+| F03 BYOK providers with saved profiles: OpenAI, Anthropic, Gemini, DeepSeek, Mistral, OpenCode Go, OpenRouter, Ollama, custom OpenAI-compatible | Done (wire formats unit-tested; live calls only against a mock) |
 | F04 Summarize / Ask Page | Done |
 | F05 Shift-hover link previews | M2 |
 | F06 Summarize / Ask across tabs | M2 |
 | F07 Instant Links | M3 |
 | F08 Tidy Downloads | M3 |
 
-Exploring [TypeSafe's Jev](docs/jev.md), a decision model, to make Tidy Tabs and future grounding checks cheaper and more reliable.
+[TypeSafe's Jev](docs/jev.md) was evaluated and parked; it may come back for yes/no grounding checks in M2/M3.
 
 ## Try it
 
@@ -28,7 +28,7 @@ pnpm install
 pnpm build
 ```
 
-In Helium, open `helium://extensions` (or `chrome://extensions`), turn on Developer mode, choose **Load unpacked** and pick `.output/chrome-mv3`. Settings opens on install with a profile for each common provider (OpenAI, Anthropic, Gemini, DeepSeek, Mistral, OpenCode Zen). Pick one, paste a key, press **Load models** to choose a model ID, then **Save and use** and **Test connection**. Add more profiles for other endpoints, such as a second Mistral profile for a different model. Switch the active profile from the palette by typing “profile”.
+In Helium, open `helium://extensions` (or `chrome://extensions`), turn on Developer mode, choose **Load unpacked** and pick `.output/chrome-mv3`. Settings opens on install with a profile for each common provider (OpenAI, Anthropic, Gemini, DeepSeek, Mistral, OpenCode Go). Pick one, paste a key, press **Load models** to choose a model ID, then **Save and use** and **Test connection**. Add more profiles for other endpoints, such as a second Mistral profile for a different model. Switch the active profile from the palette by typing “profile”.
 
 `pnpm dev` starts WXT in watch mode with a throwaway Chromium profile.
 

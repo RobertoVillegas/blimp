@@ -13,6 +13,8 @@ export interface Preset {
   /** Shown under the form; for provider quirks the user has to know about. */
   note?: string;
   headers?: Record<string, string>;
+  /** Header carrying a stable per-conversation id; OpenCode Go rejects requests without one. */
+  sessionHeader?: string;
 }
 
 export const PRESETS: Record<PresetId, Preset> = {
@@ -67,16 +69,17 @@ export const PRESETS: Record<PresetId, Preset> = {
     keyUrl: 'https://console.mistral.ai/api-keys',
     note: 'Mistral also hosts third-party models such as DeepSeek; use Load models to see the IDs your key can call.',
   },
-  opencode: {
-    id: 'opencode',
-    label: 'OpenCode Zen',
+  'opencode-go': {
+    id: 'opencode-go',
+    label: 'OpenCode Go',
     adapter: 'openai-compatible',
-    defaultBaseUrl: 'https://opencode.ai/zen/v1',
+    defaultBaseUrl: 'https://opencode.ai/zen/go/v1',
     editableBaseUrl: false,
     needsKey: true,
-    modelPlaceholder: 'model-id',
-    keyUrl: 'https://opencode.ai/auth',
-    note: 'Only Zen models served on /chat/completions work here. Models that Zen serves only through /responses or /messages (some GPT and Claude IDs) will fail.',
+    modelPlaceholder: 'deepseek-v4.1-flash',
+    keyUrl: 'https://opencode.ai/console',
+    note: 'Uses your OpenCode Go subscription. Load models lists only the models Go serves over Chat Completions (DeepSeek, GLM, Kimi, MiMo…); GPT, Claude, Grok, Gemini and Qwen models in Go use other APIs and are not supported here yet.',
+    sessionHeader: 'x-opencode-session',
   },
   openrouter: {
     id: 'openrouter',
@@ -114,7 +117,7 @@ export const PRESETS: Record<PresetId, Preset> = {
 export const PRESET_IDS = Object.keys(PRESETS) as PresetId[];
 
 /** Profiles created on first run, so the common providers only need a key. */
-export const SEEDED_PRESETS: PresetId[] = ['openai', 'anthropic', 'gemini', 'deepseek', 'mistral', 'opencode'];
+export const SEEDED_PRESETS: PresetId[] = ['openai', 'anthropic', 'gemini', 'deepseek', 'mistral', 'opencode-go'];
 
 /** Ollama and loopback custom endpoints stay on this machine; anything else is hosted. */
 export function isHostedEndpoint(preset: PresetId, baseUrl: string): boolean {

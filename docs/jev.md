@@ -1,6 +1,8 @@
 # Exploring Jev (TypeSafe) for Helium Max
 
-Notes from 2026-11-07. No code uses Jev yet; nothing here was tested with a real key.
+Notes from 2026-11-07. **Parked:** no code uses Jev and nothing here was tested with a real key.
+
+Decision: Tidy Tabs stays LLM-only. Jev only picks among labels you give it, so the group names (like "PHP docs & CVEs") would still need an LLM call, and splitting the job across two calls and two keys isn't worth it. Revisit for yes/no grounding checks when F04 follow-ups, F05 previews and F07 Instant Links are built.
 
 ## What Jev is
 
@@ -24,7 +26,7 @@ All questions in a request are answered in parallel against the same state.
 
 Jev is good where Helium Max currently asks an LLM for JSON and then validates it. The answer space is fixed in advance, so malformed output can't happen, and the probabilities give an honest "not sure" threshold.
 
-1. **Tidy Tabs, hybrid (best fit).** The LLM still proposes 3–8 group names, which is the only generative step. Jev then gets one `choice` question per tab, with the group names plus `none` as options. Tabs below a confidence threshold stay ungrouped, which matches the PRD's "don't force a Misc group". This removes invalid tab IDs and duplicate assignments by construction and makes reassignment nearly free.
+1. **Tidy Tabs, hybrid (rejected for now, see above).** The LLM still proposes 3–8 group names, which is the only generative step. Jev then gets one `choice` question per tab, with the group names plus `none` as options. Tabs below a confidence threshold stay ungrouped, which matches the PRD's "don't force a Misc group". This removes invalid tab IDs and duplicate assignments by construction and makes reassignment nearly free.
 2. **Grounding checks for Ask Page and cross-tab answers.** A `noul` question asks "does the page text contain the answer to this question?" before or after the LLM answers. When it's low, the UI says "the page doesn't seem to say" instead of trusting the LLM's prose (PRD F04/F06: say when evidence is absent).
 3. **Instant Links reranking (F07).** Candidates come from the real search adapter; Jev `choice` picks the best match among them with a probability. It can only choose URLs that were actually returned, which is exactly the PRD's "don't trust model-invented URLs".
 4. **Link preview gating (F05).** After fetching a page, a `noul` asks whether it's a login wall, paywall or bot check, so the card shows "Preview unavailable" instead of summarizing a sign-in page.

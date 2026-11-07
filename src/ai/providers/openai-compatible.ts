@@ -1,9 +1,10 @@
 import type { ProviderAdapter, ProviderConfig } from '../types';
 import { joinUrl } from './http';
 
-function headers(config: ProviderConfig): Record<string, string> {
+function headers(config: ProviderConfig, sessionId?: string): Record<string, string> {
   const result: Record<string, string> = { 'content-type': 'application/json', ...config.headers };
   if (config.apiKey) result.authorization = `Bearer ${config.apiKey}`;
+  if (config.sessionHeader) result[config.sessionHeader] = sessionId ?? crypto.randomUUID();
   return result;
 }
 
@@ -23,7 +24,7 @@ export const openAiCompatible: ProviderAdapter = {
 
     return {
       url: joinUrl(config.baseUrl, 'chat/completions'),
-      init: { method: 'POST', headers: headers(config), body: JSON.stringify(body) },
+      init: { method: 'POST', headers: headers(config, request.sessionId), body: JSON.stringify(body) },
     };
   },
 
@@ -44,7 +45,12 @@ export const openAiCompatible: ProviderAdapter = {
   },
 
   parseModels(body) {
-    const data = (body as { data?: { id?: unknown }[] })?.data;
-    return Array.isArray(data) ? data.map((model) => model.id).filter((id): id is string => typeof id === 'string') : [];
+    const data = (body as { data?: { id?: unknown; api?: Record<string, unknown> }[] })?.data;
+    if (!Array.isArray(data)) return [];
+    return data
+      // Gateways like OpenCode say which API each model speaks; keep only Chat Completions ones.
+      .filter((model) => !model.api || 'chat-completions' in model.api)
+      .map((model) => model.id)
+      .filter((id): id is string => typeof id === 'string');
   },
 };

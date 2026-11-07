@@ -84,13 +84,13 @@ describe('provider wire formats', () => {
 
 describe('presets', () => {
   const ok = () => mockFetch(200, { choices: [{ message: { content: 'ok' } }] });
-  const profile = (preset: 'deepseek' | 'mistral' | 'opencode' | 'openrouter') =>
+  const profile = (preset: 'deepseek' | 'mistral' | 'opencode-go' | 'openrouter') =>
     profileConfig({ id: preset, preset, name: preset, model: 'm', baseUrl: '' }, 'key');
 
   it.each([
     ['deepseek', 'https://api.deepseek.com/chat/completions'],
     ['mistral', 'https://api.mistral.ai/v1/chat/completions'],
-    ['opencode', 'https://opencode.ai/zen/v1/chat/completions'],
+    ['opencode-go', 'https://opencode.ai/zen/go/v1/chat/completions'],
     ['openrouter', 'https://openrouter.ai/api/v1/chat/completions'],
   ] as const)('%s speaks Chat Completions at %s with max_tokens', async (preset, expected) => {
     const fetchImpl = ok();
@@ -100,6 +100,24 @@ describe('presets', () => {
     expect(headers.authorization).toBe('Bearer key');
     expect(body.max_tokens).toBe(50);
     expect(body.max_completion_tokens).toBeUndefined();
+  });
+
+  it('OpenCode Go sends a stable session id per conversation', async () => {
+    const fetchImpl = ok();
+    await complete(profile('opencode-go'), { ...request, sessionId: 'conv-1' }, { fetchImpl });
+    await complete(profile('opencode-go'), { ...request, sessionId: 'conv-1' }, { fetchImpl });
+    const ids = fetchImpl.mock.calls.map(([, init]) => (init!.headers as Record<string, string>)['x-opencode-session']);
+    expect(ids).toEqual(['conv-1', 'conv-1']);
+
+    await complete(profile('opencode-go'), request, { fetchImpl });
+    const fresh = fetchImpl.mock.calls[2]![1]!.headers as Record<string, string>;
+    expect(fresh['x-opencode-session']).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('other presets send no session header', async () => {
+    const fetchImpl = ok();
+    await complete(profile('deepseek'), { ...request, sessionId: 'conv-1' }, { fetchImpl });
+    expect(sent(fetchImpl).headers['x-opencode-session']).toBeUndefined();
   });
 
   it('OpenRouter identifies the app', async () => {
@@ -122,6 +140,15 @@ describe('listModels', () => {
     const openAiFetch = mockFetch(200, { data: [{ id: 'b-model' }, { id: 'a-model' }, { id: 'a-model' }] });
     expect(await listModels(compatible, { fetchImpl: openAiFetch })).toEqual(['a-model', 'b-model']);
     expect(openAiFetch.mock.calls[0]![0]).toBe('https://api.mistral.ai/v1/models');
+
+    const goFetch = mockFetch(200, {
+      data: [
+        { id: 'deepseek-v4.1-flash', api: { 'chat-completions': {} } },
+        { id: 'claude-haiku-5-5', api: { messages: {} } },
+        { id: 'gpt-6-luna', api: { responses: {} } },
+      ],
+    });
+    expect(await listModels(compatible, { fetchImpl: goFetch })).toEqual(['deepseek-v4.1-flash']);
 
     const geminiFetch = mockFetch(200, {
       models: [

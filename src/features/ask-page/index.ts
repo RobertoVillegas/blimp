@@ -11,6 +11,7 @@ import { PAGE_SYSTEM_PROMPT, SUMMARY_REQUEST, pageContext } from './prompt';
 /** One conversation per tab, kept in session storage only (gone when the browser quits). */
 interface PageConversation {
   url: string;
+  sessionId: string;
   context: string;
   title: string;
   truncated: boolean;
@@ -34,6 +35,7 @@ export async function askPage(
     const { text, truncated } = truncateToTokens(page.text, settings.maxInputTokens);
     conversation = {
       url: page.url,
+      sessionId: crypto.randomUUID(),
       title: page.title,
       context: pageContext({ ...page, text }, truncated),
       truncated,
@@ -59,6 +61,7 @@ export async function askPage(
     temperature: settings.temperature,
     maxOutputTokens: settings.maxOutputTokens,
     signal,
+    sessionId: conversation.sessionId,
   });
 
   conversation.messages = [...messages, { role: 'assistant', content: text }];

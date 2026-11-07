@@ -14,6 +14,7 @@ export function profileConfig(profile: Profile, apiKey: string | undefined): Pro
     apiKey,
     needsKey: preset.needsKey,
     headers: preset.headers,
+    sessionHeader: preset.sessionHeader,
   };
 }
 

@@ -13,7 +13,7 @@ describe('settings', () => {
       'gemini',
       'deepseek',
       'mistral',
-      'opencode',
+      'opencode-go',
     ]);
     expect(activeProfile(settings).id).toBe('openai');
   });
@@ -23,6 +23,17 @@ describe('settings', () => {
     const second = newProfile('mistral', settings.profiles);
     expect(second.id).not.toBe('mistral');
     expect(second.name).toBe('Mistral AI 2');
+  });
+
+  it('replaces the early OpenCode Zen profile with OpenCode Go, keeping its id and model', async () => {
+    await fakeBrowser.storage.local.set({
+      settings: {
+        activeProfileId: 'opencode',
+        profiles: [{ id: 'opencode', preset: 'opencode', name: 'OpenCode Zen', model: 'glm-5.3', baseUrl: 'https://opencode.ai/zen/v1' }],
+      },
+    });
+    const settings = await loadSettings();
+    expect(activeProfile(settings)).toEqual({ id: 'opencode', preset: 'opencode-go', name: 'OpenCode Go', model: 'glm-5.3', baseUrl: '' });
   });
 
   it('migrates v0.1 per-provider settings, keeping the provider id so stored keys still match', async () => {
