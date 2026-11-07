@@ -40,9 +40,15 @@ Press ⌘K on any page to search commands and your open tabs. Type part of a tab
 
 When something plays in any tab, the palette shows it at the top, like Arc's mini player: title and artist, play/pause, previous/next on YouTube, YouTube Music, Spotify and SoundCloud, mute, go to tab, and picture in picture for the video on the page you're on. **Play or Pause Media** does it from the keyboard. Mute and go-to-tab work everywhere; playback controls need access to the site, and the card asks the first time.
 
+### Peeks: Gmail and Calendar
+
+**Unread Email** shows your unread Gmail (sender, subject, snippet) and opens a message in your Gmail tab; **Upcoming Events** shows today and tomorrow from your Google Calendar with a Join button for Meet, Zoom or Teams links. Turn them on in Settings › Peeks: Gmail uses the account you're signed in to in this browser, and Calendar uses the calendar's secret iCal address, kept like an API key. Nothing from either goes to an AI.
+
 ### Picture in Picture
 
 On a page with a video, open the palette and run **Picture in Picture**: the video floats in its own window that you can drag anywhere and park in a corner. Run it again to bring it back. It picks the video that's playing, or the biggest one on the page. Videos inside embedded players (iframes) aren't reachable yet.
+
+To float videos automatically when you switch tabs, as Arc did, turn on **Float a playing video when I switch to another tab** in Settings › Video (experimental). The browser does the floating and may ask once per site.
 
 ### Tidy Tabs
 
@@ -198,6 +204,7 @@ Change them, or bind Tidy Tabs to its own shortcut, at `chrome://extensions/shor
 | Shift-hover a link (if turned on) | Text of the linked page, downloaded without your cookies |
 | Instant Links | Your query goes to the search provider; its results and your query go to the AI |
 | A download starts (if Tidy Downloads is on) | Filename, file type, the address without query strings, and the page title |
+| Unread Email, Upcoming Events | Nothing to an AI; Gmail's feed is read with your browser session, the calendar from its iCal address |
 | Just browsing | Nothing |
 | Twice a day (unless turned off) | GitHub's public API is asked for this repository's releases; nothing about you is sent |
 
@@ -225,6 +232,7 @@ This is an early build. It loads and runs in Helium; everything below is tested 
 | ✅ | Tidy Tab Titles, Rename Tab | v0.3.5 |
 | ✅ | Picture in Picture from the palette | v0.3.8 |
 | ✅ | Now playing controls in the palette | v0.3.9 |
+| ✅ | Gmail and Calendar peeks, auto-float videos (experimental) | v0.4.0 |
 
 [Jev](docs/jev.md), TypeSafe's decision model, was looked at and parked for now.
 

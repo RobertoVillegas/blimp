@@ -176,6 +176,22 @@ export interface NowPlaying {
   current: boolean;
 }
 
+export interface GmailPeek {
+  unreadCount: number;
+  messages: { subject: string; snippet: string; from: string; date: string; url: string }[];
+}
+
+export interface CalendarEvent {
+  title: string;
+  /** ISO timestamps. */
+  start: string;
+  end: string;
+  allDay: boolean;
+  location: string;
+  /** Meet, Zoom, Teams… link found in the event. */
+  meetingUrl: string;
+}
+
 export interface PageAnswer {
   text: string;
   title: string;

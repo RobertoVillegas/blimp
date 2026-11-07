@@ -10,6 +10,7 @@ import { InstantLinksView } from './InstantLinksView';
 import { RenameTabView, TabTitlesView } from './TabTitlesView';
 import { togglePictureInPicture } from '@/features/pip/page';
 import { NowPlayingCard } from './NowPlayingCard';
+import { PeekView } from './PeekView';
 import { RichText } from './RichText';
 
 export interface PaletteProps {
@@ -38,6 +39,7 @@ type View =
   | { name: 'titles' }
   | { name: 'titles-restored'; count: number }
   | { name: 'sidebar-help'; shortcut: string }
+  | { name: 'peek'; kind: 'gmail' | 'calendar' }
   | { name: 'rename' }
   | { name: 'error'; message: string; retry?: () => void };
 
@@ -188,6 +190,10 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
             .then(onClose)
             .catch((error: unknown) => fail(error));
           return;
+        case 'peek-gmail':
+          return setView({ name: 'peek', kind: 'gmail' });
+        case 'peek-calendar':
+          return setView({ name: 'peek', kind: 'calendar' });
         case 'media-toggle': {
           const target = playing.find((item) => item.playing) ?? playing[0];
           if (!target) {
@@ -435,6 +441,8 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
       {view.name === 'cross' && (
         <CrossTabView mode={view.mode} windowId={windowId} tabId={tabId} status={statusFor(status, 'tabs')} onBack={backToList} onClose={onClose} />
       )}
+
+      {view.name === 'peek' && <PeekView kind={view.kind} onBack={backToList} onClose={onClose} />}
 
       {view.name === 'sidebar-help' && (
         <ResultPanel title="Open the sidebar" onBack={backToList}>

@@ -146,6 +146,33 @@ addEventListener('click', () => {
 navigator.mediaSession.metadata = new MediaMetadata({ title: 'Test Song', artist: 'The Fixtures' });
 </script></body></html>`);
     }
+    // Gmail's unread feed and an iCal calendar, for peeks.
+    if (req.method === 'GET' && url.pathname === '/mail/u/0/feed/atom') {
+      res.writeHead(200, { 'content-type': 'application/atom+xml; charset=utf-8' });
+      return void res.end(`<?xml version="1.0" encoding="UTF-8"?><feed version="0.3" xmlns="http://purl.org/atom/ns#">
+<fullcount>2</fullcount>
+<entry><title>Lunch on Friday?</title><summary>Are you free at 1?</summary>
+<link rel="alternate" href="${origin}/mail/u/0?message_id=lunch" type="text/html"/>
+<issued>${new Date(Date.now() - 20 * 60_000).toISOString()}</issued><author><name>Ana</name><email>ana@example.com</email></author></entry>
+<entry><title>Your receipt</title><summary>Order 1234</summary>
+<link rel="alternate" href="${origin}/mail/u/0?message_id=receipt" type="text/html"/>
+<issued>${new Date(Date.now() - 3 * 3_600_000).toISOString()}</issued><author><name>Shop</name><email>shop@example.com</email></author></entry>
+</feed>`);
+    }
+    if (req.method === 'GET' && url.pathname === '/calendar.ics') {
+      const stamp = (date: Date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+      const start = new Date(Date.now() + 3_600_000);
+      const end = new Date(start.getTime() + 30 * 60_000);
+      res.writeHead(200, { 'content-type': 'text/calendar; charset=utf-8' });
+      return void res.end(
+        ['BEGIN:VCALENDAR', 'VERSION:2.0', 'BEGIN:VEVENT', 'UID:design-review', 'SUMMARY:Design review', `DTSTART:${stamp(start)}`, `DTEND:${stamp(end)}`,
+          'LOCATION:Room 4', 'DESCRIPTION:Join at https://meet.google.com/xyz-abcd-efg', 'END:VEVENT', 'END:VCALENDAR'].join('\r\n'),
+      );
+    }
+    if (req.method === 'GET' && url.pathname === '/mail/u/0') {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      return void res.end('<!doctype html><title>Mail message</title><h1>Message</h1>');
+    }
     if (req.method === 'GET' && url.pathname === '/login') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       return void res.end(LOGIN_HTML);

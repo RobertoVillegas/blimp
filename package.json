@@ -2,7 +2,7 @@
   "name": "helium-max",
   "description": "Local-first, bring-your-own-key AI browser extension for Helium (Manifest V3).",
   "private": true,
-  "version": "0.3.9",
+  "version": "0.4.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -18,6 +18,7 @@
     "screenshots": "pnpm build:e2e && SCREENSHOTS=1 playwright test e2e/screenshots"
   },
   "dependencies": {
+    "ical.js": "^2.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "zod": "^4.6.7"

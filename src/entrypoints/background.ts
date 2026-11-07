@@ -1,6 +1,7 @@
 import { openPalette } from '@/background/palette';
 import { hasRunningOperations, registerRouter } from '@/background/router';
 import { syncLinkPreviewScript } from '@/features/link-preview';
+import { syncRegisteredScript } from '@/shared/registered-scripts';
 import { registerTitleKeeper } from '@/features/tab-titles';
 import { registerTidyDownloads } from '@/features/tidy-downloads';
 import { currentUpdate, registerUpdateChecks, showBadge } from '@/features/updates';
@@ -20,7 +21,11 @@ export default defineBackground(() => {
   });
 
   // Settings are the source of truth for the hover script; Settings and tests just write storage.
-  const syncPreviews = async () => syncLinkPreviewScript((await loadSettings()).linkPreviews);
+  const syncPreviews = async () => {
+    const settings = await loadSettings();
+    await syncLinkPreviewScript(settings.linkPreviews);
+    await syncRegisteredScript('auto-float', 'content-scripts/auto-float.js', settings.autoFloat);
+  };
   void syncPreviews();
   browser.storage.onChanged.addListener((changes, area) => {
     if (area === 'local' && changes.settings) void syncPreviews();

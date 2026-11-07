@@ -8,6 +8,7 @@ import { domainOf, isHttpUrl } from '@/shared/url';
 import { fetchPreviewHtml, fetchPreviewImage } from './fetch';
 import { normalizePreviewUrl } from './guard';
 import { PREVIEW_SYSTEM_PROMPT, UNAVAILABLE_MARKER } from './prompt';
+import { syncRegisteredScript } from '@/shared/registered-scripts';
 
 const CACHE_KEY = 'preview:cache';
 const CACHE_TTL_MS = 30 * 60_000;
@@ -110,23 +111,7 @@ async function loadCache(): Promise<Record<string, CacheEntry>> {
   return (stored[CACHE_KEY] as Record<string, CacheEntry> | undefined) ?? {};
 }
 
-const SCRIPT_ID = 'link-preview';
-
 /** Register the hover script while previews are on. Chrome only injects it where site access was granted. */
-export async function syncLinkPreviewScript(enabled: boolean): Promise<void> {
-  const registered = await browser.scripting.getRegisteredContentScripts({ ids: [SCRIPT_ID] });
-  if (enabled && registered.length === 0) {
-    await browser.scripting.registerContentScripts([
-      {
-        id: SCRIPT_ID,
-        matches: ['http://*/*', 'https://*/*'],
-        js: ['content-scripts/link-preview.js'],
-        runAt: 'document_idle',
-        allFrames: false,
-        persistAcrossSessions: true,
-      },
-    ]);
-  } else if (!enabled && registered.length > 0) {
-    await browser.scripting.unregisterContentScripts({ ids: [SCRIPT_ID] });
-  }
+export function syncLinkPreviewScript(enabled: boolean): Promise<void> {
+  return syncRegisteredScript('link-preview', 'content-scripts/link-preview.js', enabled);
 }

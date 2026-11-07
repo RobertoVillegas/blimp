@@ -3,6 +3,8 @@ import type { UpdateStatus } from '@/shared/messages';
 import { send } from '@/shared/send';
 import { SEARCH_PROVIDERS, searchWeb } from '@/features/instant-links/adapters';
 import { SEARCH_KEY_ID } from '@/features/instant-links';
+import { CALENDAR_SECRET_ID } from '@/features/peeks';
+import { GMAIL_ORIGIN } from '@/features/peeks/gmail';
 import { originPattern } from '@/shared/url';
 import { getApiKey, setApiKey } from '@/storage/secrets';
 import type { Settings } from '@/storage/settings';
@@ -18,13 +20,17 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
   const [searchBase, setSearchBase] = useState(settings.search.baseUrl);
   const [searchKey, setSearchKey] = useState('');
   const [hasSearchKey, setHasSearchKey] = useState(false);
-  const [notices, setNotices] = useState<Record<'previews' | 'search' | 'downloads' | 'updates', Notice>>({
+  const [notices, setNotices] = useState<Record<'previews' | 'search' | 'downloads' | 'updates' | 'video' | 'peeks', Notice>>({
+    video: undefined,
+    peeks: undefined,
     previews: undefined,
     search: undefined,
     downloads: undefined,
     updates: undefined,
   });
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>();
+  const [calendarUrl, setCalendarUrl] = useState('');
+  const [hasCalendar, setHasCalendar] = useState(false);
 
   const note = (key: keyof typeof notices, value: Notice) => setNotices((current) => ({ ...current, [key]: value }));
 
@@ -32,6 +38,7 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
     void browser.permissions.contains({ origins: ALL_SITES }).then(setPreviewAccess);
     void getApiKey(SEARCH_KEY_ID).then((key) => setHasSearchKey(Boolean(key)));
     void send({ type: 'update/status' }).then(setUpdateStatus);
+    void getApiKey(CALENDAR_SECRET_ID).then((url) => setHasCalendar(Boolean(url)));
     if (location.hash === '#updates') requestAnimationFrame(() => document.getElementById('updates')?.scrollIntoView());
   }, []);
 
@@ -54,6 +61,55 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
     setPreviewAccess(on || previewAccess);
     await persist({ ...settings, linkPreviews: on });
     note('previews', { tone: 'ok', text: on ? 'On. Hold Shift over a link on any page (reload pages that were already open).' : 'Off.' });
+  }
+
+  async function setAutoFloat(on: boolean) {
+    if (on && !(await browser.permissions.request({ origins: ALL_SITES }))) {
+      note('video', { tone: 'error', text: 'Floating videos automatically needs access to websites. Nothing was changed.' });
+      return;
+    }
+    await persist({ ...settings, autoFloat: on });
+    note('video', {
+      tone: 'ok',
+      text: on ? 'On. Reload pages that were already open. The browser may ask once per site to allow automatic picture in picture.' : 'Off.',
+    });
+  }
+
+  async function setGmailPeek(on: boolean) {
+    if (on && !(await browser.permissions.request({ origins: [GMAIL_ORIGIN] }))) {
+      note('peeks', { tone: 'error', text: 'Gmail peeks need access to mail.google.com. Nothing was changed.' });
+      return;
+    }
+    await persist({ ...settings, peeks: { ...settings.peeks, gmail: on } });
+    note('peeks', { tone: 'ok', text: on ? 'Gmail is on. Try Unread Email in the palette.' : 'Gmail is off.' });
+  }
+
+  async function saveCalendar() {
+    const url = calendarUrl.trim();
+    if (!url) {
+      await setApiKey(CALENDAR_SECRET_ID, '', settings.keyStorage);
+      setHasCalendar(false);
+      note('peeks', { tone: 'ok', text: 'Calendar address removed.' });
+      return;
+    }
+    const pattern = originPattern(url);
+    if (!pattern || !url.startsWith('https://')) {
+      note('peeks', { tone: 'error', text: 'Paste the https address that ends in .ics.' });
+      return;
+    }
+    if (!(await browser.permissions.request({ origins: [pattern] }))) {
+      note('peeks', { tone: 'error', text: `Helium Max needs access to ${pattern} to read the calendar.` });
+      return;
+    }
+    await setApiKey(CALENDAR_SECRET_ID, url, settings.keyStorage);
+    setHasCalendar(true);
+    setCalendarUrl('');
+    try {
+      const events = await send({ type: 'peek/calendar' });
+      note('peeks', { tone: 'ok', text: `Saved. ${events.length} events in the next two days.` });
+    } catch (error) {
+      note('peeks', { tone: 'error', text: error instanceof Error ? error.message : String(error) });
+    }
   }
 
   async function setTidyDownloads(on: boolean) {
@@ -141,6 +197,54 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
           </p>
         )}
         <Status notice={notices.previews} />
+      </section>
+
+      <section aria-labelledby="peeks-heading">
+        <h2 id="peeks-heading">Peeks</h2>
+        <p className="hint">
+          Glance at your inbox and calendar from the palette (Unread Email, Upcoming Events), the way Arc showed them when you
+          hovered a favorite. Nothing from them is sent to an AI.
+        </p>
+        <label className="inline">
+          <input type="checkbox" checked={settings.peeks.gmail} onChange={(event) => void setGmailPeek(event.target.checked)} />
+          Gmail: show my unread email
+        </label>
+        <p className="hint">Uses the Gmail account you're signed in to in this browser (the one in your open Gmail tab, if any).</p>
+        <label>
+          Google Calendar: secret address in iCal format
+          <span className="row">
+            <input
+              type="password"
+              value={calendarUrl}
+              onChange={(event) => setCalendarUrl(event.target.value)}
+              placeholder={hasCalendar ? 'An address is saved; paste to replace, or leave empty and save to remove' : 'https://calendar.google.com/calendar/ical/…/basic.ics'}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <button type="button" onClick={() => void saveCalendar()}>
+              Save
+            </button>
+          </span>
+          <span className="hint">
+            In Google Calendar: Settings › your calendar › Integrate calendar › Secret address in iCal format. Treat it like a
+            password; it's kept the same way as your API keys.
+          </span>
+        </label>
+        <Status notice={notices.peeks} />
+      </section>
+
+      <section aria-labelledby="video-heading">
+        <h2 id="video-heading">Video</h2>
+        <label className="inline">
+          <input type="checkbox" checked={settings.autoFloat} onChange={(event) => void setAutoFloat(event.target.checked)} />
+          Float a playing video when I switch to another tab (experimental)
+        </label>
+        <p className="hint">
+          Like Arc: leave a tab while its video plays and it keeps playing in a small window you can move anywhere; come back
+          and it returns. The browser does the floating and may ask once per site. Nothing is sent anywhere. For a video
+          you want to float right now, use Picture in Picture in the palette.
+        </p>
+        <Status notice={notices.video} />
       </section>
 
       <section aria-labelledby="search-heading">

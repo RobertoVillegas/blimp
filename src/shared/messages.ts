@@ -12,6 +12,8 @@ import type {
   TidyResult,
   TitleProposal,
   NowPlaying,
+  GmailPeek,
+  CalendarEvent,
   UndoResult,
 } from './types';
 
@@ -83,6 +85,9 @@ export const requestSchema = z.discriminatedUnion('type', [
     tabId: z.number().int(),
     action: z.enum(['toggle', 'next', 'previous', 'mute']),
   }),
+  z.object({ type: z.literal('peek/gmail') }),
+  z.object({ type: z.literal('peek/calendar') }),
+  z.object({ type: z.literal('peek/open'), url: z.string().max(4000) }),
   z.object({ type: z.literal('op/cancel'), opId: z.string() }),
   z.object({ type: z.literal('settings/open') }),
   z.object({ type: z.literal('shortcut/get'), name: z.string().max(50) }),
@@ -121,6 +126,9 @@ export interface ResponseMap {
   'titles/current': { tabId: number; title: string; renamed: boolean } | null;
   'media/list': NowPlaying[];
   'media/action': NowPlaying | null;
+  'peek/gmail': GmailPeek & { inboxUrl: string };
+  'peek/calendar': CalendarEvent[];
+  'peek/open': null;
   'op/cancel': null;
   'settings/open': null;
   'shortcut/get': string;

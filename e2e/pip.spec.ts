@@ -26,3 +26,23 @@ test('Picture in Picture explains when the page has no video', async ({ context,
   await input.press('Enter');
   await expect(page!.getByRole('alert')).toContainText('No video on this page');
 });
+
+test('auto-float: turning it on makes video pages offer picture in picture to the browser when the tab is left', async ({ context, sw, server }) => {
+  await configureMockProvider(sw, server.origin, 'mock', { autoFloat: true });
+  await expect
+    .poll(() => sw.evaluate(async () => (await chrome.scripting.getRegisteredContentScripts()).map((s) => s.id)))
+    .toContain('auto-float');
+  const page = await context.newPage();
+  await page.goto(`${server.origin}/video`);
+  // The e2e build marks the page once the handler is registered with the browser.
+  await expect.poll(() => page.evaluate(() => document.documentElement.dataset.heliumMaxAutoFloat)).toBe('ready');
+
+  const article = await context.newPage();
+  await article.goto(`${server.origin}/page/news-a`);
+  expect(await article.evaluate(() => document.documentElement.dataset.heliumMaxAutoFloat)).toBeUndefined();
+
+  await configureMockProvider(sw, server.origin, 'mock', { autoFloat: false });
+  await expect
+    .poll(() => sw.evaluate(async () => (await chrome.scripting.getRegisteredContentScripts()).map((s) => s.id)))
+    .not.toContain('auto-float');
+});

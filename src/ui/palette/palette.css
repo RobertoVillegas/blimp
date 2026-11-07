@@ -644,3 +644,46 @@
   margin: 0 4px 4px;
   font-size: 12px;
 }
+
+.hm-peek-summary {
+  margin: 0;
+  padding: 8px 18px 0;
+  font-size: 12px;
+  color: var(--hm-muted);
+}
+
+.hm-peek-subject {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hm-peek-event {
+  display: grid;
+  gap: 4px;
+  padding: 4px 10px;
+}
+
+.hm-peek-event .hm-subhead {
+  margin: 8px 0 2px;
+}
+
+.hm-peek-event-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hm-peek-time {
+  flex: none;
+  width: 110px;
+  font-size: 12px;
+  color: var(--hm-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.hm-peek-event-text {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}

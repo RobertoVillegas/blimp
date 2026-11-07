@@ -40,6 +40,10 @@ export const settingsSchema = z.object({
       baseUrl: z.string().trim().max(500).default(''),
     })
     .default({ provider: 'none', baseUrl: '' }),
+  /** Glanceable data from other sites, shown in the palette. */
+  peeks: z.object({ gmail: z.boolean().default(false) }).default({ gmail: false }),
+  /** Ask the browser to float a playing video when the user switches away from its tab. */
+  autoFloat: z.boolean().default(false),
   /** F08: AI filename suggestions. Turning it on requests the downloads permission. */
   tidyDownloads: z.boolean().default(false),
   /** Ask GitHub twice a day whether a newer release exists. Nothing is sent but the request itself. */

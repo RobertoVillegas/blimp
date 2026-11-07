@@ -14,6 +14,8 @@ export type CommandId =
   | 'open-sidebar'
   | 'pip'
   | 'media-toggle'
+  | 'peek-gmail'
+  | 'peek-calendar'
   | 'settings';
 
 export interface PaletteCommand {
@@ -111,6 +113,20 @@ export const COMMANDS: PaletteCommand[] = [
     description: 'Float the video on this page in its own window you can move anywhere. Run it again to close it.',
     keywords: 'pip video float floating window mini player popout',
     icon: '⧉',
+  },
+  {
+    id: 'peek-gmail',
+    title: 'Unread Email',
+    description: 'Your unread Gmail without leaving this page.',
+    keywords: 'gmail mail inbox unread peek email messages',
+    icon: '✉',
+  },
+  {
+    id: 'peek-calendar',
+    title: 'Upcoming Events',
+    description: 'What is next on your calendar today and tomorrow.',
+    keywords: 'calendar agenda meetings events schedule today tomorrow peek',
+    icon: '◷',
   },
   {
     id: 'media-toggle',
