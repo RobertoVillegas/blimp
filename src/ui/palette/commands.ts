@@ -106,7 +106,7 @@ export const COMMANDS: PaletteCommand[] = [
   {
     id: 'open-sidebar',
     title: 'Open Sidebar',
-    description: 'Show your pinned tabs in a column beside the page (the start of the Arc-style sidebar).',
+    description: 'Show your pinned tabs in a column beside the page (⇧⌘S).',
     keywords: 'side panel sidebar pinned favorites column',
     icon: '▥',
   },

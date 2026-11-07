@@ -21,7 +21,7 @@ export default defineConfig({
     description:
       'Local-first, bring-your-own-key AI for Helium: command palette, Tidy Tabs, page Q&A and more.',
     minimum_chrome_version: '120',
-    permissions: ['activeTab', 'alarms', 'scripting', 'search', 'storage', 'tabs', 'tabGroups'],
+    permissions: ['activeTab', 'alarms', 'contextMenus', 'scripting', 'search', 'storage', 'tabs', 'tabGroups'],
     optional_permissions: ['downloads'],
     optional_host_permissions: [
       ...PROVIDER_ORIGINS,
@@ -39,6 +39,11 @@ export default defineConfig({
       'open-palette-fallback': {
         suggested_key: { default: 'Ctrl+Shift+K', mac: 'Command+Shift+K' },
         description: 'Open the command palette (fallback shortcut)',
+      },
+      // Chromium opens the side panel only straight from a user action like this shortcut.
+      'open-sidebar': {
+        suggested_key: { default: 'Ctrl+Shift+S', mac: 'Command+Shift+S' },
+        description: 'Open the Helium Max sidebar',
       },
       'tidy-tabs': {
         description: 'Tidy Tabs: group ungrouped tabs in this window',

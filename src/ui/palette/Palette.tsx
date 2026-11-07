@@ -35,6 +35,7 @@ type View =
   | { name: 'instant'; query: string }
   | { name: 'titles' }
   | { name: 'titles-restored'; count: number }
+  | { name: 'sidebar-help'; shortcut: string }
   | { name: 'rename' }
   | { name: 'error'; message: string; retry?: () => void };
 
@@ -170,9 +171,13 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
             .catch((error: unknown) => fail(error));
           return;
         case 'open-sidebar':
-          void send({ type: 'sidebar/open', windowId })
-            .then(onClose)
-            .catch((error: unknown) => fail(error));
+          // Extension pages (the palette in its own window) may open it from this click; the
+          // in-page palette can't, because the click doesn't count once it leaves the page.
+          if (typeof browser.sidePanel?.open === 'function' && windowId !== undefined) {
+            void browser.sidePanel.open({ windowId }).then(onClose).catch((error: unknown) => fail(error));
+            return;
+          }
+          void send({ type: 'shortcut/get', name: 'open-sidebar' }).then((shortcut) => setView({ name: 'sidebar-help', shortcut }));
           return;
         case 'instant-links':
           return setView({ name: 'instant', query: '' });
@@ -395,6 +400,22 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
 
       {view.name === 'cross' && (
         <CrossTabView mode={view.mode} windowId={windowId} tabId={tabId} status={statusFor(status, 'tabs')} onBack={backToList} onClose={onClose} />
+      )}
+
+      {view.name === 'sidebar-help' && (
+        <ResultPanel title="Open the sidebar" onBack={backToList}>
+          <p>
+            {view.shortcut ? (
+              <>
+                Press <kbd className="hm-kbd">{view.shortcut}</kbd>, or right-click the Helium Max icon in the toolbar and choose
+                Open sidebar.
+              </>
+            ) : (
+              'Right-click the Helium Max icon in the toolbar and choose Open sidebar, or give it a shortcut at chrome://extensions/shortcuts.'
+            )}
+          </p>
+          <p className="hm-muted">The browser only lets the side panel open straight from a key press or a click on its own controls.</p>
+        </ResultPanel>
       )}
 
       {view.name === 'titles-restored' && (

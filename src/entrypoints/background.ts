@@ -28,7 +28,21 @@ export default defineBackground(() => {
 
   browser.action.onClicked.addListener((tab) => void openPalette(tab));
 
+  // The side panel opens only from a direct user action, so it's wired to the shortcut and the
+  // toolbar icon's menu, never to a message from a page.
+  browser.contextMenus.removeAll(() => {
+    browser.contextMenus.create({ id: 'open-sidebar', title: 'Open sidebar', contexts: ['action'] });
+  });
+  browser.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId === 'open-sidebar' && tab?.windowId !== undefined) void openSidebar(tab.windowId);
+  });
+
   browser.commands.onCommand.addListener(async (command, tab) => {
+    if (command === 'open-sidebar') {
+      // Call before any await: the user action only counts for the first synchronous step.
+      if (tab?.windowId !== undefined) void openSidebar(tab.windowId);
+      return;
+    }
     const target = tab ?? (await activeTab());
     if (command === 'open-palette' || command === 'open-palette-fallback') await openPalette(target);
     // The Tidy Tabs shortcut is an explicit request; it runs inside the palette so progress and Undo are visible.
@@ -39,6 +53,10 @@ export default defineBackground(() => {
     if (reason === 'install') void browser.runtime.openOptionsPage();
   });
 });
+
+function openSidebar(windowId: number) {
+  return browser.sidePanel?.open({ windowId }).catch(() => undefined);
+}
 
 async function activeTab() {
   const [tab] = await browser.tabs.query({ active: true, lastFocusedWindow: true });
