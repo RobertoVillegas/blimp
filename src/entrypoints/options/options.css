@@ -4,12 +4,7 @@
   --border: rgb(128 128 128 / 0.3);
   --warning: #a63a00;
   --ok: #1d7a3a;
-  font:
-    14px/1.5 -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    system-ui,
-    sans-serif;
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -71,7 +66,7 @@ label a {
   font-size: 13px;
 }
 
-input:not([type="radio"]),
+input:not([type='radio']),
 select {
   font: inherit;
   font-size: 16px;
@@ -158,7 +153,7 @@ kbd {
   border-top: 1px solid var(--border);
 }
 
-.profiles li[aria-selected="true"] {
+.profiles li[aria-selected='true'] {
   background: rgb(128 128 128 / 0.14);
 }
 

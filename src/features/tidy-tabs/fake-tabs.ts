@@ -1,6 +1,6 @@
-import type { GroupColor } from "@/shared/types";
-import type { PortGroup, PortTab, TabsPort } from "./types";
-import { NO_GROUP } from "./types";
+import type { GroupColor } from '@/shared/types';
+import type { PortGroup, PortTab, TabsPort } from './types';
+import { NO_GROUP } from './types';
 
 /**
  * In-memory model of one window's tab strip that follows Chromium's rules closely enough for
@@ -13,10 +13,7 @@ export class FakeTabs implements TabsPort {
   failGroupAfter = Infinity;
   private nextGroupId = 100;
 
-  constructor(
-    spec: { id: number; pinned?: boolean; groupId?: number }[],
-    readonly windowId = 1,
-  ) {
+  constructor(spec: { id: number; pinned?: boolean; groupId?: number }[], readonly windowId = 1) {
     this.tabs = spec.map((tab, index) => ({
       id: tab.id,
       windowId,
@@ -28,12 +25,7 @@ export class FakeTabs implements TabsPort {
     }));
     for (const tab of this.tabs) {
       if (tab.groupId !== NO_GROUP && !this.groups.has(tab.groupId)) {
-        this.groups.set(tab.groupId, {
-          id: tab.groupId,
-          title: `Group ${tab.groupId}`,
-          color: "grey",
-          collapsed: false,
-        });
+        this.groups.set(tab.groupId, { id: tab.groupId, title: `Group ${tab.groupId}`, color: 'grey', collapsed: false });
       }
     }
   }
@@ -53,11 +45,7 @@ export class FakeTabs implements TabsPort {
     this.tabs = this.tabs.filter((candidate) => candidate !== tab);
     tab.pinned = true;
     tab.groupId = NO_GROUP;
-    this.tabs.splice(
-      this.tabs.filter((candidate) => candidate.pinned).length,
-      0,
-      tab,
-    );
+    this.tabs.splice(this.tabs.filter((candidate) => candidate.pinned).length, 0, tab);
     this.reindex();
   }
 
@@ -75,8 +63,7 @@ export class FakeTabs implements TabsPort {
   }
 
   async group(tabIds: number[]) {
-    if (this.groups.size >= this.failGroupAfter)
-      throw new Error("group failed");
+    if (this.groups.size >= this.failGroupAfter) throw new Error('group failed');
     const groupId = this.nextGroupId++;
     const moving = this.tabs.filter((tab) => tabIds.includes(tab.id));
     const anchor = this.tabs.findIndex((tab) => tabIds.includes(tab.id));
@@ -85,12 +72,7 @@ export class FakeTabs implements TabsPort {
     for (const tab of moving) tab.groupId = groupId;
     rest.splice(insertAt, 0, ...moving);
     this.tabs = rest;
-    this.groups.set(groupId, {
-      id: groupId,
-      title: "",
-      color: "grey",
-      collapsed: false,
-    });
+    this.groups.set(groupId, { id: groupId, title: '', color: 'grey', collapsed: false });
     this.reindex();
     return groupId;
   }
@@ -106,16 +88,12 @@ export class FakeTabs implements TabsPort {
     this.reindex();
   }
 
-  async updateGroup(
-    groupId: number,
-    update: { title: string; color: GroupColor },
-  ) {
+  async updateGroup(groupId: number, update: { title: string; color: GroupColor }) {
     Object.assign(this.groups.get(groupId)!, update);
   }
 
   async ungroup(tabIds: number[]) {
-    for (const tab of this.tabs)
-      if (tabIds.includes(tab.id)) tab.groupId = NO_GROUP;
+    for (const tab of this.tabs) if (tabIds.includes(tab.id)) tab.groupId = NO_GROUP;
     this.pruneGroups();
   }
 
@@ -127,13 +105,7 @@ export class FakeTabs implements TabsPort {
     // Landing between two tabs of the same group joins that group.
     const left = this.tabs[target - 1];
     const right = this.tabs[target + 1];
-    if (
-      left &&
-      right &&
-      left.groupId !== NO_GROUP &&
-      left.groupId === right.groupId
-    )
-      tab!.groupId = left.groupId;
+    if (left && right && left.groupId !== NO_GROUP && left.groupId === right.groupId) tab!.groupId = left.groupId;
     this.reindex();
   }
 

@@ -1,4 +1,4 @@
-import type { GroupColor } from "@/shared/types";
+import type { GroupColor } from '@/shared/types';
 
 export interface PortTab {
   id: number;
@@ -24,10 +24,7 @@ export interface TabsPort {
   windowGroups(windowId: number): Promise<PortGroup[]>;
   group(tabIds: number[], windowId: number): Promise<number>;
   addToGroup(tabIds: number[], groupId: number): Promise<void>;
-  updateGroup(
-    groupId: number,
-    update: { title: string; color: GroupColor },
-  ): Promise<void>;
+  updateGroup(groupId: number, update: { title: string; color: GroupColor }): Promise<void>;
   ungroup(tabIds: number[]): Promise<void>;
   move(tabId: number, index: number): Promise<void>;
 }
@@ -52,7 +49,7 @@ export interface OfferedGroup {
 export interface Snapshot {
   windowId: number;
   takenAt: number;
-  tabs: Pick<PortTab, "id" | "index" | "groupId" | "pinned">[];
+  tabs: Pick<PortTab, 'id' | 'index' | 'groupId' | 'pinned'>[];
   groups: PortGroup[];
 }
 

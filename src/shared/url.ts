@@ -10,28 +10,25 @@ function parseUrl(value: string): URL | null {
 export function isHttpUrl(value: string | undefined | null): boolean {
   if (!value) return false;
   const url = parseUrl(value);
-  return (
-    url !== null && (url.protocol === "http:" || url.protocol === "https:")
-  );
+  return url !== null && (url.protocol === 'http:' || url.protocol === 'https:');
 }
 
 /** Pages where an extension cannot inject a content script, so the palette falls back to a popup. */
 export function canInjectInto(url: string | undefined): boolean {
   if (!isHttpUrl(url)) return false;
   const host = parseUrl(url!)!.hostname;
-  return host !== "chromewebstore.google.com" && host !== "chrome.google.com";
+  return host !== 'chromewebstore.google.com' && host !== 'chrome.google.com';
 }
 
 export function domainOf(value: string | undefined): string {
-  if (!value) return "";
-  return parseUrl(value)?.hostname.replace(/^www\./, "") ?? "";
+  if (!value) return '';
+  return parseUrl(value)?.hostname.replace(/^www\./, '') ?? '';
 }
 
 /** Origin match pattern (e.g. `https://api.openai.com/*`) for a permission request. */
 export function originPattern(value: string): string | null {
   const url = parseUrl(value);
-  if (!url || (url.protocol !== "http:" && url.protocol !== "https:"))
-    return null;
+  if (!url || (url.protocol !== 'http:' && url.protocol !== 'https:')) return null;
   return `${url.protocol}//${url.hostname}/*`;
 }
 
@@ -42,9 +39,6 @@ export function originPattern(value: string): string | null {
 export function isSecureEndpoint(value: string): boolean {
   const url = parseUrl(value);
   if (!url) return false;
-  if (url.protocol === "https:") return true;
-  return (
-    url.protocol === "http:" &&
-    ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
-  );
+  if (url.protocol === 'https:') return true;
+  return url.protocol === 'http:' && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
 }

@@ -1,13 +1,13 @@
 export const GROUP_COLORS = [
-  "grey",
-  "blue",
-  "red",
-  "yellow",
-  "green",
-  "pink",
-  "purple",
-  "cyan",
-  "orange",
+  'grey',
+  'blue',
+  'red',
+  'yellow',
+  'green',
+  'pink',
+  'purple',
+  'cyan',
+  'orange',
 ] as const;
 
 export type GroupColor = (typeof GROUP_COLORS)[number];
@@ -27,27 +27,21 @@ export interface TabSummary {
 }
 
 export type PresetId =
-  | "openai"
-  | "anthropic"
-  | "gemini"
-  | "deepseek"
-  | "mistral"
-  | "opencode-go"
-  | "openrouter"
-  | "ollama"
-  | "custom";
+  | 'openai'
+  | 'anthropic'
+  | 'gemini'
+  | 'deepseek'
+  | 'mistral'
+  | 'opencode-go'
+  | 'openrouter'
+  | 'ollama'
+  | 'custom';
 
 /** Wire protocol a profile speaks. */
-export type AdapterKind =
-  | "openai"
-  | "openai-compatible"
-  | "openai-responses"
-  | "anthropic"
-  | "gemini"
-  | "ollama";
+export type AdapterKind = 'openai' | 'openai-compatible' | 'openai-responses' | 'anthropic' | 'gemini' | 'ollama';
 
 /** Wire API a model is served on, for gateways that serve different models on different APIs. */
-export type ModelApi = "chat" | "messages" | "responses";
+export type ModelApi = 'chat' | 'messages' | 'responses';
 
 export interface ProfileSummary {
   id: string;
@@ -57,15 +51,7 @@ export interface ProfileSummary {
 }
 
 /** Features that can use their own AI profile instead of the active one. */
-export const AI_FEATURES = [
-  "tidy",
-  "page",
-  "tabs",
-  "previews",
-  "instant",
-  "downloads",
-  "ask",
-] as const;
+export const AI_FEATURES = ['tidy', 'page', 'tabs', 'previews', 'instant', 'downloads', 'ask'] as const;
 export type AiFeature = (typeof AI_FEATURES)[number];
 
 export interface AiStatus {
@@ -207,13 +193,7 @@ export interface NowPlaying {
 
 export interface GmailPeek {
   unreadCount: number;
-  messages: {
-    subject: string;
-    snippet: string;
-    from: string;
-    date: string;
-    url: string;
-  }[];
+  messages: { subject: string; snippet: string; from: string; date: string; url: string }[];
 }
 
 export interface CalendarEvent {
@@ -254,7 +234,7 @@ export interface LiveItem {
 export interface LiveFolderView {
   id: string;
   name: string;
-  kind: "github" | "feed";
+  kind: 'github' | 'feed';
   items: (LiveItem & { unread: boolean })[];
   unread: number;
   fetchedAt?: number;

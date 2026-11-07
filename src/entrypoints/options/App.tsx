@@ -1,23 +1,13 @@
-import { useEffect, useId, useState } from "react";
-import { profileConfig } from "@/ai/active";
-import { complete, listModels } from "@/ai/client";
-import {
-  API_LABELS,
-  PRESET_IDS,
-  PRESETS,
-  isHostedEndpoint,
-} from "@/ai/presets";
-import type { ModelInfo } from "@/ai/types";
-import type { AiFeature, ModelApi, PresetId } from "@/shared/types";
-import { send } from "@/shared/send";
-import { isSecureEndpoint, originPattern } from "@/shared/url";
-import { FeatureSettings } from "./FeatureSettings";
-import {
-  clearAllSecrets,
-  clearApiKey,
-  getApiKey,
-  setApiKey,
-} from "@/storage/secrets";
+import { useEffect, useId, useState } from 'react';
+import { profileConfig } from '@/ai/active';
+import { complete, listModels } from '@/ai/client';
+import { API_LABELS, PRESET_IDS, PRESETS, isHostedEndpoint } from '@/ai/presets';
+import type { ModelInfo } from '@/ai/types';
+import type { AiFeature, ModelApi, PresetId } from '@/shared/types';
+import { send } from '@/shared/send';
+import { isSecureEndpoint, originPattern } from '@/shared/url';
+import { FeatureSettings } from './FeatureSettings';
+import { clearAllSecrets, clearApiKey, getApiKey, setApiKey } from '@/storage/secrets';
 import {
   loadSettings,
   newProfile,
@@ -25,18 +15,18 @@ import {
   saveSettings,
   type Profile,
   type Settings,
-} from "@/storage/settings";
+} from '@/storage/settings';
 
-type Notice = { tone: "ok" | "error" | "info"; text: string };
+type Notice = { tone: 'ok' | 'error' | 'info'; text: string };
 
 export function App() {
   const [settings, setSettings] = useState<Settings>();
   const [selectedId, setSelectedId] = useState<string>();
   const [draft, setDraft] = useState<Profile>();
-  const [apiKey, setApiKeyValue] = useState("");
+  const [apiKey, setApiKeyValue] = useState('');
   const [storedKeys, setStoredKeys] = useState<Record<string, boolean>>({});
   const [models, setModels] = useState<ModelInfo[]>([]);
-  const [addPreset, setAddPreset] = useState<PresetId>("custom");
+  const [addPreset, setAddPreset] = useState<PresetId>('custom');
   const [notice, setNotice] = useState<Notice>();
   const [busy, setBusy] = useState(false);
   const [shortcuts, setShortcuts] = useState<Browser.commands.Command[]>([]);
@@ -47,10 +37,7 @@ export function App() {
       setSettings(loaded);
       select(loaded, loaded.activeProfileId);
       const entries = await Promise.all(
-        loaded.profiles.map(
-          async (profile) =>
-            [profile.id, Boolean(await getApiKey(profile.id))] as const,
-        ),
+        loaded.profiles.map(async (profile) => [profile.id, Boolean(await getApiKey(profile.id))] as const),
       );
       setStoredKeys(Object.fromEntries(entries));
     });
@@ -64,12 +51,10 @@ export function App() {
   const isActive = draft.id === settings.activeProfileId;
 
   function select(current: Settings, id: string) {
-    const profile =
-      current.profiles.find((candidate) => candidate.id === id) ??
-      current.profiles[0]!;
+    const profile = current.profiles.find((candidate) => candidate.id === id) ?? current.profiles[0]!;
     setSelectedId(profile.id);
     setDraft({ ...profile });
-    setApiKeyValue("");
+    setApiKeyValue('');
     setModels([]);
     setNotice(undefined);
   }
@@ -82,11 +67,7 @@ export function App() {
   function withDraft(current: Settings): Settings {
     return {
       ...current,
-      profiles: current.profiles.map((profile) =>
-        profile.id === draft!.id
-          ? { ...draft!, name: draft!.name.trim() || preset.label }
-          : profile,
-      ),
+      profiles: current.profiles.map((profile) => (profile.id === draft!.id ? { ...draft!, name: draft!.name.trim() || preset.label } : profile)),
     };
   }
 
@@ -94,18 +75,11 @@ export function App() {
   async function requestOrigin(): Promise<boolean> {
     const pattern = originPattern(baseUrl);
     if (!pattern || !isSecureEndpoint(baseUrl)) {
-      setNotice({
-        tone: "error",
-        text: "The base URL must start with https:// (http:// only for localhost).",
-      });
+      setNotice({ tone: 'error', text: 'The base URL must start with https:// (http:// only for localhost).' });
       return false;
     }
     const granted = await browser.permissions.request({ origins: [pattern] });
-    if (!granted)
-      setNotice({
-        tone: "error",
-        text: `Blimp needs access to ${pattern} to call this provider.`,
-      });
+    if (!granted) setNotice({ tone: 'error', text: `Blimp needs access to ${pattern} to call this provider.` });
     return granted;
   }
 
@@ -121,36 +95,24 @@ export function App() {
     if (apiKey.trim()) {
       await setApiKey(draft!.id, apiKey.trim(), next.keyStorage);
       setStoredKeys({ ...storedKeys, [draft!.id]: true });
-      setApiKeyValue("");
+      setApiKeyValue('');
     }
-    setNotice({
-      tone: "ok",
-      text: makeActive
-        ? `Saved. ${draft!.name} is now the active profile.`
-        : "Saved.",
-    });
+    setNotice({ tone: 'ok', text: makeActive ? `Saved. ${draft!.name} is now the active profile.` : 'Saved.' });
   }
 
   async function testConnection() {
     if (!(await requestOrigin())) return;
     setBusy(true);
-    setNotice({ tone: "info", text: `Contacting ${draft!.name}…` });
+    setNotice({ tone: 'info', text: `Contacting ${draft!.name}…` });
     try {
       const reply = await complete(
         profileConfig(draft!, await currentKey()),
-        {
-          system: "You are a connection test.",
-          messages: [{ role: "user", content: "Reply with the word OK." }],
-          maxOutputTokens: 64,
-        },
+        { system: 'You are a connection test.', messages: [{ role: 'user', content: 'Reply with the word OK.' }], maxOutputTokens: 64 },
         { timeoutMs: 30_000 },
       );
-      setNotice({
-        tone: "ok",
-        text: `Connected. ${draft!.model} replied: “${reply.trim().slice(0, 60)}”`,
-      });
+      setNotice({ tone: 'ok', text: `Connected. ${draft!.model} replied: “${reply.trim().slice(0, 60)}”` });
     } catch (error) {
-      setNotice({ tone: "error", text: errorText(error) });
+      setNotice({ tone: 'error', text: errorText(error) });
     } finally {
       setBusy(false);
     }
@@ -164,17 +126,11 @@ export function App() {
       setModels(ids);
       setNotice(
         ids.length
-          ? {
-              tone: "ok",
-              text: `${ids.length} models available. Pick one in the Model ID field.`,
-            }
-          : {
-              tone: "info",
-              text: "The endpoint returned no models; type the model ID yourself.",
-            },
+          ? { tone: 'ok', text: `${ids.length} models available. Pick one in the Model ID field.` }
+          : { tone: 'info', text: 'The endpoint returned no models; type the model ID yourself.' },
       );
     } catch (error) {
-      setNotice({ tone: "error", text: errorText(error) });
+      setNotice({ tone: 'error', text: errorText(error) });
     } finally {
       setBusy(false);
     }
@@ -188,14 +144,10 @@ export function App() {
   }
 
   async function deleteProfile() {
-    const remaining = settings!.profiles.filter(
-      (profile) => profile.id !== draft!.id,
-    );
+    const remaining = settings!.profiles.filter((profile) => profile.id !== draft!.id);
     const featureProfiles = Object.fromEntries(
-      Object.entries(settings!.featureProfiles).filter(
-        ([, id]) => id !== draft!.id,
-      ),
-    ) as Settings["featureProfiles"];
+      Object.entries(settings!.featureProfiles).filter(([, id]) => id !== draft!.id),
+    ) as Settings['featureProfiles'];
     const next = {
       ...settings!,
       featureProfiles,
@@ -211,39 +163,28 @@ export function App() {
     await clearAllSecrets();
     await browser.storage.session.clear();
     setStoredKeys({});
-    setNotice({
-      tone: "ok",
-      text: "API keys, page conversations and the Tidy Tabs undo history were cleared.",
-    });
+    setNotice({ tone: 'ok', text: 'API keys, page conversations and the Tidy Tabs undo history were cleared.' });
   }
 
-  const update = (patch: Partial<Settings>) =>
-    setSettings({ ...settings, ...patch });
+  const update = (patch: Partial<Settings>) => setSettings({ ...settings, ...patch });
   const edit = (patch: Partial<Profile>) => setDraft({ ...draft, ...patch });
-  const paletteShortcut = shortcuts.find(
-    (command) => command.name === "open-palette",
-  )?.shortcut;
-  const fallbackShortcut = shortcuts.find(
-    (command) => command.name === "open-palette-fallback",
-  )?.shortcut;
-  const littleShortcut = shortcuts.find(
-    (command) => command.name === "little-blimp",
-  )?.shortcut;
+  const paletteShortcut = shortcuts.find((command) => command.name === 'open-palette')?.shortcut;
+  const fallbackShortcut = shortcuts.find((command) => command.name === 'open-palette-fallback')?.shortcut;
+  const littleShortcut = shortcuts.find((command) => command.name === 'little-blimp')?.shortcut;
 
   return (
     <main>
       <h1>Blimp</h1>
       <p className="lead">
-        Bring your own AI provider. Blimp has no server, account or telemetry:
-        requests go straight from your browser to the provider of the active
-        profile.
+        Bring your own AI provider. Blimp has no server, account or telemetry: requests go straight from your
+        browser to the provider of the active profile.
       </p>
 
       <section aria-labelledby="profiles-heading">
         <h2 id="profiles-heading">AI profiles</h2>
         <p className="hint">
-          Each profile has its own provider, model and key. The active one is
-          used by every command; switch from the palette by typing “profile”.
+          Each profile has its own provider, model and key. The active one is used by every command; switch from the
+          palette by typing “profile”.
         </p>
         <ul className="profiles" role="listbox" aria-label="Profiles">
           {settings.profiles.map((profile) => (
@@ -253,31 +194,20 @@ export function App() {
               aria-selected={profile.id === selectedId}
               tabIndex={0}
               onClick={() => select(settings, profile.id)}
-              onKeyDown={(event) =>
-                event.key === "Enter" && select(settings, profile.id)
-              }
+              onKeyDown={(event) => event.key === 'Enter' && select(settings, profile.id)}
             >
               <span className="profile-name">
                 {profile.name}
-                {profile.id === settings.activeProfileId && (
-                  <span className="badge">Active</span>
-                )}
+                {profile.id === settings.activeProfileId && <span className="badge">Active</span>}
               </span>
               <span className="profile-meta">
-                {profile.model || "no model"} ·{" "}
-                {PRESETS[profile.preset].needsKey && !storedKeys[profile.id]
-                  ? "no key"
-                  : "ready"}
+                {profile.model || 'no model'} · {PRESETS[profile.preset].needsKey && !storedKeys[profile.id] ? 'no key' : 'ready'}
               </span>
             </li>
           ))}
         </ul>
         <div className="actions">
-          <select
-            value={addPreset}
-            onChange={(event) => setAddPreset(event.target.value as PresetId)}
-            aria-label="Provider for the new profile"
-          >
+          <select value={addPreset} onChange={(event) => setAddPreset(event.target.value as PresetId)} aria-label="Provider for the new profile">
             {PRESET_IDS.map((id) => (
               <option key={id} value={id}>
                 {PRESETS[id].label}
@@ -295,10 +225,7 @@ export function App() {
 
         <label>
           Name
-          <input
-            value={draft.name}
-            onChange={(event) => edit({ name: event.target.value })}
-          />
+          <input value={draft.name} onChange={(event) => edit({ name: event.target.value })} />
         </label>
 
         {preset.editableBaseUrl && (
@@ -307,24 +234,20 @@ export function App() {
             <input
               value={draft.baseUrl}
               onChange={(event) => edit({ baseUrl: event.target.value })}
-              placeholder={preset.defaultBaseUrl || "https://example.com/v1"}
+              placeholder={preset.defaultBaseUrl || 'https://example.com/v1'}
               spellCheck={false}
             />
           </label>
         )}
 
-        {(preset.needsKey || draft.preset === "custom") && (
+        {(preset.needsKey || draft.preset === 'custom') && (
           <label>
-            API key{!preset.needsKey && " (optional)"}
+            API key{!preset.needsKey && ' (optional)'}
             <input
               type="password"
               value={apiKey}
               onChange={(event) => setApiKeyValue(event.target.value)}
-              placeholder={
-                storedKeys[draft.id]
-                  ? "A key is stored; type to replace it"
-                  : "Paste your key"
-              }
+              placeholder={storedKeys[draft.id] ? 'A key is stored; type to replace it' : 'Paste your key'}
               autoComplete="off"
               spellCheck={false}
             />
@@ -344,32 +267,20 @@ export function App() {
               onChange={(event) => {
                 const model = event.target.value;
                 // Picking a listed model also picks the API the gateway serves it on.
-                const api = preset.apis
-                  ? models.find((item) => item.id === model)?.api
-                  : undefined;
+                const api = preset.apis ? models.find((item) => item.id === model)?.api : undefined;
                 edit(api ? { model, api } : { model });
               }}
               placeholder={preset.modelPlaceholder}
               list={modelListId}
               spellCheck={false}
             />
-            <button
-              type="button"
-              onClick={() => void loadModels()}
-              disabled={busy}
-            >
+            <button type="button" onClick={() => void loadModels()} disabled={busy}>
               Load models
             </button>
           </span>
           <datalist id={modelListId}>
             {models.map((model) => (
-              <option
-                key={model.id}
-                value={model.id}
-                label={
-                  model.api && preset.apis ? API_LABELS[model.api] : undefined
-                }
-              />
+              <option key={model.id} value={model.id} label={model.api && preset.apis ? API_LABELS[model.api] : undefined} />
             ))}
           </datalist>
         </label>
@@ -377,12 +288,7 @@ export function App() {
         {preset.apis && (
           <label>
             API
-            <select
-              value={draft.api ?? "chat"}
-              onChange={(event) =>
-                edit({ api: event.target.value as ModelApi })
-              }
-            >
+            <select value={draft.api ?? 'chat'} onChange={(event) => edit({ api: event.target.value as ModelApi })}>
               {preset.apis.map((api) => (
                 <option key={api} value={api}>
                   {API_LABELS[api]}
@@ -397,14 +303,12 @@ export function App() {
         <p className="disclosure">
           {hosted
             ? `When a command uses this profile, the provider receives only what that command needs, such as tab titles and URLs for Tidy Tabs or page text for Summarize. Nothing is sent while you just browse.`
-            : "This endpoint runs on your machine; page text does not leave it."}
+            : 'This endpoint runs on your machine; page text does not leave it.'}
         </p>
 
         <div className="actions">
           <button onClick={() => void save()}>Save</button>
-          {!isActive && (
-            <button onClick={() => void save(true)}>Save and use</button>
-          )}
+          {!isActive && <button onClick={() => void save(true)}>Save and use</button>}
           <button onClick={() => void testConnection()} disabled={busy}>
             Test connection
           </button>
@@ -415,10 +319,7 @@ export function App() {
           )}
         </div>
         {notice && (
-          <p
-            className={`notice ${notice.tone}`}
-            role={notice.tone === "error" ? "alert" : "status"}
-          >
+          <p className={`notice ${notice.tone}`} role={notice.tone === 'error' ? 'alert' : 'status'}>
             {notice.text}
           </p>
         )}
@@ -427,20 +328,18 @@ export function App() {
       <section aria-labelledby="per-feature-heading">
         <h2 id="per-feature-heading">Models per feature</h2>
         <p className="hint">
-          Every command uses the active profile unless you pick another here,
-          for example a fast, cheap model for previews and filenames and a
-          stronger one for answers across tabs.
+          Every command uses the active profile unless you pick another here, for example a fast, cheap model for
+          previews and filenames and a stronger one for answers across tabs.
         </p>
         <div className="feature-grid">
           {FEATURE_LABELS.map(([feature, label]) => (
             <label key={feature}>
               {label}
               <select
-                value={settings.featureProfiles[feature] ?? ""}
+                value={settings.featureProfiles[feature] ?? ''}
                 onChange={(event) => {
                   const featureProfiles = { ...settings.featureProfiles };
-                  if (event.target.value)
-                    featureProfiles[feature] = event.target.value;
+                  if (event.target.value) featureProfiles[feature] = event.target.value;
                   else delete featureProfiles[feature];
                   void persist({ ...settings, featureProfiles });
                 }}
@@ -449,7 +348,7 @@ export function App() {
                 {settings.profiles.map((profile) => (
                   <option key={profile.id} value={profile.id}>
                     {profile.name}
-                    {profile.model ? ` · ${profile.model}` : ""}
+                    {profile.model ? ` · ${profile.model}` : ''}
                   </option>
                 ))}
               </select>
@@ -465,31 +364,21 @@ export function App() {
         <fieldset>
           <legend>Keep API keys</legend>
           <label className="inline">
-            <input
-              type="radio"
-              checked={settings.keyStorage === "session"}
-              onChange={() =>
-                void persist({ ...settings, keyStorage: "session" })
-              }
-            />
+            <input type="radio" checked={settings.keyStorage === 'session'} onChange={() => void persist({ ...settings, keyStorage: 'session' })} />
             Until the browser quits (recommended)
           </label>
           <label className="inline">
             <input
               type="radio"
-              checked={settings.keyStorage === "persistent"}
-              onChange={() =>
-                void persist({ ...settings, keyStorage: "persistent" })
-              }
+              checked={settings.keyStorage === 'persistent'}
+              onChange={() => void persist({ ...settings, keyStorage: 'persistent' })}
             />
             On this device across restarts
           </label>
-          {settings.keyStorage === "persistent" && (
+          {settings.keyStorage === 'persistent' && (
             <p className="warning">
-              Keys you save from now on are stored unencrypted in this
-              extension's local database. Webpages and content scripts cannot
-              read them, but anyone with access to your browser profile on disk
-              can.
+              Keys you save from now on are stored unencrypted in this extension's local database. Webpages and content
+              scripts cannot read them, but anyone with access to your browser profile on disk can.
             </p>
           )}
         </fieldset>
@@ -499,16 +388,7 @@ export function App() {
         <h2 id="limits-heading">Limits</h2>
         <label>
           Temperature
-          <input
-            type="number"
-            min={0}
-            max={2}
-            step={0.1}
-            value={settings.temperature}
-            onChange={(event) =>
-              update({ temperature: Number(event.target.value) })
-            }
-          />
+          <input type="number" min={0} max={2} step={0.1} value={settings.temperature} onChange={(event) => update({ temperature: Number(event.target.value) })} />
         </label>
         <label>
           Max answer length (tokens)
@@ -518,9 +398,7 @@ export function App() {
             max={32000}
             step={100}
             value={settings.maxOutputTokens}
-            onChange={(event) =>
-              update({ maxOutputTokens: Number(event.target.value) })
-            }
+            onChange={(event) => update({ maxOutputTokens: Number(event.target.value) })}
           />
         </label>
         <label>
@@ -531,16 +409,12 @@ export function App() {
             max={200000}
             step={1000}
             value={settings.maxInputTokens}
-            onChange={(event) =>
-              update({ maxInputTokens: Number(event.target.value) })
-            }
+            onChange={(event) => update({ maxInputTokens: Number(event.target.value) })}
           />
         </label>
         <button
           onClick={() =>
-            void persist(settings).then(() =>
-              setNotice({ tone: "ok", text: "Limits saved." }),
-            )
+            void persist(settings).then(() => setNotice({ tone: 'ok', text: 'Limits saved.' }))
           }
         >
           Save limits
@@ -550,47 +424,26 @@ export function App() {
       <section aria-labelledby="shortcuts-heading">
         <h2 id="shortcuts-heading">Keyboard shortcuts</h2>
         <p>
-          Palette: <kbd>{paletteShortcut || "not set"}</kbd> · Fallback:{" "}
-          <kbd>{fallbackShortcut || "not set"}</kbd> · Little Blimp:{" "}
-          <kbd>{littleShortcut || "not set"}</kbd>
+          Palette: <kbd>{paletteShortcut || 'not set'}</kbd> · Fallback: <kbd>{fallbackShortcut || 'not set'}</kbd> · Little
+          Blimp: <kbd>{littleShortcut || 'not set'}</kbd>
         </p>
         {!paletteShortcut && (
           <p className="warning">
-            The browser did not grant ⌘K (another shortcut owns it). Use the
-            fallback or the toolbar button, or assign a shortcut yourself.
+            The browser did not grant ⌘K (another shortcut owns it). Use the fallback or the toolbar button, or assign a
+            shortcut yourself.
           </p>
         )}
-        <button
-          onClick={() =>
-            void browser.tabs.create({ url: "chrome://extensions/shortcuts" })
-          }
-        >
-          Change shortcuts
-        </button>
+        <button onClick={() => void browser.tabs.create({ url: 'chrome://extensions/shortcuts' })}>Change shortcuts</button>
       </section>
 
       <section aria-labelledby="privacy-heading">
         <h2 id="privacy-heading">Privacy</h2>
         <ul>
-          <li>
-            Tidy Tabs only runs when you ask. It names groups, never individual
-            tabs, and never closes tabs.
-          </li>
-          <li>
-            Page text is read only when you run a page or tabs command, and only
-            from the pages you chose.
-          </li>
-          <li>
-            Link previews and Tidy Downloads are off until you turn them on
-            above.
-          </li>
-          <li>
-            Conversations and the undo snapshot live in memory for this browser
-            session and are not saved to disk.
-          </li>
-          <li>
-            Blimp asks for site access only for the providers you configure.
-          </li>
+          <li>Tidy Tabs only runs when you ask. It names groups, never individual tabs, and never closes tabs.</li>
+          <li>Page text is read only when you run a page or tabs command, and only from the pages you chose.</li>
+          <li>Link previews and Tidy Downloads are off until you turn them on above.</li>
+          <li>Conversations and the undo snapshot live in memory for this browser session and are not saved to disk.</li>
+          <li>Blimp asks for site access only for the providers you configure.</li>
         </ul>
         <div className="actions">
           <button className="danger" onClick={() => void clearEverything()}>
@@ -598,12 +451,7 @@ export function App() {
           </button>
           <button
             onClick={() =>
-              void send({ type: "rank/clear" }).then(() =>
-                setNotice({
-                  tone: "ok",
-                  text: "The palette forgot what you use and pick.",
-                }),
-              )
+              void send({ type: 'rank/clear' }).then(() => setNotice({ tone: 'ok', text: 'The palette forgot what you use and pick.' }))
             }
           >
             Forget what the palette learned
@@ -615,13 +463,13 @@ export function App() {
 }
 
 const FEATURE_LABELS: [AiFeature, string][] = [
-  ["tidy", "Tidy Tabs"],
-  ["page", "Summarize and Ask Page"],
-  ["tabs", "Summarize and Ask Across Tabs"],
-  ["previews", "Link previews"],
-  ["instant", "Instant Links ranking"],
-  ["downloads", "Tidy Downloads"],
-  ["ask", "Ask AI"],
+  ['tidy', 'Tidy Tabs'],
+  ['page', 'Summarize and Ask Page'],
+  ['tabs', 'Summarize and Ask Across Tabs'],
+  ['previews', 'Link previews'],
+  ['instant', 'Instant Links ranking'],
+  ['downloads', 'Tidy Downloads'],
+  ['ask', 'Ask AI'],
 ];
 
 function errorText(error: unknown): string {

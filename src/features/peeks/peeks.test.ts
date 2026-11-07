@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
-import { upcomingEvents } from "./calendar";
-import { accountFromUrl, fetchGmail, parseGmailAtom } from "./gmail";
+import { describe, expect, it, vi } from 'vitest';
+import { upcomingEvents } from './calendar';
+import { accountFromUrl, fetchGmail, parseGmailAtom } from './gmail';
 
 const ATOM = `<?xml version="1.0" encoding="UTF-8"?>
 <feed version="0.3" xmlns="http://purl.org/atom/ns#">
@@ -20,40 +20,30 @@ const ATOM = `<?xml version="1.0" encoding="UTF-8"?>
 </entry>
 </feed>`;
 
-describe("Gmail feed", () => {
-  it("reads count, sender, subject and safe links", () => {
+describe('Gmail feed', () => {
+  it('reads count, sender, subject and safe links', () => {
     const peek = parseGmailAtom(ATOM);
     expect(peek.unreadCount).toBe(7);
     expect(peek.messages[0]).toEqual({
-      subject: "Invoice & receipt for November",
-      snippet: "Thanks for your order — your total was $42.",
-      from: "Acme Billing",
-      date: "2026-11-07T08:00:00Z",
-      url: "https://mail.google.com/mail/u/0?account_id=you%40example.com&message_id=abc&view=conv",
+      subject: 'Invoice & receipt for November',
+      snippet: 'Thanks for your order — your total was $42.',
+      from: 'Acme Billing',
+      date: '2026-11-07T08:00:00Z',
+      url: 'https://mail.google.com/mail/u/0?account_id=you%40example.com&message_id=abc&view=conv',
     });
-    expect(peek.messages[1]).toMatchObject({
-      subject: "(no subject)",
-      from: "someone@example.com",
-      url: "",
-    });
+    expect(peek.messages[1]).toMatchObject({ subject: '(no subject)', from: 'someone@example.com', url: '' });
   });
 
-  it("uses the browser session and explains a signed-out account", async () => {
-    const fetchImpl = vi.fn<typeof fetch>(
-      async () => new Response("", { status: 401 }),
-    );
-    await expect(fetchGmail(1, { fetchImpl })).rejects.toThrow(
-      /Not signed in to Gmail account 1/,
-    );
-    expect(fetchImpl.mock.calls[0]![0]).toBe(
-      "https://mail.google.com/mail/u/1/feed/atom",
-    );
-    expect(fetchImpl.mock.calls[0]![1]!.credentials).toBe("include");
+  it('uses the browser session and explains a signed-out account', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => new Response('', { status: 401 }));
+    await expect(fetchGmail(1, { fetchImpl })).rejects.toThrow(/Not signed in to Gmail account 1/);
+    expect(fetchImpl.mock.calls[0]![0]).toBe('https://mail.google.com/mail/u/1/feed/atom');
+    expect(fetchImpl.mock.calls[0]![1]!.credentials).toBe('include');
   });
 
-  it("follows the account of the open Gmail tab", () => {
-    expect(accountFromUrl("https://mail.google.com/mail/u/2/#inbox")).toBe(2);
-    expect(accountFromUrl("https://example.com")).toBe(0);
+  it('follows the account of the open Gmail tab', () => {
+    expect(accountFromUrl('https://mail.google.com/mail/u/2/#inbox')).toBe(2);
+    expect(accountFromUrl('https://example.com')).toBe(0);
   });
 });
 
@@ -104,22 +94,22 @@ DTEND:20261101T190000Z
 END:VEVENT
 END:VCALENDAR`;
 
-describe("calendar", () => {
+describe('calendar', () => {
   // Monday Nov 9 2026, 12:00 UTC = 06:00 in Mexico City.
-  const now = new Date("2026-11-09T12:00:00Z");
+  const now = new Date('2026-11-09T12:00:00Z');
 
-  it("expands recurrences, applies moved occurrences and time zones, and skips cancelled and past events", () => {
+  it('expands recurrences, applies moved occurrences and time zones, and skips cancelled and past events', () => {
     const events = upcomingEvents(ICS, now, 48);
     expect(events.map((e) => [e.title, e.start])).toEqual([
-      ["Standup", "2026-11-09T16:00:00.000Z"],
-      ["Team offsite", expect.stringMatching(/^2026-11-1[01]T/)],
-      ["Standup (moved)", "2026-11-10T18:00:00.000Z"],
+      ['Standup', '2026-11-09T16:00:00.000Z'],
+      ['Team offsite', expect.stringMatching(/^2026-11-1[01]T/)],
+      ['Standup (moved)', '2026-11-10T18:00:00.000Z'],
     ]);
-    expect(events[0]!.meetingUrl).toBe("https://meet.google.com/abc-defg-hij");
-    expect(events.find((e) => e.title === "Team offsite")!.allDay).toBe(true);
+    expect(events[0]!.meetingUrl).toBe('https://meet.google.com/abc-defg-hij');
+    expect(events.find((e) => e.title === 'Team offsite')!.allDay).toBe(true);
   });
 
-  it("rejects something that is not a calendar", () => {
-    expect(() => upcomingEvents("<html>login</html>", now)).toThrow(/iCal/);
+  it('rejects something that is not a calendar', () => {
+    expect(() => upcomingEvents('<html>login</html>', now)).toThrow(/iCal/);
   });
 });

@@ -1,5 +1,5 @@
-import { send } from "@/shared/send";
-import { showInTopLayer } from "./top-layer";
+import { send } from '@/shared/send';
+import { showInTopLayer } from './top-layer';
 
 const CSS = `
 :host { all: initial; }
@@ -28,59 +28,45 @@ type Rect = { x: number; y: number; width: number; height: number };
  * cancels). The image is copied to the clipboard and can be saved.
  */
 export function startCapture(pageTitle: string): void {
-  const host = document.createElement("blimp-capture");
-  const root = host.attachShadow({
-    mode: import.meta.env.MODE.startsWith("e2e") ? "open" : "closed",
-  });
-  const style = Object.assign(document.createElement("style"), {
-    textContent: CSS,
-  });
-  const layer = Object.assign(document.createElement("div"), {
-    className: "layer",
-    tabIndex: -1,
-  });
-  const hint = Object.assign(document.createElement("div"), {
-    className: "hint",
-    textContent:
-      "Drag to capture an area · Enter for the whole view · Esc to cancel",
-  });
-  const box = Object.assign(document.createElement("div"), {
-    className: "box",
-    hidden: true,
-  });
+  const host = document.createElement('blimp-capture');
+  const root = host.attachShadow({ mode: import.meta.env.MODE.startsWith('e2e') ? 'open' : 'closed' });
+  const style = Object.assign(document.createElement('style'), { textContent: CSS });
+  const layer = Object.assign(document.createElement('div'), { className: 'layer', tabIndex: -1 });
+  const hint = Object.assign(document.createElement('div'), { className: 'hint', textContent: 'Drag to capture an area · Enter for the whole view · Esc to cancel' });
+  const box = Object.assign(document.createElement('div'), { className: 'box', hidden: true });
   root.append(style, layer, hint, box);
-  host.style.cssText = "position: fixed; inset: 0; z-index: 2147483647;";
+  host.style.cssText = 'position: fixed; inset: 0; z-index: 2147483647;';
   document.documentElement.append(host);
-  showInTopLayer(host, "fullscreen");
+  showInTopLayer(host, 'fullscreen');
   layer.focus();
 
   let start: { x: number; y: number } | null = null;
   let rect: Rect | null = null;
   const finish = () => {
-    removeEventListener("keydown", onKey, true);
+    removeEventListener('keydown', onKey, true);
     host.remove();
   };
   const onKey = (event: KeyboardEvent) => {
-    if (event.key === "Escape") {
+    if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
       finish();
-    } else if (event.key === "Enter") {
+    } else if (event.key === 'Enter') {
       event.preventDefault();
       event.stopPropagation();
       finish();
       void take(null, pageTitle);
     }
   };
-  addEventListener("keydown", onKey, true);
+  addEventListener('keydown', onKey, true);
 
-  layer.addEventListener("pointerdown", (event) => {
+  layer.addEventListener('pointerdown', (event) => {
     // Dragging picks an area; it must not select the page's text underneath.
     event.preventDefault();
     start = { x: event.clientX, y: event.clientY };
     layer.setPointerCapture(event.pointerId);
   });
-  layer.addEventListener("pointermove", (event) => {
+  layer.addEventListener('pointermove', (event) => {
     if (!start) return;
     rect = {
       x: Math.min(start.x, event.clientX),
@@ -88,16 +74,11 @@ export function startCapture(pageTitle: string): void {
       width: Math.abs(event.clientX - start.x),
       height: Math.abs(event.clientY - start.y),
     };
-    Object.assign(box.style, {
-      left: `${rect.x}px`,
-      top: `${rect.y}px`,
-      width: `${rect.width}px`,
-      height: `${rect.height}px`,
-    });
+    Object.assign(box.style, { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.width}px`, height: `${rect.height}px` });
     box.hidden = false;
     hint.hidden = true;
   });
-  layer.addEventListener("pointerup", () => {
+  layer.addEventListener('pointerup', () => {
     const picked = rect && rect.width >= 4 && rect.height >= 4 ? rect : null;
     start = null;
     finish();
@@ -108,35 +89,23 @@ export function startCapture(pageTitle: string): void {
 
 async function take(rect: Rect | null, pageTitle: string): Promise<void> {
   // Let the selection layer disappear from the screen before the browser takes the picture.
-  await new Promise((resolve) =>
-    requestAnimationFrame(() => requestAnimationFrame(resolve)),
-  );
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   let blob: Blob;
   try {
-    const dataUrl = await send({ type: "capture/visible" });
+    const dataUrl = await send({ type: 'capture/visible' });
     blob = await crop(dataUrl, rect);
   } catch (error) {
-    showResult(
-      null,
-      pageTitle,
-      error instanceof Error ? error.message : "Capture failed.",
-    );
+    showResult(null, pageTitle, error instanceof Error ? error.message : 'Capture failed.');
     return;
   }
   let copied = false;
   try {
-    await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
     copied = true;
   } catch {
     // Some sites block clipboard access; Save still works.
   }
-  showResult(
-    blob,
-    pageTitle,
-    copied
-      ? "Copied to the clipboard."
-      : "This site doesn't allow copying images; use Save.",
-  );
+  showResult(blob, pageTitle, copied ? 'Copied to the clipboard.' : "This site doesn't allow copying images; use Save.");
 }
 
 async function crop(dataUrl: string, rect: Rect | null): Promise<Blob> {
@@ -144,97 +113,39 @@ async function crop(dataUrl: string, rect: Rect | null): Promise<Blob> {
   // The screenshot is in device pixels; the selection is in CSS pixels.
   const scale = image.width / innerWidth;
   const area = rect ?? { x: 0, y: 0, width: innerWidth, height: innerHeight };
-  const canvas = Object.assign(document.createElement("canvas"), {
+  const canvas = Object.assign(document.createElement('canvas'), {
     width: Math.round(area.width * scale),
     height: Math.round(area.height * scale),
   });
-  canvas
-    .getContext("2d")!
-    .drawImage(
-      image,
-      area.x * scale,
-      area.y * scale,
-      canvas.width,
-      canvas.height,
-      0,
-      0,
-      canvas.width,
-      canvas.height,
-    );
-  return new Promise((resolve, reject) =>
-    canvas.toBlob(
-      (blob) =>
-        blob ? resolve(blob) : reject(new Error("Could not make the image.")),
-      "image/png",
-    ),
-  );
+  canvas.getContext('2d')!.drawImage(image, area.x * scale, area.y * scale, canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+  return new Promise((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Could not make the image.'))), 'image/png'));
 }
 
-function showResult(
-  blob: Blob | null,
-  pageTitle: string,
-  message: string,
-): void {
-  const host = document.createElement("blimp-capture");
-  const root = host.attachShadow({
-    mode: import.meta.env.MODE.startsWith("e2e") ? "open" : "closed",
-  });
-  const card = Object.assign(document.createElement("div"), {
-    className: "done",
-  });
-  card.setAttribute("role", "status");
-  const url = blob ? URL.createObjectURL(blob) : "";
-  if (blob)
-    card.append(
-      Object.assign(document.createElement("img"), {
-        src: url,
-        alt: "Captured area",
-      }),
-    );
-  const row = Object.assign(document.createElement("div"), {
-    className: "row",
-  });
-  row.append(
-    Object.assign(document.createElement("span"), { textContent: message }),
-  );
+function showResult(blob: Blob | null, pageTitle: string, message: string): void {
+  const host = document.createElement('blimp-capture');
+  const root = host.attachShadow({ mode: import.meta.env.MODE.startsWith('e2e') ? 'open' : 'closed' });
+  const card = Object.assign(document.createElement('div'), { className: 'done' });
+  card.setAttribute('role', 'status');
+  const url = blob ? URL.createObjectURL(blob) : '';
+  if (blob) card.append(Object.assign(document.createElement('img'), { src: url, alt: 'Captured area' }));
+  const row = Object.assign(document.createElement('div'), { className: 'row' });
+  row.append(Object.assign(document.createElement('span'), { textContent: message }));
   if (blob) {
-    const stamp = new Date()
-      .toISOString()
-      .slice(0, 16)
-      .replace("T", " ")
-      .replace(":", ".");
-    const name = `${
-      pageTitle
-        .replace(/[\\/:*?"<>|]+/g, " ")
-        .trim()
-        .slice(0, 60) || "Capture"
-    } ${stamp}.png`;
-    row.append(
-      Object.assign(document.createElement("a"), {
-        href: url,
-        download: name,
-        textContent: "Save",
-      }),
-    );
+    const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ').replace(':', '.');
+    const name = `${pageTitle.replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 60) || 'Capture'} ${stamp}.png`;
+    row.append(Object.assign(document.createElement('a'), { href: url, download: name, textContent: 'Save' }));
   }
-  const close = Object.assign(document.createElement("button"), {
-    type: "button",
-    textContent: "Close",
-  });
+  const close = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Close' });
   const dismiss = () => {
     host.remove();
     if (url) setTimeout(() => URL.revokeObjectURL(url), 1_000);
   };
-  close.addEventListener("click", dismiss);
+  close.addEventListener('click', dismiss);
   row.append(close);
   card.append(row);
-  root.append(
-    Object.assign(document.createElement("style"), { textContent: CSS }),
-    card,
-  );
-  host.style.cssText =
-    "position: fixed; inset: 0 auto auto 0; z-index: 2147483647;";
+  root.append(Object.assign(document.createElement('style'), { textContent: CSS }), card);
+  host.style.cssText = 'position: fixed; inset: 0 auto auto 0; z-index: 2147483647;';
   document.documentElement.append(host);
-  showInTopLayer(host, "point");
+  showInTopLayer(host, 'point');
   setTimeout(dismiss, 8_000);
 }

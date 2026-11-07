@@ -1,7 +1,7 @@
-import type { AdapterKind, ModelApi } from "@/shared/types";
+import type { AdapterKind, ModelApi } from '@/shared/types';
 
 export interface ChatMessage {
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   content: string;
 }
 
@@ -31,10 +31,7 @@ export interface ProviderConfig {
 
 /** Wire format for one protocol: build HTTP requests and read results back out. */
 export interface ProviderAdapter {
-  buildRequest(
-    config: ProviderConfig,
-    request: CompletionRequest,
-  ): { url: string; init: RequestInit };
+  buildRequest(config: ProviderConfig, request: CompletionRequest): { url: string; init: RequestInit };
   parseResponse(body: unknown): string;
   modelsRequest(config: ProviderConfig): { url: string; init: RequestInit };
   parseModels(body: unknown): ModelInfo[];

@@ -1,21 +1,17 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { splitCitations } from "@/shared/citations";
-import { send } from "@/shared/send";
-import type {
-  AiStatus,
-  CrossTabCandidate,
-  CrossTabResult,
-} from "@/shared/types";
-import { domainOf } from "@/shared/url";
-import { Footer } from "./Footer";
-import { RichText } from "./RichText";
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { splitCitations } from '@/shared/citations';
+import { send } from '@/shared/send';
+import type { AiStatus, CrossTabCandidate, CrossTabResult } from '@/shared/types';
+import { domainOf } from '@/shared/url';
+import { Footer } from './Footer';
+import { RichText } from './RichText';
 
 type Phase =
-  | { name: "select" }
-  | { name: "grant"; missing: string[]; waiting: boolean }
-  | { name: "running"; opId: string; question: string | null }
-  | { name: "result"; result: CrossTabResult; question: string | null }
-  | { name: "error"; message: string };
+  | { name: 'select' }
+  | { name: 'grant'; missing: string[]; waiting: boolean }
+  | { name: 'running'; opId: string; question: string | null }
+  | { name: 'result'; result: CrossTabResult; question: string | null }
+  | { name: 'error'; message: string };
 
 const GRANT_POLL_MS = 1_000;
 
@@ -27,7 +23,7 @@ export function CrossTabView({
   onBack,
   onClose,
 }: {
-  mode: "summarize" | "ask";
+  mode: 'summarize' | 'ask';
   windowId?: number;
   tabId?: number;
   status?: AiStatus;
@@ -36,39 +32,30 @@ export function CrossTabView({
 }) {
   const [candidates, setCandidates] = useState<CrossTabCandidate[]>();
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [question, setQuestion] = useState("");
+  const [question, setQuestion] = useState('');
   const [wake, setWake] = useState(false);
-  const selectable = (tab: CrossTabCandidate) =>
-    !tab.blocked || (wake && Boolean(tab.asleep));
-  const [phase, setPhase] = useState<Phase>({ name: "select" });
+  const selectable = (tab: CrossTabCandidate) => !tab.blocked || (wake && Boolean(tab.asleep));
+  const [phase, setPhase] = useState<Phase>({ name: 'select' });
   const runningOp = useRef<string | null>(null);
   const runButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    void send({ type: "cross/candidates", windowId }).then((list) => {
+    void send({ type: 'cross/candidates', windowId }).then((list) => {
       setCandidates(list);
-      setSelected(
-        new Set(list.filter((tab) => !tab.blocked).map((tab) => tab.tabId)),
-      );
-      if (mode === "summarize")
-        requestAnimationFrame(() => runButton.current?.focus());
+      setSelected(new Set(list.filter((tab) => !tab.blocked).map((tab) => tab.tabId)));
+      if (mode === 'summarize') requestAnimationFrame(() => runButton.current?.focus());
     });
     // Leaving the view cancels a request that is still running.
     return () => {
-      if (runningOp.current)
-        void send({ type: "op/cancel", opId: runningOp.current });
+      if (runningOp.current) void send({ type: 'op/cancel', opId: runningOp.current });
     };
   }, [mode, windowId]);
 
   // While the grant window is open, check once a second whether access arrived.
   useEffect(() => {
-    if (phase.name !== "grant" || !phase.waiting) return;
+    if (phase.name !== 'grant' || !phase.waiting) return;
     const timer = setInterval(async () => {
-      const missing = await send({
-        type: "cross/missing-origins",
-        tabIds: [...selected],
-        tabId,
-      });
+      const missing = await send({ type: 'cross/missing-origins', tabIds: [...selected], tabId });
       if (missing.length === 0) void execute([...selected]);
     }, GRANT_POLL_MS);
     return () => clearInterval(timer);
@@ -82,36 +69,22 @@ export function CrossTabView({
   async function start(askedQuestion = question) {
     const ids = selectedTabs.map((tab) => tab.tabId);
     if (ids.length === 0) return;
-    if (mode === "ask" && !askedQuestion.trim()) return;
-    const missing = await send({
-      type: "cross/missing-origins",
-      tabIds: ids,
-      tabId,
-    });
-    if (missing.length) setPhase({ name: "grant", missing, waiting: false });
+    if (mode === 'ask' && !askedQuestion.trim()) return;
+    const missing = await send({ type: 'cross/missing-origins', tabIds: ids, tabId });
+    if (missing.length) setPhase({ name: 'grant', missing, waiting: false });
     else void execute(ids, askedQuestion);
   }
 
   async function execute(ids: number[], askedQuestion = question) {
     const opId = crypto.randomUUID();
-    const asked = mode === "ask" ? askedQuestion.trim() : null;
+    const asked = mode === 'ask' ? askedQuestion.trim() : null;
     runningOp.current = opId;
-    setPhase({ name: "running", opId, question: asked });
+    setPhase({ name: 'running', opId, question: asked });
     try {
-      const result = await send({
-        type: "cross/run",
-        opId,
-        windowId,
-        tabIds: ids,
-        question: asked,
-        wake,
-      });
-      setPhase({ name: "result", result, question: asked });
+      const result = await send({ type: 'cross/run', opId, windowId, tabIds: ids, question: asked, wake });
+      setPhase({ name: 'result', result, question: asked });
     } catch (error) {
-      setPhase({
-        name: "error",
-        message: error instanceof Error ? error.message : String(error),
-      });
+      setPhase({ name: 'error', message: error instanceof Error ? error.message : String(error) });
     } finally {
       runningOp.current = null;
     }
@@ -119,13 +92,12 @@ export function CrossTabView({
 
   async function grant(missing: string[]) {
     // Extension pages (the popup palette) can prompt directly; the in-page overlay can't.
-    if (typeof browser.permissions?.request === "function") {
-      if (await browser.permissions.request({ origins: missing }))
-        void execute(selectedTabs.map((tab) => tab.tabId));
+    if (typeof browser.permissions?.request === 'function') {
+      if (await browser.permissions.request({ origins: missing })) void execute(selectedTabs.map((tab) => tab.tabId));
       return;
     }
-    await send({ type: "permissions/open-grant", origins: missing });
-    setPhase({ name: "grant", missing, waiting: true });
+    await send({ type: 'permissions/open-grant', origins: missing });
+    setPhase({ name: 'grant', missing, waiting: true });
   }
 
   /** Run anyway: tabs without access are reported under Skipped instead of silently dropped. */
@@ -140,27 +112,23 @@ export function CrossTabView({
     setSelected(next);
   };
 
-  const title = mode === "summarize" ? "Summarize tabs" : "Ask across tabs";
+  const title = mode === 'summarize' ? 'Summarize tabs' : 'Ask across tabs';
   const disclosure = status?.configured
-    ? `${status.hosted ? "Sends" : "Uses"} the text of ${selectedTabs.length} ${selectedTabs.length === 1 ? "tab" : "tabs"}${status.hosted ? ` to ${status.profileName}` : ` with ${status.profileName}; it stays on this device`}.`
+    ? `${status.hosted ? 'Sends' : 'Uses'} the text of ${selectedTabs.length} ${selectedTabs.length === 1 ? 'tab' : 'tabs'}${status.hosted ? ` to ${status.profileName}` : ` with ${status.profileName}; it stays on this device`}.`
     : undefined;
 
   return (
     <div className="hm-page">
       <header className="hm-page-header">
-        <button
-          className="hm-link"
-          onClick={onBack}
-          aria-label="Back to commands"
-        >
+        <button className="hm-link" onClick={onBack} aria-label="Back to commands">
           ←
         </button>
         <span className="hm-page-title">{title}</span>
       </header>
 
-      {phase.name === "select" && (
+      {phase.name === 'select' && (
         <>
-          {mode === "ask" && (
+          {mode === 'ask' && (
             <form
               className="hm-ask hm-ask-top"
               onSubmit={(event) => {
@@ -179,18 +147,9 @@ export function CrossTabView({
           )}
           <div className="hm-select-bar">
             <span className="hm-muted">
-              {selectedTabs.length} of{" "}
-              {candidates?.filter(selectable).length ?? 0} readable tabs
-              selected
+              {selectedTabs.length} of {candidates?.filter(selectable).length ?? 0} readable tabs selected
             </span>
-            <button
-              className="hm-link"
-              onClick={() =>
-                setSelected(
-                  new Set(candidates?.filter(selectable).map((t) => t.tabId)),
-                )
-              }
-            >
+            <button className="hm-link" onClick={() => setSelected(new Set(candidates?.filter(selectable).map((t) => t.tabId)))}>
               All
             </button>
             <button className="hm-link" onClick={() => setSelected(new Set())}>
@@ -200,7 +159,7 @@ export function CrossTabView({
           <ul className="hm-checklist" aria-label="Tabs to include">
             {candidates?.map((tab) => (
               <li key={tab.tabId}>
-                <label className={tab.blocked ? "hm-blocked" : undefined}>
+                <label className={tab.blocked ? 'hm-blocked' : undefined}>
                   <input
                     type="checkbox"
                     checked={selected.has(tab.tabId)}
@@ -208,11 +167,7 @@ export function CrossTabView({
                     onChange={() => toggle(tab.tabId)}
                   />
                   <span className="hm-item-title">{tab.title}</span>
-                  <span className="hm-item-hint">
-                    {selectable(tab) && tab.asleep
-                      ? "Will be woken"
-                      : (tab.blocked ?? domainOf(tab.url))}
-                  </span>
+                  <span className="hm-item-hint">{selectable(tab) && tab.asleep ? 'Will be woken' : (tab.blocked ?? domainOf(tab.url))}</span>
                 </label>
               </li>
             ))}
@@ -225,54 +180,36 @@ export function CrossTabView({
                 onChange={(event) => {
                   const on = event.target.checked;
                   setWake(on);
-                  const asleep = candidates
-                    .filter((tab) => tab.asleep)
-                    .map((tab) => tab.tabId);
+                  const asleep = candidates.filter((tab) => tab.asleep).map((tab) => tab.tabId);
                   const next = new Set(selected);
                   for (const id of asleep) on ? next.add(id) : next.delete(id);
                   setSelected(next);
                 }}
               />
-              Wake sleeping tabs so they can be read (loads them in the
-              background)
+              Wake sleeping tabs so they can be read (loads them in the background)
             </label>
           )}
           <div className="hm-run-bar">
             <button
               ref={runButton}
               className="hm-button hm-primary"
-              disabled={
-                selectedTabs.length === 0 ||
-                (mode === "ask" && !question.trim())
-              }
+              disabled={selectedTabs.length === 0 || (mode === 'ask' && !question.trim())}
               onClick={() => void start()}
             >
-              {mode === "summarize" ? "Summarize" : "Ask"} {selectedTabs.length}{" "}
-              {selectedTabs.length === 1 ? "tab" : "tabs"}
+              {mode === 'summarize' ? 'Summarize' : 'Ask'} {selectedTabs.length} {selectedTabs.length === 1 ? 'tab' : 'tabs'}
             </button>
           </div>
-          <Footer
-            status={status}
-            note={
-              disclosure ??
-              "Tabs are read only after you press the button. Sleeping tabs are not reloaded."
-            }
-          />
+          <Footer status={status} note={disclosure ?? 'Tabs are read only after you press the button. Sleeping tabs are not reloaded.'} />
         </>
       )}
 
-      {phase.name === "grant" && (
+      {phase.name === 'grant' && (
         <div className="hm-panel">
-          <h2>
-            Blimp needs access to read{" "}
-            {phase.missing.length === 1 ? "this site" : "these sites"}
-          </h2>
+          <h2>Blimp needs access to read {phase.missing.length === 1 ? 'this site' : 'these sites'}</h2>
           <ul className="hm-plain-list">
             {phase.missing.map((origin) => (
               <li key={origin}>
-                <code>
-                  {origin.replace(/^https?:\/\//, "").replace(/\/\*$/, "")}
-                </code>
+                <code>{origin.replace(/^https?:\/\//, '').replace(/\/\*$/, '')}</code>
               </li>
             ))}
           </ul>
@@ -281,17 +218,10 @@ export function CrossTabView({
               Waiting for you to allow access in the Blimp window…
             </p>
           ) : (
-            <p className="hm-muted">
-              Access is remembered for these sites. You can remove it in the
-              extension's details.
-            </p>
+            <p className="hm-muted">Access is remembered for these sites. You can remove it in the extension's details.</p>
           )}
           <div className="hm-row">
-            <button
-              className="hm-button hm-primary"
-              autoFocus
-              onClick={() => void grant(phase.missing)}
-            >
+            <button className="hm-button hm-primary" autoFocus onClick={() => void grant(phase.missing)}>
               Allow access
             </button>
             <button className="hm-button" onClick={skipUngranted}>
@@ -301,48 +231,31 @@ export function CrossTabView({
         </div>
       )}
 
-      {phase.name === "running" && (
+      {phase.name === 'running' && (
         <div className="hm-panel" role="status" aria-live="polite">
           <div className="hm-spinner" aria-hidden="true" />
           <p>Reading {selectedTabs.length} tabs…</p>
-          <button
-            className="hm-button"
-            onClick={() => void send({ type: "op/cancel", opId: phase.opId })}
-          >
+          <button className="hm-button" onClick={() => void send({ type: 'op/cancel', opId: phase.opId })}>
             Cancel
           </button>
         </div>
       )}
 
-      {phase.name === "result" && (
+      {phase.name === 'result' && (
         <CrossTabAnswer
           result={phase.result}
           question={phase.question}
-          onOpen={(id) =>
-            void send({ type: "tabs/activate", tabId: id }).then(onClose)
-          }
-          onAsk={
-            mode === "ask"
-              ? (next) =>
-                  void execute(
-                    phase.result.sources.map((source) => source.tabId),
-                    next,
-                  )
-              : undefined
-          }
+          onOpen={(id) => void send({ type: 'tabs/activate', tabId: id }).then(onClose)}
+          onAsk={mode === 'ask' ? (next) => void execute(phase.result.sources.map((source) => source.tabId), next) : undefined}
         />
       )}
 
-      {phase.name === "error" && (
+      {phase.name === 'error' && (
         <div className="hm-panel">
           <p className="hm-warning" role="alert">
             {phase.message}
           </p>
-          <button
-            className="hm-button"
-            autoFocus
-            onClick={() => setPhase({ name: "select" })}
-          >
+          <button className="hm-button" autoFocus onClick={() => setPhase({ name: 'select' })}>
             Back to tab selection
           </button>
         </div>
@@ -362,13 +275,13 @@ function CrossTabAnswer({
   onOpen: (tabId: number) => void;
   onAsk?: (question: string) => void;
 }) {
-  const [next, setNext] = useState("");
+  const [next, setNext] = useState('');
   const byNumber = new Map(result.sources.map((source) => [source.n, source]));
   const valid = new Set(byNumber.keys());
 
   const inline = (line: string) =>
     splitCitations(line, valid).map((part, index) =>
-      part.kind === "text" ? (
+      part.kind === 'text' ? (
         part.text
       ) : (
         <button
@@ -392,23 +305,16 @@ function CrossTabAnswer({
         <ol className="hm-sources">
           {result.sources.map((source) => (
             <li key={source.n}>
-              <button
-                className="hm-cite"
-                onClick={() => onOpen(source.tabId)}
-                aria-label={`Open source ${source.n}`}
-              >
+              <button className="hm-cite" onClick={() => onOpen(source.tabId)} aria-label={`Open source ${source.n}`}>
                 {source.n}
               </button>
-              <button
-                className="hm-source-title"
-                onClick={() => onOpen(source.tabId)}
-              >
+              <button className="hm-source-title" onClick={() => onOpen(source.tabId)}>
                 {source.title}
               </button>
               <span className="hm-muted">
-                {" "}
+                {' '}
                 {domainOf(source.url)}
-                {source.truncated && " · only the start was read"}
+                {source.truncated && ' · only the start was read'}
               </span>
             </li>
           ))}
@@ -443,13 +349,7 @@ function CrossTabAnswer({
           />
         </form>
       )}
-      <Footer
-        note={
-          result.calls > 1
-            ? `Long input: read in ${result.calls - 1} batches, then combined.`
-            : "Click a number to jump to that tab."
-        }
-      />
+      <Footer note={result.calls > 1 ? `Long input: read in ${result.calls - 1} batches, then combined.` : 'Click a number to jump to that tab.'} />
     </>
   );
 }

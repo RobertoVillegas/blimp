@@ -4,32 +4,30 @@
  * - persistent: IndexedDB on the extension origin, which content scripts cannot open
  *   (they run with the page's origin). It is NOT encrypted; Settings says so.
  */
-const DB_NAME = "helium-max-secrets";
-const STORE = "keys";
+const DB_NAME = 'helium-max-secrets';
+const STORE = 'keys';
 
 const sessionKey = (profileId: string) => `secret:${profileId}`;
 
 export async function restrictSessionStorage(): Promise<void> {
-  await browser.storage.session.setAccessLevel({
-    accessLevel: "TRUSTED_CONTEXTS",
-  });
+  await browser.storage.session.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
 }
 
 export async function getApiKey(id: string): Promise<string | undefined> {
   const session = await browser.storage.session.get(sessionKey(id));
   const value = session[sessionKey(id)];
-  if (typeof value === "string" && value) return value;
+  if (typeof value === 'string' && value) return value;
   return idbGet(id);
 }
 
 export async function setApiKey(
   id: string,
   key: string,
-  storage: "session" | "persistent",
+  storage: 'session' | 'persistent',
 ): Promise<void> {
   await clearApiKey(id);
   if (!key) return;
-  if (storage === "persistent") await idbSet(id, key);
+  if (storage === 'persistent') await idbSet(id, key);
   else await browser.storage.session.set({ [sessionKey(id)]: key });
 }
 
@@ -40,11 +38,9 @@ export async function clearApiKey(id: string): Promise<void> {
 
 export async function clearAllSecrets(): Promise<void> {
   const all = await browser.storage.session.get(null);
-  await browser.storage.session.remove(
-    Object.keys(all).filter((key) => key.startsWith("secret:")),
-  );
+  await browser.storage.session.remove(Object.keys(all).filter((key) => key.startsWith('secret:')));
   const db = await openDb();
-  await tx(db, "readwrite", (store) => store.clear());
+  await tx(db, 'readwrite', (store) => store.clear());
 }
 
 function openDb(): Promise<IDBDatabase> {
@@ -69,14 +65,14 @@ function tx<T>(
 }
 
 async function idbGet(id: string): Promise<string | undefined> {
-  const value = await tx(await openDb(), "readonly", (store) => store.get(id));
-  return typeof value === "string" && value ? value : undefined;
+  const value = await tx(await openDb(), 'readonly', (store) => store.get(id));
+  return typeof value === 'string' && value ? value : undefined;
 }
 
 async function idbSet(id: string, key: string): Promise<void> {
-  await tx(await openDb(), "readwrite", (store) => store.put(key, id));
+  await tx(await openDb(), 'readwrite', (store) => store.put(key, id));
 }
 
 async function idbDelete(id: string): Promise<void> {
-  await tx(await openDb(), "readwrite", (store) => store.delete(id));
+  await tx(await openDb(), 'readwrite', (store) => store.delete(id));
 }
