@@ -457,6 +457,7 @@ const FEATURE_LABELS: [AiFeature, string][] = [
   ['previews', 'Link previews'],
   ['instant', 'Instant Links ranking'],
   ['downloads', 'Tidy Downloads'],
+  ['ask', 'Ask AI'],
 ];
 
 function errorText(error: unknown): string {

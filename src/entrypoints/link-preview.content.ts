@@ -6,6 +6,23 @@ import { showInTopLayer } from '@/ui/top-layer';
 import { CARD_CSS } from '@/ui/preview-card-css';
 
 const DEBOUNCE_MS = 400;
+/** Without Shift the pointer has to rest a little longer, so passing over a list doesn't trigger. */
+const LIST_HOVER_MS = 900;
+
+/**
+ * Sites where, like Arc, resting on a list's main links previews them without Shift (opt-in).
+ * Only the links that are the point of the page: story titles, results, posts.
+ */
+const LIST_LINKS: Record<string, string> = {
+  'news.ycombinator.com': '.titleline > a',
+  'www.google.com': 'a:has(> h3)',
+  'www.reddit.com': 'a[slot="full-post-link"], a[slot="title"], a[data-testid="outbound-link"]',
+  'old.reddit.com': 'a.title',
+  'x.com': '[data-testid="tweetText"] a[href^="http"], [data-testid="card.wrapper"] a',
+  'twitter.com': '[data-testid="tweetText"] a[href^="http"], [data-testid="card.wrapper"] a',
+  'github.com': '.markdown-body a[href^="http"]',
+  'lobste.rs': 'a.u-url',
+};
 const LEAVE_GRACE_MS = 250;
 const MAX_TEXT_CHARS = 16_000;
 
@@ -36,11 +53,26 @@ export default defineContentScript({
       return url;
     };
 
+    let listSelector: string | undefined;
+    const applySetting = (on: boolean) => {
+      const hosts = import.meta.env.MODE === 'e2e' ? { ...LIST_LINKS, '127.0.0.1': 'a.list-link' } : LIST_LINKS;
+      listSelector = on ? hosts[location.hostname] : undefined;
+    };
+    void browser.storage.local.get('settings').then((stored) => applySetting(Boolean((stored.settings as { previewListLinks?: boolean } | undefined)?.previewListLinks)));
+    browser.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes.settings) applySetting(Boolean((changes.settings.newValue as { previewListLinks?: boolean } | undefined)?.previewListLinks));
+    });
+    const isListLink = (anchor: HTMLAnchorElement | null) => Boolean(anchor && listSelector && anchor.matches(listSelector));
+
     const schedule = () => {
       clearTimeout(pending);
-      if (!shiftDown || !eligible(hovered)) return;
+      if (!eligible(hovered)) return;
       const anchor = hovered;
-      pending = setTimeout(() => anchor === hovered && shiftDown && void show(anchor!), DEBOUNCE_MS);
+      if (shiftDown) {
+        pending = setTimeout(() => anchor === hovered && shiftDown && void show(anchor!), DEBOUNCE_MS);
+      } else if (isListLink(anchor)) {
+        pending = setTimeout(() => anchor === hovered && void show(anchor!), LIST_HOVER_MS);
+      }
     };
 
     const dismiss = () => {
@@ -199,7 +231,10 @@ class Card {
   }
 
   render(preview: LinkPreview) {
-    if (preview.summary) this.fill(preview.title || preview.domain, preview.domain, preview.summary, 'summary');
+    if (preview.headline || preview.facts?.length) {
+      this.fill(preview.title || preview.domain, preview.domain, preview.headline ?? '', 'headline');
+      this.addFacts(preview.facts ?? []);
+    } else if (preview.summary) this.fill(preview.title || preview.domain, preview.domain, preview.summary, 'summary');
     else this.fill(preview.title || preview.domain, preview.domain, `Preview unavailable: ${preview.unavailable ?? 'unknown reason'}.`, 'muted');
   }
 
@@ -223,7 +258,21 @@ class Card {
     this.host.remove();
   }
 
-  private fill(title: string, domain: string | null, body: string, tone: 'loading' | 'summary' | 'muted') {
+  /** Arc-style rows: "Price  $499 for the base model". Text only, never HTML. */
+  private addFacts(facts: { label: string; info: string }[]) {
+    if (!facts.length) return;
+    const list = Object.assign(document.createElement('dl'), { className: 'facts' });
+    for (const fact of facts) {
+      list.append(
+        Object.assign(document.createElement('dt'), { textContent: fact.label }),
+        Object.assign(document.createElement('dd'), { textContent: fact.info }),
+      );
+    }
+    this.box.querySelector('.actions')?.before(list);
+    this.reposition();
+  }
+
+  private fill(title: string, domain: string | null, body: string, tone: 'loading' | 'summary' | 'headline' | 'muted') {
     const domainEl = Object.assign(document.createElement('div'), { className: 'domain', textContent: domain ?? domainOf(this.url) });
     const titleEl = Object.assign(document.createElement('div'), { className: 'title', textContent: title });
     const bodyEl = Object.assign(document.createElement('p'), { className: `body ${tone}`, textContent: body });

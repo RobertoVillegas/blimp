@@ -1,8 +1,10 @@
 import { aiStatus } from '@/ai/active';
 import { askPage, forgetPage } from '@/features/ask-page';
 import { crossTabCandidates, missingOrigins, runCrossTab } from '@/features/cross-tab';
-import { browserSearch, instantSearch, openResult } from '@/features/instant-links';
+import { browserSearch, instantSearch, openResult, openResults } from '@/features/instant-links';
 import { finishPreview, previewImage, startPreview } from '@/features/link-preview';
+import { askAi } from '@/features/ask-ai';
+import { browseAnswer, browseFetch } from '@/features/browse';
 import { mediaAction, nowPlaying } from '@/features/media';
 import { calendarPeek, gmailPeek, openPeekLink } from '@/features/peeks';
 import { applyTitles, proposeTitles, restoreTitles, titleKey } from '@/features/tab-titles';
@@ -138,6 +140,10 @@ async function handle(
       await openResult(request.url, request.tabId ?? sender.tab?.id);
       return null;
 
+    case 'instant/open-many':
+      await openResults(request.urls, request.tabId ?? sender.tab?.id);
+      return null;
+
     case 'instant/web-search':
       await browserSearch(request.query);
       return null;
@@ -194,6 +200,15 @@ async function handle(
     case 'peek/open':
       await openPeekLink(request.url);
       return null;
+
+    case 'ai/ask':
+      return withOperation(request.opId, (signal) => askAi(request.messages, signal));
+
+    case 'browse/fetch':
+      return withOperation(request.opId, (signal) => browseFetch(request.query, signal));
+
+    case 'browse/answer':
+      return withOperation(request.opId, (signal) => browseAnswer(request.query, request.sources, signal));
 
     case 'op/cancel':
       operations.get(request.opId)?.abort();

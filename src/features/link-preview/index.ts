@@ -1,13 +1,13 @@
 import { activeProvider } from '@/ai/active';
 import { truncateToTokens } from '@/ai/budget';
-import { complete } from '@/ai/client';
+import { completeJson } from '@/ai/client';
 import { UserFacingError } from '@/shared/errors';
 import type { PreviewStart } from '@/shared/messages';
 import type { LinkPreview } from '@/shared/types';
 import { domainOf, isHttpUrl } from '@/shared/url';
 import { fetchPreviewHtml, fetchPreviewImage } from './fetch';
 import { normalizePreviewUrl } from './guard';
-import { PREVIEW_SYSTEM_PROMPT, UNAVAILABLE_MARKER } from './prompt';
+import { PREVIEW_SYSTEM_PROMPT, cardFrom, previewSchema } from './prompt';
 import { syncRegisteredScript } from '@/shared/registered-scripts';
 
 const CACHE_KEY = 'preview:cache';
@@ -61,22 +61,23 @@ export async function finishPreview(page: ParsedPage, signal?: AbortSignal): Pro
     const header = [`Title: ${page.title}`, `URL: ${page.finalUrl}`, page.description && `Description: ${page.description}`]
       .filter(Boolean)
       .join('\n');
-    const summary = (
-      await complete(
-        config,
-        {
-          system: PREVIEW_SYSTEM_PROMPT,
-          messages: [{ role: 'user', content: `<page>\n${header}\n\n${text}\n</page>` }],
-          temperature: settings.temperature,
-          maxOutputTokens: 100,
-          signal,
-        },
-        { timeoutMs: 30_000 },
-      )
-    ).trim();
-    preview = summary.startsWith(UNAVAILABLE_MARKER)
-      ? { ...base, unavailable: 'Sign-in, paywall or bot check' }
-      : { ...base, summary, imageUrl: page.imageUrl };
+    const result = await completeJson(
+      config,
+      {
+        system: PREVIEW_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: `<page>\n${header}\n\n${text}\n</page>` }],
+        temperature: settings.temperature,
+        maxOutputTokens: 300,
+        signal,
+      },
+      previewSchema,
+      { timeoutMs: 30_000 },
+    );
+    const card = cardFrom(result);
+    preview =
+      result.blocked || (!card.headline && card.facts.length === 0)
+        ? { ...base, unavailable: result.blocked ? 'Sign-in, paywall or bot check' : 'Nothing to summarize' }
+        : { ...base, ...card, imageUrl: page.imageUrl };
   }
   await writeCache(page.url, preview);
   return preview;

@@ -11,9 +11,13 @@ export type CommandId =
   | 'summarize-tabs'
   | 'ask-tabs'
   | 'instant-links'
+  | 'browse'
   | 'open-sidebar'
   | 'pip'
   | 'media-toggle'
+  | 'copy-url'
+  | 'copy-markdown'
+  | 'copy-quote'
   | 'peek-gmail'
   | 'peek-calendar'
   | 'settings';
@@ -115,6 +119,27 @@ export const COMMANDS: PaletteCommand[] = [
     icon: '⧉',
   },
   {
+    id: 'copy-url',
+    title: 'Copy URL',
+    description: "Copy this page's address.",
+    keywords: 'link address clipboard share',
+    icon: '⎘',
+  },
+  {
+    id: 'copy-markdown',
+    title: 'Copy as Markdown Link',
+    description: 'Copy [Page title](address), ready to paste into notes or chat.',
+    keywords: 'link markdown clipboard title share',
+    icon: '⎘',
+  },
+  {
+    id: 'copy-quote',
+    title: 'Copy as Quote',
+    description: 'Copy the text you selected as a quote, with a link back to this page.',
+    keywords: 'selection quote cite clipboard markdown',
+    icon: '❝',
+  },
+  {
     id: 'peek-gmail',
     title: 'Unread Email',
     description: 'Your unread Gmail without leaving this page.',
@@ -143,6 +168,14 @@ export const COMMANDS: PaletteCommand[] = [
     icon: '▥',
   },
   {
+    id: 'browse',
+    title: 'Browse for Me',
+    description: 'Search the web, read the top results and get one answer with sources.',
+    keywords: 'research search web answer read results',
+    icon: '✧',
+    sends: 'your search and the text of the top results',
+  },
+  {
     id: 'settings',
     title: 'AI Settings',
     description: 'Profiles, models, API keys and privacy options. Type "profile" to switch profiles here.',
@@ -160,6 +193,7 @@ export const FEATURE_OF: Partial<Record<CommandId, AiFeature>> = {
   'summarize-tabs': 'tabs',
   'ask-tabs': 'tabs',
   'instant-links': 'instant',
+  browse: 'ask',
 };
 
 /** Rank for a command that matches: its title equal to, starting with, or containing the query wins. */

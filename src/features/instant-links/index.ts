@@ -6,6 +6,7 @@ import { isHttpUrl } from '@/shared/url';
 import { getApiKey } from '@/storage/secrets';
 import { loadSettings } from '@/storage/settings';
 import { SEARCH_PROVIDERS, searchWeb } from './adapters';
+import { INTENT_SYSTEM_PROMPT, actionLink, intentSchema, type IntentAction } from './intents';
 import { RANK_SYSTEM_PROMPT, bestIndex, rankPrompt, rankSchema } from './rank';
 
 const LAST_RESULTS_KEY = 'instant:last';
@@ -14,24 +15,42 @@ export const SEARCH_KEY_ID = 'search:brave';
 export async function instantSearch(query: string, signal?: AbortSignal): Promise<InstantLinksResult> {
   const settings = await loadSettings();
   const provider = settings.search.provider;
-  if (provider === 'none') return { configured: false, providerLabel: '', results: [], best: null };
+  const status = await aiStatus('instant');
 
-  const info = SEARCH_PROVIDERS[provider];
+  // Step 1, like Arc: what does the user want? Without AI, or if it fails, it's a plain web search.
+  const intent = status.configured ? await parseIntent(query, signal) : null;
+  const actions: IntentAction[] = intent?.actions ?? [{ type: 'web', query }];
+  const shortcuts = actions.map(actionLink).filter((link): link is { label: string; url: string } => link !== null);
+  const web = actions.find((action) => action.type === 'web');
+  const base: InstantLinksResult = {
+    configured: provider !== 'none',
+    providerLabel: provider === 'none' ? '' : SEARCH_PROVIDERS[provider].label,
+    results: [],
+    best: null,
+    shortcuts,
+    webRequested: Boolean(web),
+    navigate: intent?.navigate ?? false,
+    openCount: Math.min(5, web?.count ?? 1),
+    searchQuery: web?.query || query,
+  };
+
+  if (!web || provider === 'none') {
+    await rememberAllowed(shortcuts.map((link) => link.url));
+    return base;
+  }
+
   const results = await searchWeb({
     provider,
-    query,
+    query: base.searchQuery!,
     baseUrl: settings.search.baseUrl,
     apiKey: provider === 'brave' ? await getApiKey(SEARCH_KEY_ID) : undefined,
     signal,
   });
-  await browser.storage.session.set({ [LAST_RESULTS_KEY]: results.map((result) => result.url) });
-  if (results.length === 0) return { configured: true, providerLabel: info.label, results, best: null, note: 'No results.' };
+  await rememberAllowed([...results.map((result) => result.url), ...shortcuts.map((link) => link.url)]);
+  if (results.length === 0) return { ...base, results, note: 'No results.' };
 
-  // Ranking is a bonus: if the model is missing or fails, show the search engine's order.
-  const status = await aiStatus('instant');
-  if (!status.configured || results.length < 2) {
-    return { configured: true, providerLabel: info.label, results, best: 0 };
-  }
+  // Step 2: rank. A bonus: if the model is missing or fails, show the search engine's order.
+  if (!status.configured || results.length < 2) return { ...base, results, best: 0 };
   try {
     const { config } = await activeProvider('instant');
     const ranked = await completeJson(
@@ -46,23 +65,47 @@ export async function instantSearch(query: string, signal?: AbortSignal): Promis
       rankSchema,
       { timeoutMs: 20_000 },
     );
-    return {
-      configured: true,
-      providerLabel: info.label,
-      results,
-      best: bestIndex(ranked.best, results.length),
-      note: ranked.why || undefined,
-      rankedBy: status.profileName,
-    };
+    return { ...base, results, best: bestIndex(ranked.best, results.length), note: ranked.why || undefined, rankedBy: status.profileName };
   } catch (error) {
     signal?.throwIfAborted();
     return {
-      configured: true,
-      providerLabel: info.label,
+      ...base,
       results,
       best: 0,
-      note: `Showing ${info.label}'s order; AI ranking failed (${error instanceof Error ? error.message : 'unknown error'}).`,
+      note: `Showing ${base.providerLabel}'s order; AI ranking failed (${error instanceof Error ? error.message : 'unknown error'}).`,
     };
+  }
+}
+
+async function parseIntent(query: string, signal?: AbortSignal) {
+  try {
+    const { config } = await activeProvider('instant');
+    return await completeJson(
+      config,
+      { system: INTENT_SYSTEM_PROMPT, messages: [{ role: 'user', content: query }], temperature: 0, maxOutputTokens: 400, signal },
+      intentSchema,
+      { timeoutMs: 15_000 },
+    );
+  } catch {
+    signal?.throwIfAborted();
+    return null;
+  }
+}
+
+/** Only URLs from the search provider or our own templates may be opened afterwards. */
+export async function rememberAllowed(urls: string[]): Promise<void> {
+  await browser.storage.session.set({ [LAST_RESULTS_KEY]: urls });
+}
+
+/** Open several results at once, only after the user pressed the button for it. */
+export async function openResults(urls: string[], besideTabId: number | undefined): Promise<void> {
+  const stored = await browser.storage.session.get(LAST_RESULTS_KEY);
+  const allowed = new Set((stored[LAST_RESULTS_KEY] as string[] | undefined) ?? []);
+  const safe = urls.filter((url) => isHttpUrl(url) && allowed.has(url)).slice(0, 5);
+  if (safe.length !== urls.length) throw new UserFacingError('invalid-output', 'Some links did not come from the search results; nothing was opened.');
+  const beside = besideTabId === undefined ? undefined : await browser.tabs.get(besideTabId).catch(() => undefined);
+  for (const [i, url] of safe.entries()) {
+    await browser.tabs.create({ url, active: i === 0, index: beside ? beside.index + 1 + i : undefined, windowId: beside?.windowId });
   }
 }
 

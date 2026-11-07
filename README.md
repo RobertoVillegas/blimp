@@ -34,7 +34,7 @@ Not affiliated with Helium or The Browser Company.
 
 ### ⌘K palette
 
-Press ⌘K on any page to search commands and your open tabs. Type part of a tab's title and press Enter to jump to it. Searching never calls the AI. If Helium keeps ⌘K for itself, use ⇧⌘K or the toolbar button. On pages extensions can't touch, like `helium://` pages and the Web Store, the palette opens as a popup instead.
+Press ⌘K on any page to search commands and your open tabs, or copy the page's URL, a Markdown link, or the selected text as a quote with a link back. Type part of a tab's title and press Enter to jump to it. Searching never calls the AI. If Helium keeps ⌘K for itself, use ⇧⌘K or the toolbar button. On pages extensions can't touch, like `helium://` pages and the Web Store, the palette opens as a popup instead.
 
 ### Now playing
 
@@ -69,11 +69,15 @@ Run **Tidy Tabs** and the model reads your tab titles and URLs. It invents group
 
 <img src="docs/images/ask-page.png" width="520" align="right" alt="A summary of a CVE page with bullet points, followed by the question 'How do I fix it?' and an answer citing the Remediation section">
 
-**Summarize Page** gives you the gist of the article you're on. **Ask Page** answers questions from it, and you can keep asking follow-ups. The model is told to say when the page doesn't contain the answer instead of guessing.
+**Summarize Page** gives you the gist of the article you're on. **Ask Page** answers questions from it, and you can keep asking follow-ups. Answers quote the page word for word; each quote is checked against the page, flagged if it isn't really there, and **Show on page** jumps to it. The model is told to say when the page doesn't contain the answer instead of guessing.
 
 It only reads text you can see in the article. It skips menus, footers, hidden elements and forms, and it never reads password fields or what you typed into a form. Press **Forget this page conversation** to drop it, or quit the browser.
 
 <br clear="right">
+
+### Ask AI and Browse for Me
+
+Type anything in the palette and press **Tab** to **Ask AI**, like Arc's ChatGPT in the command bar, with follow-ups. **Browse for Me** searches with your search provider, reads the top results and answers with numbered sources you can click; sites Helium Max can't read yet count only by their search snippet, and it offers to allow them.
 
 ### Ask across tabs
 
@@ -95,7 +99,7 @@ Tabs that can't be read are listed under **Skipped** with the reason: browser pa
 
 <img src="docs/images/link-preview.png" width="520" align="right" alt="A preview card above a link, with the page title and a three-sentence summary of the linked page">
 
-Hold Shift over a link and a card tells you what's on the other side, without opening a tab. This is off until you turn it on in Settings, because it needs access to the sites you visit.
+Hold Shift over a link and a card tells you what's on the other side, without opening a tab: a short headline and a few labeled facts, like Arc's answer card. Optionally, on Hacker News, Google results, Reddit, X, GitHub and Lobsters, resting on a story or result link for a second previews it without Shift. This is off until you turn it on in Settings, because it needs access to the sites you visit.
 
 The linked page is downloaded without your cookies, so anything behind a sign-in shows as unavailable instead of a made-up summary. Hovering without Shift sends nothing, and holding Shift while you type in a field doesn't trigger it either.
 
@@ -105,7 +109,7 @@ The linked page is downloaded without your cookies, so anything behind a sign-in
 
 <img src="docs/images/instant-links.png" width="520" align="right" alt="Search results for 'download latest php' with the php.net downloads page marked Best match and a one-line reason">
 
-Type what you want, like "download latest php", then pick **Instant Links** (or the "Instant Links: …" row at the bottom of the palette). The results come from a real search engine, [Brave Search API](https://brave.com/search/api/) or your own [SearXNG](https://docs.searxng.org/), and the AI only picks the best match. Every URL is shown before you open it, and the extension refuses to open anything that wasn't in the results.
+Type what you want, like "download latest php", "directions from the Zócalo to Coyoacán" or "lofi beats on YouTube", then pick **Instant Links** (or the "Instant Links: …" row at the bottom of the palette). It works out whether you want one site or a list, and handles images, news, maps, directions, flights and searching inside a site; asking for several results gives you an "Open top 3" button. The results come from a real search engine, [Brave Search API](https://brave.com/search/api/) or your own [SearXNG](https://docs.searxng.org/), and the AI only picks the best match. Every URL is shown before you open it, and the extension refuses to open anything that wasn't in the results.
 
 With no search provider set up, it hands the query to your browser's normal search engine instead of guessing a URL.
 
@@ -202,7 +206,9 @@ Change them, or bind Tidy Tabs to its own shortcut, at `chrome://extensions/shor
 | Summarize Page, Ask Page | Visible text of the current page, and your questions |
 | Summarize Tabs, Ask Across Tabs | Visible text of the tabs you tick, and your question |
 | Shift-hover a link (if turned on) | Text of the linked page, downloaded without your cookies |
-| Instant Links | Your query goes to the search provider; its results and your query go to the AI |
+| Instant Links | Your query goes to the AI to work out what you want and to the search provider; the results go to the AI to pick the best |
+| Ask AI | Your question and follow-ups |
+| Browse for Me | Your search goes to the search provider; the top results' text goes to the AI |
 | A download starts (if Tidy Downloads is on) | Filename, file type, the address without query strings, and the page title |
 | Unread Email, Upcoming Events | Nothing to an AI; Gmail's feed is read with your browser session, the calendar from its iCal address |
 | Just browsing | Nothing |
@@ -233,6 +239,7 @@ This is an early build. It loads and runs in Helium; everything below is tested 
 | ✅ | Picture in Picture from the palette | v0.3.8 |
 | ✅ | Now playing controls in the palette | v0.3.9 |
 | ✅ | Gmail and Calendar peeks, auto-float videos (experimental) | v0.4.0 |
+| ✅ | Arc Max complete: Ask AI, Browse for Me, verified quotes, answer-card previews, Instant Links intents, copy commands | v0.5.0 |
 
 The full checklist of Arc features, what's done and what's next, is in [`docs/arc-features.md`](docs/arc-features.md).
 

@@ -13,23 +13,24 @@ Every Arc feature we know of, from Arc's own docs and from the feature modules i
 - [x] Tidy Tabs: AI groups tabs into named tab groups (v0.1), with Undo, optionally into your existing groups (v0.3)
 - [x] Tidy Tab Titles: short names for pinned tabs (v0.3.5), plus Rename Tab and Restore Tab Titles
 - [x] Ask on Page (v0.1). Arc opened it with ⌘F; here it's in the ⌘K palette
-- [~] Ask on Page quotes: Arc checked that every quote exists on the page and jumped to it. We ask for citations but don't verify them yet
+- [x] Ask on Page quotes: every quote is checked against the page ("Not found on the page" otherwise), the answer's key words are bold, and Show on page selects the sentence (v0.5.0)
 - [x] 5-second previews: Shift-hover link summaries (v0.2) with the page's image (v0.3.3)
-- [ ] 5-second previews as Arc's answer card: 3–8 word headline plus 2–4 labeled facts
-- [ ] Hover previews without Shift on list sites (Hacker News, Google results, Reddit, X, GitHub)
+- [x] 5-second previews as Arc's answer card: 3–8 word headline plus 2–4 labeled facts, and a blocked-page check (v0.5.0)
+- [x] Hover previews without Shift on list sites (Hacker News, Google results, Reddit, X, GitHub, Lobsters), opt-in (v0.5.0)
 - [x] Instant Links: real search results, AI picks the best one (v0.2)
-- [ ] Instant Links intents: navigate vs. search, images, news, maps, flights, search inside a site, open several results
+- [x] Instant Links intents: navigate vs. search, images, news, maps, directions, flights, search inside a site, open several results with one click (v0.5.0)
 - [x] Tidy Downloads: AI filenames before saving (v0.2)
-- [ ] Tidy Downloads with Arc-style examples and the source tab's title
-- [~] Browse for Me: Summarize/Ask Across Tabs answers from the tabs you choose, with numbered citations back to each tab (v0.2). Arc searched the web and built a page; we don't search
-- ✗ ChatGPT in the command bar: use Ask Page or your provider's own site
+- [x] Tidy Downloads with style examples and the source tab's title (v0.5.0)
+- [x] Browse for Me: searches, reads the top results and answers with clickable numbered sources, in the palette (v0.5.0)
+- [x] Summarize/Ask Across Tabs: the same over tabs you choose (v0.2)
+- [x] ChatGPT in the command bar: Ask AI, type and press Tab, with follow-ups, using any provider (v0.5.0)
 
 ## Command bar and navigation
 
 - [x] ⌘K palette with commands and open tabs (v0.1)
 - [x] Search tabs by title or URL and jump to them (v0.1)
 - [x] Picking the command whose name matches what you typed (v0.3.5)
-- [ ] Copy URL, Copy URL as Markdown, Copy as quote
+- [x] Copy URL, Copy as Markdown Link, Copy as Quote (selected text with a link back) (v0.5.0)
 - [x] **Helium:** address bar, search engines, history
 
 ## Little Arc

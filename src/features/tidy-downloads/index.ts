@@ -11,7 +11,17 @@ Return only JSON: {"name": string}
 - "name" is a short, descriptive filename WITHOUT an extension, at most 60 characters.
 - Use what the details make clear (document type, organization, subject, date). Don't invent facts.
 - Keep the language of the original name or page title. Spaces are fine; no slashes.
-- If the original name is already descriptive, return it unchanged without the extension.`;
+- Remove ID numbers, hashes, "final_v2", "download", "image", and stock-photo or tool prefixes; keep version numbers people search for.
+- Make dates short and readable, and add context from the page title when the name alone says nothing.
+- If the original name is already descriptive, return it unchanged without the extension.
+
+Examples (original name | page title | site → name):
+- INV-2026-00184_7f3a.pdf | Billing – Northwind Cloud | billing.northwind.io → Northwind invoice Oct 2026
+- IMG_20261103_184512.jpg | Lisbon trip – Shared album | photos.example.com → Lisbon trip photo Nov 3
+- download.csv | Monthly signups report – Analytics | analytics.example.com → Monthly signups report
+- shutterstock_2251177731.jpg | mountain lake sunrise – Stock photos | shutterstock.com → Mountain lake sunrise
+- node-v24.11.0-darwin-arm64.tar.gz | Download Node.js | nodejs.org → node v24.11.0 darwin arm64
+- Screen Recording 2026-11-02 at 10.41.07.mov | Bug: sidebar flickers #4821 – GitHub | github.com → Sidebar flicker bug recording Nov 2`;
 
 const nameSchema = z.object({ name: z.string().max(300) });
 

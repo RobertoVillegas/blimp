@@ -14,6 +14,7 @@ import type {
   NowPlaying,
   GmailPeek,
   CalendarEvent,
+  BrowseSource,
   UndoResult,
 } from './types';
 
@@ -69,6 +70,7 @@ export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('instant/search'), opId: z.string(), query: z.string().trim().min(1).max(500) }),
   z.object({ type: z.literal('instant/open'), url: z.string().max(4000), tabId: z.number().int().optional() }),
   z.object({ type: z.literal('instant/web-search'), query: z.string().trim().min(1).max(500) }),
+  z.object({ type: z.literal('instant/open-many'), urls: z.array(z.string().max(4000)).min(1).max(5), tabId: z.number().int().optional() }),
   z.object({ type: z.literal('update/status') }),
   z.object({ type: z.literal('update/check') }),
   z.object({ type: z.literal('update/show') }),
@@ -88,6 +90,24 @@ export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('peek/gmail') }),
   z.object({ type: z.literal('peek/calendar') }),
   z.object({ type: z.literal('peek/open'), url: z.string().max(4000) }),
+  z.object({
+    type: z.literal('ai/ask'),
+    opId: z.string(),
+    messages: z
+      .array(z.object({ role: z.enum(['user', 'assistant']), content: z.string().max(16_000) }))
+      .min(1)
+      .max(40),
+  }),
+  z.object({ type: z.literal('browse/fetch'), opId: z.string(), query: z.string().trim().min(1).max(500) }),
+  z.object({
+    type: z.literal('browse/answer'),
+    opId: z.string(),
+    query: z.string().max(500),
+    sources: z
+      .array(z.object({ n: z.number().int(), url: z.string().max(4000), title: z.string().max(500), snippet: z.string().max(1000), text: z.string().max(20_000) }))
+      .min(1)
+      .max(8),
+  }),
   z.object({ type: z.literal('op/cancel'), opId: z.string() }),
   z.object({ type: z.literal('settings/open') }),
   z.object({ type: z.literal('shortcut/get'), name: z.string().max(50) }),
@@ -117,6 +137,7 @@ export interface ResponseMap {
   'instant/search': InstantLinksResult;
   'instant/open': null;
   'instant/web-search': null;
+  'instant/open-many': null;
   'update/status': UpdateStatus;
   'update/check': UpdateStatus;
   'update/show': null;
@@ -129,9 +150,21 @@ export interface ResponseMap {
   'peek/gmail': GmailPeek & { inboxUrl: string };
   'peek/calendar': CalendarEvent[];
   'peek/open': null;
+  'ai/ask': string;
+  'browse/fetch': BrowseFetchPage[];
+  'browse/answer': string;
   'op/cancel': null;
   'settings/open': null;
   'shortcut/get': string;
+}
+
+export interface BrowseFetchPage {
+  n: number;
+  url: string;
+  title: string;
+  snippet: string;
+  html?: string;
+  needsOrigin?: string;
 }
 
 export interface UpdateStatus {

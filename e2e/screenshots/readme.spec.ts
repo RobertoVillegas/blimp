@@ -58,8 +58,16 @@ const SEARCH_RESULTS = {
 };
 
 function reply(user: string, messages: { role: string; content: string }[], system: string): string {
-  if (system.startsWith('You preview a linked webpage')) {
-    return 'PHP 8.4 adds property hooks, asymmetric visibility and a new DOM API. PHP 8.2 gets security fixes only until December 2026.';
+  if (system.startsWith('You make a glanceable preview card')) {
+    return JSON.stringify({
+      blocked: false,
+      headline: 'Property hooks and a new DOM API',
+      facts: [
+        { label: 'Released', info: 'November 2024, supported until December 2028' },
+        { label: 'Highlights', info: 'Property hooks, asymmetric visibility, HTML5 DOM parser' },
+        { label: 'PHP 8.2', info: 'Security fixes only until December 2026' },
+      ],
+    });
   }
   if (system.startsWith('You answer from several browser tabs')) {
     return "Yes, a PHP 8.2 server is affected if it runs PHP-CGI on Windows and is older than 8.2.20 [2].\n- The bug lets an attacker pass options to the PHP binary and run arbitrary code; it is rated CVSS 9.8 [2].\n- 8.2 only gets security fixes until December 2026, so moving to 8.3 or 8.4 buys more time [3].\n- Separately, never pass untrusted input to unserialize(); use JSON instead [1].\n\nThe tabs don't say whether Linux PHP-FPM setups are affected.";
@@ -225,7 +233,7 @@ test('readme screenshots', async () => {
       await page.locator('#related').scrollIntoViewIfNeeded();
       await page.hover('#related');
       await page.keyboard.down('Shift');
-      await expect(page.locator('helium-max-preview .card')).toContainText('property hooks');
+      await expect(page.locator('helium-max-preview .card')).toContainText('Property hooks');
       await expect(page.locator('helium-max-preview .card img.image')).toBeVisible();
       const link = (await page.locator('#related').boundingBox())!;
       const card = (await page.locator('helium-max-preview .card').boundingBox())!;

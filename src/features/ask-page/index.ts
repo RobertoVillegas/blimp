@@ -3,6 +3,7 @@ import { truncateToTokens } from '@/ai/budget';
 import { complete } from '@/ai/client';
 import type { ChatMessage } from '@/ai/types';
 import { UserFacingError } from '@/shared/errors';
+import { verifyQuotes } from '@/shared/quotes';
 import type { PageAnswer } from '@/shared/types';
 import { isHttpUrl } from '@/shared/url';
 import { extractPageContent, type ExtractedPage } from './extract';
@@ -66,7 +67,8 @@ export async function askPage(
 
   conversation.messages = [...messages, { role: 'assistant', content: text }];
   await browser.storage.session.set({ [conversationKey(tabId)]: conversation });
-  return { text, title: conversation.title, url: conversation.url, truncated: conversation.truncated };
+  // Arc checked its quotes against the page; so do we, against the text we sent.
+  return { text, title: conversation.title, url: conversation.url, truncated: conversation.truncated, quotes: verifyQuotes(text, conversation.context) };
 }
 
 export async function forgetPage(tabId: number): Promise<void> {

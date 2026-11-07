@@ -190,6 +190,19 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
           its text to the active AI profile. Hovering without Shift sends nothing. This needs access to all websites, so
           the Shift detector can run on the pages you visit.
         </p>
+        <label className="inline">
+          <input
+            type="checkbox"
+            checked={settings.previewListLinks}
+            disabled={!settings.linkPreviews}
+            onChange={(event) => void persist({ ...settings, previewListLinks: event.target.checked })}
+          />
+          Also preview without Shift on Hacker News, Google results, Reddit, X, GitHub and Lobsters
+        </label>
+        <p className="hint">
+          Like Arc: rest the pointer on a story or result link for about a second. Only those main links, not every link on
+          the page.
+        </p>
         {settings.linkPreviews && !previewAccess && (
           <p className="warning">
             Site access was removed, so previews are paused.{' '}

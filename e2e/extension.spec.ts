@@ -29,7 +29,12 @@ test('palette opens, filters commands and tabs without AI, closes on Esc', async
 
   await input.fill('paris');
   // The matching tab, then the offer to search the web for the typed text.
-  await expect(first!.getByRole('option')).toHaveText([/Paris weather forecast/, /Instant Links: “paris”/]);
+  await expect(first!.getByRole('option')).toHaveText([
+    /Paris weather forecast/,
+    /Instant Links: “paris”/,
+    /Ask AI: “paris”/,
+    /Browse for Me: “paris”/,
+  ]);
   await input.press('Enter');
   await expect.poll(() => second!.evaluate(() => document.visibilityState)).toBe('visible');
 
@@ -203,15 +208,38 @@ test('Summarize and Ask Page use visible article text only', async ({ context, s
   const followUp = page!.getByRole('textbox', { name: 'Question about this page' });
   await followUp.fill('How long do I boil it?');
   await followUp.press('Enter');
-  await expect(page!.getByText(/MOCK ANSWER about "Easy pasta recipe" to: How long/)).toBeVisible();
+  // The quote is checked against the page; the answer's key words are bold.
+  const quote = page!.locator('.hm-quote').first();
+  await expect(quote).toContainText('Boil pasta for nine minutes, then toss with garlic and olive oil.');
+  await expect(quote.getByRole('button', { name: 'Show on page' })).toBeVisible();
+  await expect(page!.locator('.hm-rich strong', { hasText: 'nine minutes' })).toBeVisible();
   // The follow-up carries the conversation, with the page only in the first turn.
   const messages = server.requests[1]!.body.messages as { role: string; content: string }[];
   expect(messages.map((m) => m.role)).toEqual(['system', 'user', 'assistant', 'user']);
   expect(messages[1]!.content).toContain('Boil pasta');
 
+  // A quote the page doesn't contain is flagged instead of shown as a citation.
+  await followUp.fill('Is it bogus?');
+  await followUp.press('Enter');
+  await expect(page!.locator('.hm-quote').nth(1)).toContainText('Not found on the page');
+
   await page!.getByRole('button', { name: 'Forget this page conversation' }).click();
   const stored = await sw.evaluate(() => chrome.storage.session.get(null));
   expect(Object.keys(stored).filter((key) => key.startsWith('page:'))).toEqual([]);
+});
+
+test('Show on page closes the palette and selects the quoted sentence on the page', async ({ context, sw, server }) => {
+  await configureMockProvider(sw, server.origin);
+  const [page] = await openPages(context, server.origin, ['recipe-pasta']);
+  const input = await openPalette(sw, page!);
+  await input.fill('ask page');
+  await input.press('Enter');
+  const question = page!.getByRole('textbox', { name: 'Question about this page' });
+  await question.fill('How long do I boil it?');
+  await question.press('Enter');
+  await page!.getByRole('button', { name: 'Show on page' }).click();
+  await expect(page!.locator('helium-max-palette')).toHaveCount(0);
+  await expect.poll(() => page!.evaluate(() => getSelection()?.toString())).toBe('Boil pasta for nine minutes, then toss with garlic and olive oil.');
 });
 
 test('the palette in its own window works on the tab it was opened for, not on itself', async ({ context, sw, server }) => {

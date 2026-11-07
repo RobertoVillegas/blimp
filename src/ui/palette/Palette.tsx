@@ -9,8 +9,13 @@ import { Footer, statusFor } from './Footer';
 import { InstantLinksView } from './InstantLinksView';
 import { RenameTabView, TabTitlesView } from './TabTitlesView';
 import { togglePictureInPicture } from '@/features/pip/page';
+import { markdownLink, markdownQuote } from '@/features/copy/format';
+import { showQuoteOnPage } from '@/features/ask-page/find-in-page';
+import { normalizeForMatch } from '@/shared/quotes';
 import { NowPlayingCard } from './NowPlayingCard';
 import { PeekView } from './PeekView';
+import { AskAiView } from './AskAiView';
+import { BrowseView } from './BrowseView';
 import { RichText } from './RichText';
 
 export interface PaletteProps {
@@ -19,6 +24,9 @@ export interface PaletteProps {
   tabId?: number;
   intent?: PaletteIntent;
   onClose: () => void;
+  /** The in-page palette knows its page and the text selected when it opened. */
+  page?: { title: string; url: string };
+  selection?: string;
 }
 
 type Item =
@@ -26,6 +34,8 @@ type Item =
   | { kind: 'profile'; profile: ProfileSummary }
   | { kind: 'tab'; tab: TabSummary }
   | { kind: 'instant'; query: string }
+  | { kind: 'ask'; query: string }
+  | { kind: 'browse'; query: string }
   | { kind: 'update'; version: string };
 
 type View =
@@ -40,12 +50,15 @@ type View =
   | { name: 'titles-restored'; count: number }
   | { name: 'sidebar-help'; shortcut: string }
   | { name: 'peek'; kind: 'gmail' | 'calendar' }
+  | { name: 'copied'; what: string }
+  | { name: 'ask'; question: string }
+  | { name: 'browse'; query: string }
   | { name: 'rename' }
   | { name: 'error'; message: string; retry?: () => void };
 
-const AI_COMMANDS = new Set<CommandId>(['tidy', 'tidy-titles', 'summarize-page', 'ask-page', 'summarize-tabs', 'ask-tabs']);
+const AI_COMMANDS = new Set<CommandId>(['tidy', 'tidy-titles', 'summarize-page', 'ask-page', 'summarize-tabs', 'ask-tabs', 'browse']);
 
-export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
+export function Palette({ windowId, tabId, intent, onClose, page, selection }: PaletteProps) {
   const [query, setQuery] = useState('');
   const [tabs, setTabs] = useState<TabSummary[]>([]);
   const [status, setStatus] = useState<AiStatus>();
@@ -91,7 +104,13 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
       .slice(0, query ? 30 : 6)
       .map((tab): Item => ({ kind: 'tab', tab }));
     // Any typed text can become an Instant Links search.
-    const instant: Item[] = query.trim() ? [{ kind: 'instant', query: query.trim() }] : [];
+    const instant: Item[] = query.trim()
+      ? [
+          { kind: 'instant', query: query.trim() },
+          { kind: 'ask', query: query.trim() },
+          { kind: 'browse', query: query.trim() },
+        ]
+      : [];
     // The notice bar covers the empty list; the row is for people who search for it.
     const updateItem: Item[] =
       update && query && matches(query, 'update upgrade new version release', update.version)
@@ -148,7 +167,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
   );
 
   const runCommand = useCallback(
-    (command: PaletteCommand) => {
+    (command: PaletteCommand, argument?: string) => {
       if (isDisabled(command)) return;
       const effective = statusFor(status, FEATURE_OF[command.id]);
       if (AI_COMMANDS.has(command.id) && effective && !effective.configured) {
@@ -190,6 +209,35 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
             .then(onClose)
             .catch((error: unknown) => fail(error));
           return;
+        case 'copy-url':
+        case 'copy-markdown':
+        case 'copy-quote': {
+          // The popup palette works on a tab elsewhere; it can't see that page's selection.
+          const target = page ?? tabs.find((tab) => tab.id === tabId);
+          if (!target?.url) {
+            fail(new Error('No page to copy from.'));
+            return;
+          }
+          if (command.id === 'copy-quote' && !selection) {
+            fail(new Error('Select some text on the page first, then open the palette and run Copy as Quote.'));
+            return;
+          }
+          const text =
+            command.id === 'copy-url'
+              ? target.url
+              : command.id === 'copy-markdown'
+                ? markdownLink(target.title, target.url)
+                : markdownQuote(selection!, target.title, target.url);
+          // Inside this key press or click, which clipboard access requires.
+          navigator.clipboard
+            .writeText(text)
+            .then(() => {
+              setView({ name: 'copied', what: command.title.replace(/^Copy /, '') });
+              setTimeout(onClose, 700);
+            })
+            .catch(() => fail(new Error('The browser did not allow copying to the clipboard.')));
+          return;
+        }
         case 'peek-gmail':
           return setView({ name: 'peek', kind: 'gmail' });
         case 'peek-calendar':
@@ -216,6 +264,8 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
           }
           void send({ type: 'shortcut/get', name: 'open-sidebar' }).then((shortcut) => setView({ name: 'sidebar-help', shortcut }));
           return;
+        case 'browse':
+          return setView({ name: 'browse', query: argument ?? '' });
         case 'instant-links':
           return setView({ name: 'instant', query: '' });
         case 'settings':
@@ -223,7 +273,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
           return onClose();
       }
     },
-    [askPage, isDisabled, onClose, runTidy, runUndo, status, tabs, tabId, playing],
+    [askPage, isDisabled, onClose, runTidy, runUndo, status, tabs, tabId, playing, page, selection],
   );
 
   useEffect(() => {
@@ -237,6 +287,8 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
     if (!item) return;
     if (item.kind === 'command') return runCommand(item.command);
     if (item.kind === 'instant') return setView({ name: 'instant', query: item.query });
+    if (item.kind === 'ask') return askAi(item.query);
+    if (item.kind === 'browse') return runCommand(COMMANDS.find((command) => command.id === 'browse')!, item.query);
     if (item.kind === 'update') return void send({ type: 'update/show' }).then(onClose);
     if (item.kind === 'profile') {
       void send({ type: 'profiles/activate', profileId: item.profile.id })
@@ -249,6 +301,16 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
       return;
     }
     void send({ type: 'tabs/activate', tabId: item.tab.id }).then(onClose);
+  };
+
+  const askAi = (question: string) => {
+    const effective = statusFor(status, 'ask');
+    if (effective && !effective.configured) {
+      void send({ type: 'settings/open' });
+      onClose();
+      return;
+    }
+    setView({ name: 'ask', question });
   };
 
   const backToList = () => {
@@ -268,6 +330,12 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
     if (view.name !== 'list') return;
     // Buttons (like the media controls) handle their own Enter and Space.
     if ((event.target as HTMLElement).tagName === 'BUTTON') return;
+    // Like Arc's command bar: type anything and press Tab to ask.
+    if (event.key === 'Tab' && !event.shiftKey && query.trim()) {
+      event.preventDefault();
+      askAi(query.trim());
+      return;
+    }
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       setSelected((index) => Math.min(index + 1, items.length - 1));
@@ -402,7 +470,33 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
             {view.turns.map((turn, index) => (
               <div key={index} className="hm-turn">
                 {turn.question && <p className="hm-question">{turn.question}</p>}
-                <RichText text={turn.answer.text} />
+                <RichText
+                  text={turn.answer.text}
+                  quote={(text) => {
+                    const verified = turn.answer.quotes?.find((q) => normalizeForMatch(q.text) === normalizeForMatch(text))?.found;
+                    return (
+                      <blockquote className="hm-quote">
+                        <span>{text}</span>
+                        {verified === false ? (
+                          <span className="hm-quote-status hm-warning">Not found on the page; treat it as a paraphrase</span>
+                        ) : page ? (
+                          <button
+                            className="hm-link hm-quote-status"
+                            onClick={() => {
+                              onClose();
+                              // After the palette is gone, so the selection and scroll stick.
+                              requestAnimationFrame(() => showQuoteOnPage(text));
+                            }}
+                          >
+                            Show on page
+                          </button>
+                        ) : (
+                          <span className="hm-quote-status hm-muted">On the page</span>
+                        )}
+                      </blockquote>
+                    );
+                  }}
+                />
                 {turn.answer.truncated && index === 0 && (
                   <p className="hm-muted">Long page: only the first part was sent.</p>
                 )}
@@ -440,6 +534,18 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
 
       {view.name === 'cross' && (
         <CrossTabView mode={view.mode} windowId={windowId} tabId={tabId} status={statusFor(status, 'tabs')} onBack={backToList} onClose={onClose} />
+      )}
+
+      {view.name === 'browse' && (
+        <BrowseView initialQuery={view.query} tabId={tabId} status={statusFor(status, 'ask')} onBack={backToList} onClose={onClose} />
+      )}
+
+      {view.name === 'ask' && <AskAiView question={view.question} status={statusFor(status, 'ask')} onBack={backToList} />}
+
+      {view.name === 'copied' && (
+        <div className="hm-panel" role="status">
+          <p>Copied {view.what.toLowerCase()}.</p>
+        </div>
       )}
 
       {view.name === 'peek' && <PeekView kind={view.kind} onBack={backToList} onClose={onClose} />}
@@ -498,6 +604,8 @@ function itemKey(item: Item): string {
   if (item.kind === 'command') return item.command.id;
   if (item.kind === 'profile') return `profile-${item.profile.id}`;
   if (item.kind === 'instant') return 'instant';
+  if (item.kind === 'ask') return 'ask';
+  if (item.kind === 'browse') return 'browse';
   if (item.kind === 'update') return 'update';
   return `tab-${item.tab.id}`;
 }
@@ -533,7 +641,23 @@ function ItemRow({
       onMouseMove={onHover}
       onClick={onClick}
     >
-      {item.kind === 'update' ? (
+      {item.kind === 'browse' ? (
+        <>
+          <span className="hm-icon" aria-hidden="true">
+            ✧
+          </span>
+          <span className="hm-item-title">Browse for Me: “{item.query}”</span>
+          <span className="hm-item-hint">Search and read</span>
+        </>
+      ) : item.kind === 'ask' ? (
+        <>
+          <span className="hm-icon" aria-hidden="true">
+            ✦
+          </span>
+          <span className="hm-item-title">Ask AI: “{item.query}”</span>
+          <span className="hm-item-hint">Tab</span>
+        </>
+      ) : item.kind === 'update' ? (
         <>
           <span className="hm-icon" aria-hidden="true">
             ↑

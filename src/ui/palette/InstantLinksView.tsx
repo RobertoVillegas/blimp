@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { send } from '@/shared/send';
-import type { AiStatus, InstantLinksResult, SearchCandidate } from '@/shared/types';
+import type { AiStatus, InstantLinksResult } from '@/shared/types';
 import { Footer } from './Footer';
 
 type State =
@@ -8,6 +8,8 @@ type State =
   | { name: 'searching'; opId: string; query: string }
   | { name: 'results'; query: string; result: InstantLinksResult }
   | { name: 'error'; message: string };
+
+type Row = { kind: 'shortcut' | 'result'; title: string; url: string; detail?: string; best?: boolean };
 
 export function InstantLinksView({
   initialQuery,
@@ -50,12 +52,24 @@ export function InstantLinksView({
     }
   }
 
-  const ordered = state.name === 'results' ? orderResults(state.result) : [];
+  const result = state.name === 'results' ? state.result : undefined;
+  const rows = result ? toRows(result) : [];
   const fresh = state.name === 'results' && state.query === query.trim();
+  const needsProvider = Boolean(result && result.webRequested && !result.configured);
+  const topResults = result ? toRows(result).filter((row) => row.kind === 'result').slice(0, result.openCount) : [];
 
-  async function open(candidate: SearchCandidate) {
+  async function open(url: string) {
     try {
-      await send({ type: 'instant/open', url: candidate.url, tabId });
+      await send({ type: 'instant/open', url, tabId });
+      onClose();
+    } catch (error) {
+      setState({ name: 'error', message: error instanceof Error ? error.message : String(error) });
+    }
+  }
+
+  async function openMany() {
+    try {
+      await send({ type: 'instant/open-many', urls: topResults.map((row) => row.url), tabId });
       onClose();
     } catch (error) {
       setState({ name: 'error', message: error instanceof Error ? error.message : String(error) });
@@ -63,23 +77,23 @@ export function InstantLinksView({
   }
 
   async function webSearch() {
-    await send({ type: 'instant/web-search', query: query.trim() });
+    await send({ type: 'instant/web-search', query: result?.searchQuery ?? query.trim() });
     onClose();
   }
 
   const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'ArrowDown' && ordered.length) {
+    if (event.key === 'ArrowDown' && rows.length) {
       event.preventDefault();
-      setSelected((index) => Math.min(index + 1, ordered.length - 1));
-    } else if (event.key === 'ArrowUp' && ordered.length) {
+      setSelected((index) => Math.min(index + 1, rows.length - 1));
+    } else if (event.key === 'ArrowUp' && rows.length) {
       event.preventDefault();
       setSelected((index) => Math.max(index - 1, 0));
     } else if (event.key === 'Enter') {
       event.preventDefault();
       if (!query.trim()) return;
       // Enter on the results of this exact query opens; otherwise it searches.
-      if (fresh && state.result.configured && ordered[selected]) void open(ordered[selected]!.candidate);
-      else if (fresh && !state.result.configured) void webSearch();
+      if (fresh && rows[selected]) void open(rows[selected]!.url);
+      else if (fresh && needsProvider) void webSearch();
       else void search(query.trim());
     }
   };
@@ -92,7 +106,7 @@ export function InstantLinksView({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="What do you want to open? e.g. official React docs"
+          placeholder="What do you want to open? e.g. official React docs, directions to the airport"
           aria-label="Instant Links search"
           spellCheck={false}
         />
@@ -103,19 +117,50 @@ export function InstantLinksView({
       {state.name === 'searching' && (
         <div className="hm-panel" role="status" aria-live="polite">
           <div className="hm-spinner" aria-hidden="true" />
-          <p>Searching for “{state.query}”…</p>
+          <p>Looking for “{state.query}”…</p>
         </div>
       )}
 
-      {state.name === 'results' && !state.result.configured && (
+      {result && rows.length > 0 && (
+        <ul className="hm-list" role="listbox" aria-label="Search results">
+          {rows.map((row, index) => (
+            <li
+              key={`${row.kind}-${row.url}`}
+              role="option"
+              aria-selected={index === selected}
+              className="hm-item hm-result-row"
+              onMouseMove={() => setSelected(index)}
+              onClick={() => void open(row.url)}
+            >
+              <span className="hm-result-title">
+                {row.title}
+                {row.best && <span className="hm-badge">Best match</span>}
+                {row.kind === 'shortcut' && <span className="hm-badge">Shortcut</span>}
+              </span>
+              <span className="hm-result-url">{row.url}</span>
+              {row.detail && <span className={`hm-result-snippet${row.best && result.note ? ' hm-why' : ''}`}>{row.detail}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {result && topResults.length > 1 && (
+        <div className="hm-run-bar">
+          <button className="hm-button hm-primary" onClick={() => void openMany()}>
+            Open top {topResults.length} in new tabs
+          </button>
+        </div>
+      )}
+
+      {result && needsProvider && (
         <div className="hm-panel">
           <p>
-            No search provider is set up. Instant Links only opens links that come from a real search, so it won't guess
-            a URL.
+            No search provider is set up. Instant Links only opens links that come from a real search, so it won't guess a
+            URL.
           </p>
           <div className="hm-row">
-            <button className="hm-button hm-primary" autoFocus onClick={() => void webSearch()}>
-              Search “{state.query}” with your search engine
+            <button className="hm-button hm-primary" autoFocus={rows.length === 0} onClick={() => void webSearch()}>
+              Search “{result.searchQuery ?? query.trim()}” with your search engine
             </button>
             <button
               className="hm-link"
@@ -130,32 +175,7 @@ export function InstantLinksView({
         </div>
       )}
 
-      {state.name === 'results' && state.result.configured && (
-        <ul className="hm-list" role="listbox" aria-label="Search results">
-          {ordered.length === 0 && <li className="hm-empty">No results for “{state.query}”.</li>}
-          {ordered.map(({ candidate, best }, index) => (
-            <li
-              key={candidate.url}
-              role="option"
-              aria-selected={index === selected}
-              className="hm-item hm-result-row"
-              onMouseMove={() => setSelected(index)}
-              onClick={() => void open(candidate)}
-            >
-              <span className="hm-result-title">
-                {candidate.title}
-                {best && <span className="hm-badge">Best match</span>}
-              </span>
-              <span className="hm-result-url">{candidate.url}</span>
-              {best && state.result.note ? (
-                <span className="hm-result-snippet hm-why">{state.result.note}</span>
-              ) : (
-                candidate.snippet && <span className="hm-result-snippet">{candidate.snippet}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+      {result && rows.length === 0 && !needsProvider && <p className="hm-panel hm-muted">No results for “{state.name === 'results' ? state.query : ''}”.</p>}
 
       {state.name === 'error' && (
         <div className="hm-panel">
@@ -171,17 +191,26 @@ export function InstantLinksView({
       <Footer
         status={status}
         note={
-          state.name === 'results' && state.result.configured
-            ? `Results from ${state.result.providerLabel}${state.result.rankedBy ? ` · ranked by ${state.result.rankedBy}` : ''} · Enter opens in a new tab`
-            : 'Links come from your search provider; the AI only ranks them.'
+          result?.configured && result.results.length
+            ? `Results from ${result.providerLabel}${result.rankedBy ? ` · ranked by ${result.rankedBy}` : ''} · Enter opens in a new tab`
+            : 'Links come from your search provider or fixed shortcuts; the AI only picks.'
         }
       />
     </div>
   );
 }
 
-/** Best match first, then the search engine's order. */
-function orderResults(result: InstantLinksResult) {
+/** Shortcuts first (they're what was explicitly asked for), then the best match, then the rest. */
+function toRows(result: InstantLinksResult): Row[] {
+  const shortcuts: Row[] = result.shortcuts.map((link) => ({ kind: 'shortcut', title: link.label, url: link.url }));
   const items = result.results.map((candidate, index) => ({ candidate, best: index === result.best }));
-  return [...items.filter((item) => item.best), ...items.filter((item) => !item.best)];
+  const ordered = [...items.filter((item) => item.best), ...items.filter((item) => !item.best)];
+  const results: Row[] = ordered.map(({ candidate, best }) => ({
+    kind: 'result',
+    title: candidate.title,
+    url: candidate.url,
+    best,
+    detail: best && result.note ? result.note : candidate.snippet,
+  }));
+  return [...shortcuts, ...results];
 }

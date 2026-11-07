@@ -27,6 +27,9 @@ export default defineContentScript({
       if (opening) return;
       opening = true;
       previousFocus = document.activeElement;
+      // Read before the palette takes focus, which clears the page's selection.
+      const selection = window.getSelection()?.toString().trim().slice(0, 5_000) ?? '';
+      const page = { title: document.title, url: location.href };
       try {
         ui = await createShadowRootUi(ctx, {
           name: 'helium-max-palette',
@@ -41,7 +44,7 @@ export default defineContentScript({
                 className="hm-root hm-backdrop"
                 onMouseDown={(event) => event.target === event.currentTarget && close()}
               >
-                <Palette intent={intent} onClose={close} />
+                <Palette intent={intent} onClose={close} page={page} selection={selection} />
               </div>,
             );
             return root;

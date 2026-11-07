@@ -32,6 +32,8 @@ export const settingsSchema = z.object({
   tidyIntoExistingGroups: z.boolean().default(false),
   /** F05: Shift-hover previews. Turning it on requests http(s) site access. */
   linkPreviews: z.boolean().default(false),
+  /** Also preview a list site's main links (HN, Google results…) on hover without Shift, like Arc. */
+  previewListLinks: z.boolean().default(false),
   /** F07: where Instant Links gets real candidate URLs. */
   search: z
     .object({

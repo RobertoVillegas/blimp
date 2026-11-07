@@ -49,7 +49,7 @@ export interface ProfileSummary {
 }
 
 /** Features that can use their own AI profile instead of the active one. */
-export const AI_FEATURES = ['tidy', 'page', 'tabs', 'previews', 'instant', 'downloads'] as const;
+export const AI_FEATURES = ['tidy', 'page', 'tabs', 'previews', 'instant', 'downloads', 'ask'] as const;
 export type AiFeature = (typeof AI_FEATURES)[number];
 
 export interface AiStatus {
@@ -122,8 +122,11 @@ export interface LinkPreview {
   url: string;
   title: string;
   domain: string;
+  /** Older cached previews were a sentence; new ones are a headline plus labeled facts. */
   summary?: string;
-  /** Set instead of `summary` when the page could not be summarized honestly. */
+  headline?: string;
+  facts?: { label: string; info: string }[];
+  /** Set instead of a summary when the page could not be summarized honestly. */
   unavailable?: string;
   /** The linked page's own image (og:image or first article image), shown above the summary. */
   imageUrl?: string;
@@ -144,6 +147,16 @@ export interface InstantLinksResult {
   /** One line from the model on why `best` fits, or why ranking was skipped. */
   note?: string;
   rankedBy?: string;
+  /** Pages built from fixed templates for images, news, maps, directions, flights or a site's search. */
+  shortcuts: { label: string; url: string }[];
+  /** The request included a plain web search. */
+  webRequested: boolean;
+  /** The user wants one specific page rather than a list of results. */
+  navigate: boolean;
+  /** How many results they asked to open (1–5). */
+  openCount: number;
+  /** The query sent to the search provider (the model may have sharpened it). */
+  searchQuery?: string;
 }
 
 export interface TitleProposal {
@@ -192,9 +205,20 @@ export interface CalendarEvent {
   meetingUrl: string;
 }
 
+export interface BrowseSource {
+  n: number;
+  url: string;
+  title: string;
+  snippet: string;
+  /** Text extracted from the page; empty when only the snippet is known. */
+  text: string;
+}
+
 export interface PageAnswer {
   text: string;
   title: string;
   url: string;
   truncated: boolean;
+  /** Quotes in the answer ("> …") and whether each really appears on the page. */
+  quotes: { text: string; found: boolean }[];
 }

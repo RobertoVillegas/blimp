@@ -60,6 +60,26 @@ export const CARD_CSS = `
   margin: 6px 0 0;
 }
 
+.body.headline {
+  font-weight: 600;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  margin: 8px 0 0;
+  font-size: 12px;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+}
+
 .body.loading,
 .body.muted {
   color: var(--muted);

@@ -117,7 +117,9 @@ test.describe('Shift-hover link previews', () => {
     await expect(card(page!)).toContainText('127.0.0.1');
     expect(server.gets.filter((p) => p === '/page/react-hooks')).toHaveLength(1);
     expect(server.requests[0]!.user).toContain('useState lets a component remember');
-    expect(server.requests[0]!.system).toContain('at most 35 words');
+    // Arc-style card: a headline plus labeled facts.
+    expect(server.requests[0]!.system).toContain('glanceable preview card');
+    await expect(card(page!)).toContainText('TopicA short fixture page for tests');
     // The page's og:image, fetched by the extension and shown as a data URL.
     const image = page!.locator('helium-max-preview .card img.image');
     await expect(image).toHaveAttribute('src', /^data:image\/png;base64,/);
@@ -235,8 +237,56 @@ test.describe('Instant Links', () => {
     await search.fill('helium browser');
     await search.press('Enter');
     await expect(page!.getByText('No search provider is set up.')).toBeVisible();
-    await expect(page!.getByRole('button', { name: 'Search “helium browser” with your search engine' })).toBeFocused();
-    expect(server.requests).toHaveLength(0);
+    // The model sharpened the query before handing it to the browser's search.
+    await expect(page!.getByRole('button', { name: 'Search “helium browser official” with your search engine' })).toBeFocused();
+    expect(server.requests.map((r) => r.system.slice(0, 30))).toEqual(['You turn what someone typed in']);
+  });
+
+  const tabUrls = (sw: Worker) => sw.evaluate(async () => (await chrome.tabs.query({})).map((tab) => tab.pendingUrl || tab.url || ''));
+
+  test('understands directions and site searches, building links from fixed templates', async ({ context, sw, server }) => {
+    await configureMockProvider(sw, server.origin, 'mock', { search: { provider: 'searxng', baseUrl: `${server.origin}/searx` } });
+    const [page] = await openPages(context, server.origin, ['news-a']);
+
+    let input = await openPalette(sw, page!);
+    await input.fill('instant links');
+    await input.press('Enter');
+    const search = page!.getByRole('textbox', { name: 'Instant Links search' });
+    await search.fill('directions from the zocalo to coyoacan');
+    await search.press('Enter');
+    const rows = page!.getByRole('listbox', { name: 'Search results' }).getByRole('option');
+    await expect(rows.first()).toContainText('Directions from Zócalo to Coyoacán');
+    await expect(rows.first()).toContainText('https://www.google.com/maps/dir/?api=1&destination=Coyoac%C3%A1n&origin=Z%C3%B3calo');
+    // Directions alone don't need a web search.
+    expect(server.gets).not.toContain('/searx/search');
+    await search.press('Enter');
+    await expect.poll(() => tabUrls(sw)).toContainEqual(expect.stringMatching(/^https:\/\/www\.google\.com\/maps\/dir\//));
+
+    input = await openPalette(sw, page!);
+    await input.fill('instant links');
+    await input.press('Enter');
+    await page!.getByRole('textbox', { name: 'Instant Links search' }).fill('lofi beats on youtube');
+    await page!.getByRole('textbox', { name: 'Instant Links search' }).press('Enter');
+    await expect(page!.getByRole('listbox', { name: 'Search results' }).getByRole('option').first()).toContainText(
+      'https://www.youtube.com/results?search_query=lofi%20beats',
+    );
+  });
+
+  test('opens several results only after pressing the button for it', async ({ context, sw, server }) => {
+    await configureMockProvider(sw, server.origin, 'mock', { search: { provider: 'searxng', baseUrl: `${server.origin}/searx` } });
+    const [page] = await openPages(context, server.origin, ['news-a']);
+    const input = await openPalette(sw, page!);
+    await input.fill('instant links');
+    await input.press('Enter');
+    const search = page!.getByRole('textbox', { name: 'Instant Links search' });
+    await search.fill('open a couple of react reviews');
+    await search.press('Enter');
+    const before = (await tabUrls(sw)).length;
+    await page!.getByRole('button', { name: 'Open top 2 in new tabs' }).click();
+    await expect.poll(async () => (await tabUrls(sw)).length).toBe(before + 2);
+    const urls = await tabUrls(sw);
+    expect(urls).toContain(`${server.origin}/page/react-hooks`);
+    expect(urls).toContain(`${server.origin}/page/react-state`);
   });
 });
 
@@ -296,5 +346,31 @@ test.describe('Tidy Downloads', () => {
     const result = await downloadWith(server, { tidyDownloads: false });
     expect(result).toMatchObject({ state: 'complete', files: ['inv_8812.pdf'] });
     expect(server.requests).toHaveLength(0);
+  });
+});
+
+test.describe('Previews on list sites without Shift', () => {
+  test('resting on a list link previews it only when the option is on, and only list links', async ({ context, sw, server }) => {
+    await configureMockProvider(sw, server.origin, 'mock', { linkPreviews: true });
+    await expect
+      .poll(() => sw.evaluate(async () => (await chrome.scripting.getRegisteredContentScripts()).map((s) => s.id)))
+      .toContain('link-preview');
+    const page = await context.newPage();
+    await page.goto(`${server.origin}/links`);
+    const card = page.locator('helium-max-preview .card');
+
+    await page.hover('#paris');
+    await page.waitForTimeout(1400);
+    await expect(card).toHaveCount(0);
+
+    await configureMockProvider(sw, server.origin, 'mock', { linkPreviews: true, previewListLinks: true });
+    await page.hover('#hooks');
+    await page.waitForTimeout(1400);
+    // #hooks isn't a list link here: still nothing without Shift.
+    await expect(card).toHaveCount(0);
+    expect(server.requests).toHaveLength(0);
+
+    await page.hover('#paris');
+    await expect(card).toContainText('PREVIEW of "Paris weather forecast"', { timeout: 5_000 });
   });
 });

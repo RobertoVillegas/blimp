@@ -39,7 +39,7 @@ function linksHtml(origin: string): string {
   return `<!doctype html><html lang="en"><head><title>Links</title></head><body>
 <h1>Reading list</h1>
 <p><a id="hooks" href="${origin}/page/react-hooks">React hooks</a></p>
-<p><a id="paris" href="${origin}/page/weather-paris">Paris weather</a></p>
+<p><a id="paris" class="list-link" href="${origin}/page/weather-paris">Paris weather</a></p>
 <p><a id="login" href="${origin}/login">Members area</a></p>
 <p><a id="same" href="#section">Jump to section</a></p>
 <p><input id="box" placeholder="type here"></p>
@@ -242,9 +242,9 @@ navigator.mediaSession.metadata = new MediaMetadata({ title: 'Test Song', artist
 }
 
 function respond(model: string, messages: { role: string; content: string }[], user: string, system: string): string {
-  if (system.startsWith('You preview a linked webpage')) {
+  if (system.startsWith('You make a glanceable preview card')) {
     const title = /Title: (.*)/.exec(user)?.[1] ?? 'unknown';
-    return `PREVIEW of "${title}". It is a short fixture page.`;
+    return JSON.stringify({ blocked: false, headline: `PREVIEW of "${title}"`, facts: [{ label: 'Topic', info: 'A short fixture page for tests' }] });
   }
   if (system.startsWith('You take notes')) {
     const numbers = [...user.matchAll(/<source n="(\d+)">/g)].map((m) => m[1]);
@@ -263,6 +263,20 @@ function respond(model: string, messages: { role: string; content: string }[], u
         return { tab: n, title: /Inbox/.test(line) ? 'Mail' : /Hooks/.test(line) ? '"React Hooks"' : `Tab ${n}` };
       }),
     });
+  }
+  if (system.startsWith('You are a quick assistant')) {
+    const turns = messages.filter((m) => m.role === 'user').length;
+    return `QUICK ANSWER ${turns} to "${user}"`;
+  }
+  if (system.startsWith('You turn what someone typed')) {
+    if (/directions/i.test(user)) return JSON.stringify({ navigate: false, actions: [{ type: 'directions', query: '', origin: 'Zócalo', destination: 'Coyoacán' }] });
+    if (/youtube/i.test(user)) return JSON.stringify({ navigate: false, actions: [{ type: 'site', site: 'youtube', query: 'lofi beats' }] });
+    if (/reviews/i.test(user)) return JSON.stringify({ navigate: false, actions: [{ type: 'web', query: 'react reviews', count: 2 }] });
+    return JSON.stringify({ navigate: true, actions: [{ type: 'web', query: `${user} official` }] });
+  }
+  if (system.startsWith("You answer someone's web search")) {
+    const snippetOnly = /\(Only the search snippet is available\)/.test(user);
+    return `BROWSE ANSWER for "${/Search: (.*)/.exec(user)?.[1]}". Hooks let components remember state [2].\n- State lives per component [1].${snippetOnly ? '\n- (some snippets)' : ''}`;
   }
   if (system.startsWith('You pick which search result')) return JSON.stringify({ best: 2, why: 'Official React documentation' });
   if (system.startsWith('You rename a file')) return JSON.stringify({ name: 'Acme invoice 8812.pdf' });
@@ -288,5 +302,8 @@ function respond(model: string, messages: { role: string; content: string }[], u
   const page = messages.find((m) => m.role === 'user')?.content ?? '';
   const title = /Title: (.*)/.exec(page)?.[1] ?? 'unknown';
   if (user.includes('Summarize this page')) return `MOCK SUMMARY of "${title}".\n- point one\n- point two`;
+  // Ask Page answers quote the page; "bogus" asks for a quote the page doesn't have.
+  if (/boil/i.test(user)) return `> Boil pasta for nine minutes, then toss with garlic and olive oil.\nBoil it for **nine minutes**.`;
+  if (/bogus/i.test(user)) return `> Boil pasta for twenty minutes in salty water.\nAbout **twenty minutes**.`;
   return `MOCK ANSWER about "${title}" to: ${user.slice(0, 80)}`;
 }

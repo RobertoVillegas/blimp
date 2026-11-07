@@ -687,3 +687,22 @@
   min-width: 0;
   flex: 1;
 }
+
+.hm-quote {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 8px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--hm-accent);
+  border-radius: 0 6px 6px 0;
+  background: var(--hm-hover);
+}
+
+.hm-quote-status {
+  justify-self: start;
+  font-size: 11px;
+}
+
+.hm-rich strong {
+  font-weight: 600;
+}
