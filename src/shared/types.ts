@@ -125,6 +125,8 @@ export interface LinkPreview {
   summary?: string;
   /** Set instead of `summary` when the page could not be summarized honestly. */
   unavailable?: string;
+  /** The linked page's own image (og:image or first article image), shown above the summary. */
+  imageUrl?: string;
 }
 
 export interface SearchCandidate {

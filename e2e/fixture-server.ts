@@ -12,10 +12,17 @@ export const PAGES: Record<string, { title: string; body: string }> = {
   'news-b': { title: 'Local news B', body: 'Library extends weekend opening hours.' },
 };
 
+/** 2×2 PNG used as the share image of the React hooks page. */
+export const COVER_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR42mP4z8DAwPCfgQEIGBgYGAAJ/wH/lWg0pQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 function articleHtml(slug: string): string {
   const page = PAGES[slug]!;
+  const image = slug === 'react-hooks' ? '<meta property="og:image" content="/img/cover.png">' : '';
   return `<!doctype html><html lang="en"><head><title>${page.title}</title>
-<meta name="description" content="Fixture page ${slug}"></head><body>
+<meta name="description" content="Fixture page ${slug}">${image}</head><body>
 <nav>NAVIGATION-CHROME Home About Login</nav>
 <main><article><h1>${page.title}</h1>
 <p>${page.body}</p>
@@ -80,6 +87,10 @@ export async function startFixtureServer() {
     if (req.method === 'GET' && url.pathname === '/login') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       return void res.end(LOGIN_HTML);
+    }
+    if (req.method === 'GET' && url.pathname === '/img/cover.png') {
+      res.writeHead(200, { 'content-type': 'image/png' });
+      return void res.end(COVER_PNG);
     }
     if (req.method === 'GET' && url.pathname === '/files/inv_8812.pdf') {
       res.writeHead(200, { 'content-type': 'application/pdf', 'content-disposition': 'attachment; filename="inv_8812.pdf"' });

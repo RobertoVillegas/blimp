@@ -2,7 +2,7 @@ import { aiStatus } from '@/ai/active';
 import { askPage, forgetPage } from '@/features/ask-page';
 import { crossTabCandidates, missingOrigins, runCrossTab } from '@/features/cross-tab';
 import { browserSearch, instantSearch, openResult } from '@/features/instant-links';
-import { finishPreview, startPreview } from '@/features/link-preview';
+import { finishPreview, previewImage, startPreview } from '@/features/link-preview';
 import { canUndoTidy, tidyTabs, undoTidyTabs } from '@/features/tidy-tabs';
 import { AUTO_UPDATED_KEY, checkForUpdate, currentUpdate, reloadIfNewerOnDisk } from '@/features/updates';
 import { chromeTabsPort } from '@/features/tidy-tabs/chrome-port';
@@ -121,6 +121,9 @@ async function handle(
 
     case 'preview/finish':
       return withOperation(request.opId, (signal) => finishPreview(request.page, signal));
+
+    case 'preview/image':
+      return withOperation(request.opId, (signal) => previewImage(request.url, signal));
 
     case 'instant/search':
       return withOperation(request.opId, (signal) => instantSearch(request.query, signal));

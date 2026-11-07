@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fetchPreviewHtml, MAX_HTML_BYTES } from './fetch';
+import { fetchPreviewHtml, fetchPreviewImage, MAX_HTML_BYTES, MAX_IMAGE_BYTES } from './fetch';
 import { isPrivateHost, normalizePreviewUrl } from './guard';
 
 describe('isPrivateHost', () => {
@@ -59,5 +59,29 @@ describe('fetchPreviewHtml', () => {
   it('caps the body size', async () => {
     const result = await fetchPreviewHtml('https://example.com/a', { fetchImpl: html('x'.repeat(MAX_HTML_BYTES * 2)) });
     expect(result.kind === 'html' && result.html.length).toBeLessThan(MAX_HTML_BYTES * 2);
+  });
+});
+
+describe('fetchPreviewImage', () => {
+  const image = (type: string, bytes = 10, url = 'https://cdn.example.com/a.png') => {
+    const response = new Response(new Uint8Array(bytes), { headers: { 'content-type': type } });
+    Object.defineProperty(response, 'url', { value: url });
+    return vi.fn<typeof fetch>(async () => response);
+  };
+
+  it('returns a data URL, fetched without cookies or referrer', async () => {
+    const fetchImpl = image('image/png', 3);
+    expect(await fetchPreviewImage('https://cdn.example.com/a.png', { fetchImpl })).toBe('data:image/png;base64,AAAA');
+    expect(fetchImpl.mock.calls[0]![1]).toMatchObject({ credentials: 'omit', referrerPolicy: 'no-referrer' });
+  });
+
+  it('refuses non-images, SVG, oversized files and private hosts', async () => {
+    expect(await fetchPreviewImage('https://cdn.example.com/a', { fetchImpl: image('text/html') })).toBeNull();
+    expect(await fetchPreviewImage('https://cdn.example.com/a.svg', { fetchImpl: image('image/svg+xml') })).toBeNull();
+    expect(await fetchPreviewImage('https://cdn.example.com/a.png', { fetchImpl: image('image/png', MAX_IMAGE_BYTES + 1) })).toBeNull();
+    const fetchImpl = image('image/png');
+    expect(await fetchPreviewImage('http://192.168.1.1/a.png', { fetchImpl })).toBeNull();
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(await fetchPreviewImage('https://cdn.example.com/r', { fetchImpl: image('image/png', 3, 'http://10.0.0.1/x.png') })).toBeNull();
   });
 });

@@ -5,14 +5,14 @@ import { UserFacingError } from '@/shared/errors';
 import type { PreviewStart } from '@/shared/messages';
 import type { LinkPreview } from '@/shared/types';
 import { domainOf, isHttpUrl } from '@/shared/url';
-import { fetchPreviewHtml } from './fetch';
+import { fetchPreviewHtml, fetchPreviewImage } from './fetch';
 import { normalizePreviewUrl } from './guard';
 import { PREVIEW_SYSTEM_PROMPT, UNAVAILABLE_MARKER } from './prompt';
 
 const CACHE_KEY = 'preview:cache';
 const CACHE_TTL_MS = 30 * 60_000;
 const CACHE_MAX = 100;
-const PREVIEW_INPUT_TOKENS = 4_000;
+const PREVIEW_INPUT_TOKENS = 3_000;
 
 /** e2e builds preview pages on the local fixture server; real builds never touch private hosts. */
 const ALLOW_PRIVATE = import.meta.env.MODE === 'e2e';
@@ -41,6 +41,7 @@ export interface ParsedPage {
   siteName: string;
   text: string;
   hasPasswordField: boolean;
+  imageUrl?: string;
 }
 
 /** Second step: summarize what the content script extracted, or explain why not. */
@@ -66,7 +67,7 @@ export async function finishPreview(page: ParsedPage, signal?: AbortSignal): Pro
           system: PREVIEW_SYSTEM_PROMPT,
           messages: [{ role: 'user', content: `<page>\n${header}\n\n${text}\n</page>` }],
           temperature: settings.temperature,
-          maxOutputTokens: 220,
+          maxOutputTokens: 100,
           signal,
         },
         { timeoutMs: 30_000 },
@@ -74,10 +75,15 @@ export async function finishPreview(page: ParsedPage, signal?: AbortSignal): Pro
     ).trim();
     preview = summary.startsWith(UNAVAILABLE_MARKER)
       ? { ...base, unavailable: 'Sign-in, paywall or bot check' }
-      : { ...base, summary };
+      : { ...base, summary, imageUrl: page.imageUrl };
   }
   await writeCache(page.url, preview);
   return preview;
+}
+
+/** The preview's image as a data URL, or null when there's none or it can't be fetched safely. */
+export function previewImage(url: string, signal?: AbortSignal): Promise<string | null> {
+  return fetchPreviewImage(url, { signal, allowPrivate: ALLOW_PRIVATE });
 }
 
 async function readCache(url: string): Promise<LinkPreview | undefined> {

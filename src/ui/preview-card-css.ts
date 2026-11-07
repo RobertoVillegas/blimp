@@ -29,6 +29,16 @@ export const CARD_CSS = `
   }
 }
 
+.image {
+  display: block;
+  width: calc(100% + 28px);
+  max-height: 150px;
+  margin: -12px -14px 10px;
+  object-fit: cover;
+  border-radius: 10px 10px 0 0;
+  background: var(--border);
+}
+
 .domain {
   color: var(--muted);
   font-size: 11px;

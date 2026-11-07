@@ -117,6 +117,12 @@ test.describe('Shift-hover link previews', () => {
     await expect(card(page!)).toContainText('127.0.0.1');
     expect(server.gets.filter((p) => p === '/page/react-hooks')).toHaveLength(1);
     expect(server.requests[0]!.user).toContain('useState lets a component remember');
+    expect(server.requests[0]!.system).toContain('at most 35 words');
+    // The page's og:image, fetched by the extension and shown as a data URL.
+    const image = page!.locator('helium-max-preview .card img.image');
+    await expect(image).toHaveAttribute('src', /^data:image\/png;base64,/);
+    expect(await image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(2);
+    expect(server.gets).toContain('/img/cover.png');
     expect(context.pages().some((p) => p.url().endsWith('/page/react-hooks'))).toBe(false);
 
     await page!.keyboard.up('Shift');
@@ -134,14 +140,20 @@ test.describe('Shift-hover link previews', () => {
     await page!.keyboard.up('Shift');
   });
 
-  test('shows sign-in pages as unavailable without asking the AI', async ({ context, sw, server }) => {
+  test('pages without an image show none; sign-in pages are unavailable without asking the AI', async ({ context, sw, server }) => {
     await enablePreviews(sw, server.origin);
     const page = await context.newPage();
     await page.goto(`${server.origin}/links`);
+    await page.hover('#paris');
+    await page.keyboard.down('Shift');
+    await expect(card(page)).toContainText('PREVIEW of "Paris weather forecast"');
+    await expect(page.locator('helium-max-preview .card img')).toHaveCount(0);
+    await page.keyboard.up('Shift');
+
     await page.hover('#login');
     await page.keyboard.down('Shift');
     await expect(card(page)).toContainText('Preview unavailable: Looks like a sign-in page.');
-    expect(server.requests).toHaveLength(0);
+    expect(server.requests).toHaveLength(1);
     await page.keyboard.up('Shift');
   });
 

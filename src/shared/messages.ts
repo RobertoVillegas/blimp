@@ -57,8 +57,10 @@ export const requestSchema = z.discriminatedUnion('type', [
       siteName: z.string().max(200),
       text: z.string().max(40_000),
       hasPasswordField: z.boolean(),
+      imageUrl: z.string().max(4000).optional(),
     }),
   }),
+  z.object({ type: z.literal('preview/image'), opId: z.string(), url: z.string().max(4000) }),
   z.object({ type: z.literal('instant/search'), opId: z.string(), query: z.string().trim().min(1).max(500) }),
   z.object({ type: z.literal('instant/open'), url: z.string().max(4000), tabId: z.number().int().optional() }),
   z.object({ type: z.literal('instant/web-search'), query: z.string().trim().min(1).max(500) }),
@@ -88,6 +90,7 @@ export interface ResponseMap {
   'permissions/open-grant': null;
   'preview/start': PreviewStart;
   'preview/finish': LinkPreview;
+  'preview/image': string | null;
   'instant/search': InstantLinksResult;
   'instant/open': null;
   'instant/web-search': null;

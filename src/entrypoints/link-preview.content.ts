@@ -72,10 +72,15 @@ export default defineContentScript({
           preview = start.preview;
         } else {
           const doc = new DOMParser().parseFromString(start.html, 'text/html');
-          const page = extractFromDocument(doc, MAX_TEXT_CHARS);
+          const page = extractFromDocument(doc, MAX_TEXT_CHARS, start.finalUrl);
           preview = await send({ type: 'preview/finish', opId, page: { ...page, url, finalUrl: start.finalUrl } });
         }
-        if (stillCurrent()) card?.render(preview);
+        if (!stillCurrent()) return;
+        card?.render(preview);
+        if (preview.imageUrl) {
+          const image = await send({ type: 'preview/image', opId, url: preview.imageUrl });
+          if (image && stillCurrent()) card?.setImage(image);
+        }
       } catch (error) {
         if (stillCurrent()) card?.renderError(error instanceof Error ? error.message : 'Preview unavailable');
       }
@@ -194,6 +199,14 @@ class Card {
   render(preview: LinkPreview) {
     if (preview.summary) this.fill(preview.title || preview.domain, preview.domain, preview.summary, 'summary');
     else this.fill(preview.title || preview.domain, preview.domain, `Preview unavailable: ${preview.unavailable ?? 'unknown reason'}.`, 'muted');
+  }
+
+  /** `src` is a data URL fetched by the worker, so the page never requests the image itself. */
+  setImage(src: string) {
+    const img = Object.assign(document.createElement('img'), { className: 'image', src, alt: '', decoding: 'async' });
+    img.addEventListener('load', () => this.reposition(), { once: true });
+    img.addEventListener('error', () => img.remove(), { once: true });
+    this.box.prepend(img);
   }
 
   renderError(message: string) {

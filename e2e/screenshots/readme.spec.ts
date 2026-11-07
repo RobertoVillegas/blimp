@@ -1,5 +1,6 @@
 // Regenerates the README images: `pnpm screenshots`. Uses a scripted mock provider, so no key is needed.
 import http from 'node:http';
+import fs from 'node:fs';
 import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { chromium, expect, test, type Page, type Worker } from '@playwright/test';
@@ -43,7 +44,8 @@ const BODIES: Record<string, string> = {
 
 const otherPage = (slug: string, title: string) => {
   const body = BODIES[slug] ?? `More details about ${title}. `.repeat(8);
-  return `<!doctype html><html><head><title>${title}</title></head><body><main><h1>${title}</h1><p>${body}</p></main></body></html>`;
+  const image = slug === 'php-8-4-release' ? '<meta property="og:image" content="/img/php-84-cover.png">' : '';
+  return `<!doctype html><html><head><title>${title}</title>${image}</head><body><main><h1>${title}</h1><p>${body}</p></main></body></html>`;
 };
 
 const SEARCH_RESULTS = {
@@ -57,7 +59,7 @@ const SEARCH_RESULTS = {
 
 function reply(user: string, messages: { role: string; content: string }[], system: string): string {
   if (system.startsWith('You preview a linked webpage')) {
-    return 'PHP 8.4 is a major release that adds property hooks, asymmetric visibility and an updated DOM API, along with performance work and cleanup. It also lists support windows: 8.2 gets security fixes until December 2026, 8.3 until December 2027 and 8.4 until December 2028.';
+    return 'PHP 8.4 adds property hooks, asymmetric visibility and a new DOM API. PHP 8.2 gets security fixes only until December 2026.';
   }
   if (system.startsWith('You answer from several browser tabs')) {
     return "Yes, a PHP 8.2 server is affected if it runs PHP-CGI on Windows and is older than 8.2.20 [2].\n- The bug lets an attacker pass options to the PHP binary and run arbitrary code; it is rated CVSS 9.8 [2].\n- 8.2 only gets security fixes until December 2026, so moving to 8.3 or 8.4 buys more time [3].\n- Separately, never pass untrusted input to unserialize(); use JSON instead [1].\n\nThe tabs don't say whether Linux PHP-FPM setups are affected.";
@@ -85,6 +87,10 @@ test('readme screenshots', async () => {
     if (req.method === 'GET' && PAGES[slug]) {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       return void res.end(slug === 'cve-2024-4577' ? ARTICLE : otherPage(slug, PAGES[slug]!));
+    }
+    if (req.method === 'GET' && req.url === '/img/php-84-cover.png') {
+      res.writeHead(200, { 'content-type': 'image/png' });
+      return void res.end(fs.readFileSync(path.resolve(import.meta.dirname, 'php-84-cover.png')));
     }
     if (req.method === 'GET' && req.url?.startsWith('/searx/search')) {
       res.writeHead(200, { 'content-type': 'application/json', ...cors });
@@ -220,6 +226,7 @@ test('readme screenshots', async () => {
       await page.hover('#related');
       await page.keyboard.down('Shift');
       await expect(page.locator('helium-max-preview .card')).toContainText('property hooks');
+      await expect(page.locator('helium-max-preview .card img.image')).toBeVisible();
       const link = (await page.locator('#related').boundingBox())!;
       const card = (await page.locator('helium-max-preview .card').boundingBox())!;
       const top = Math.max(0, Math.min(link.y, card.y) - 40);
