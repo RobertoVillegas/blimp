@@ -2,6 +2,7 @@ import ReactDOM from 'react-dom/client';
 import type { ShadowRootContentScriptUi } from 'wxt/utils/content-script-ui/shadow-root';
 import type { PaletteIntent, PaletteSignal } from '@/shared/messages';
 import { Palette } from '@/ui/palette/Palette';
+import { showInTopLayer } from '@/ui/top-layer';
 import paletteCss from '@/ui/palette/palette.css?inline';
 
 // Injected on demand by the background (activeTab grant), never on every page.
@@ -50,6 +51,7 @@ export default defineContentScript({
           },
         });
         ui.mount();
+        showInTopLayer(ui.shadowHost, 'fullscreen');
       } finally {
         opening = false;
       }

@@ -84,6 +84,28 @@ export async function startFixtureServer() {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       return void res.end(linksHtml(origin));
     }
+    // Tries both ways a site can paint over an extension: a top-layer popover opened first, and
+    // a max-z-index element added after the extension's UI.
+    if (req.method === 'GET' && url.pathname === '/greedy') {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      return void res.end(`<!doctype html><html><head><title>Greedy page</title><style>
+body { margin: 0; position: relative; z-index: 0; }
+.cover { position: fixed; inset: 0; background: rgb(255 0 0 / .3); }
+#pop { inset: 60px 0 0 0; width: 100vw; height: calc(100vh - 60px); margin: 0; border: 0; background: rgb(0 0 255 / .3); }
+</style></head><body>
+<p><a id="hooks" href="${origin}/page/react-hooks">React hooks</a></p>
+<div id="pop" popover="manual">top-layer popover</div>
+<script>
+document.getElementById('pop').showPopover();
+window.addLateCover = () => {
+  const el = document.createElement('div');
+  el.className = 'cover';
+  el.id = 'late';
+  el.style.zIndex = '2147483647';
+  document.body.append(el);
+};
+</script></body></html>`);
+    }
     if (req.method === 'GET' && url.pathname === '/login') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       return void res.end(LOGIN_HTML);

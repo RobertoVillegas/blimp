@@ -157,6 +157,24 @@ test.describe('Shift-hover link previews', () => {
     await page.keyboard.up('Shift');
   });
 
+  test('the preview card stays above page popovers and max-z-index elements', async ({ context, sw, server }) => {
+    await enablePreviews(sw, server.origin);
+    const page = await context.newPage();
+    await page.goto(`${server.origin}/greedy`);
+    // The page's popover covers where the card opens (below the link); a max-z cover comes later.
+    await page.hover('#hooks');
+    await page.keyboard.down('Shift');
+    await expect(card(page)).toContainText('PREVIEW of');
+    await page.evaluate(() => (window as unknown as { addLateCover(): void }).addLateCover());
+    const box = (await card(page).boundingBox())!;
+    const hit = await page.evaluate(
+      ({ x, y }) => (document.elementFromPoint(x, y)?.closest('helium-max-preview') ? 'card' : document.elementFromPoint(x, y)?.id),
+      { x: box.x + box.width / 2, y: box.y + box.height / 2 },
+    );
+    expect(hit).toBe('card');
+    await page.keyboard.up('Shift');
+  });
+
   test('stays quiet while typing and when turned off', async ({ context, sw, server }) => {
     await enablePreviews(sw, server.origin);
     const page = await context.newPage();

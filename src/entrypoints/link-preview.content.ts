@@ -2,6 +2,7 @@ import { extractFromDocument } from '@/features/link-preview/extract-document';
 import { send } from '@/shared/send';
 import type { LinkPreview } from '@/shared/types';
 import { domainOf, isHttpUrl } from '@/shared/url';
+import { showInTopLayer } from '@/ui/top-layer';
 import { CARD_CSS } from '@/ui/preview-card-css';
 
 const DEBOUNCE_MS = 400;
@@ -174,6 +175,7 @@ class Card {
     this.root.append(style, this.box);
     this.host.style.cssText = 'all: initial; position: fixed; inset: 0 auto auto 0; z-index: 2147483647;';
     document.documentElement.append(this.host);
+    showInTopLayer(this.host, 'point');
     this.fill(label, null, 'Reading the page…', 'loading');
   }
 

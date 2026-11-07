@@ -39,6 +39,22 @@ test('palette opens, filters commands and tabs without AI, closes on Esc', async
   expect(server.requests).toHaveLength(0);
 });
 
+test('the palette stays above page popovers and max-z-index elements', async ({ context, sw, server }) => {
+  await configureMockProvider(sw, server.origin);
+  const page = await context.newPage();
+  await page.goto(`${server.origin}/greedy`);
+  await openPalette(sw, page);
+  await page.evaluate(() => (window as unknown as { addLateCover(): void }).addLateCover());
+
+  // What a click in the middle of the palette would hit.
+  const hit = await page.evaluate(() => {
+    const el = document.elementFromPoint(innerWidth / 2, innerHeight * 0.25);
+    return el?.closest('helium-max-palette') ? 'palette' : (el?.id ?? el?.tagName);
+  });
+  expect(hit).toBe('palette');
+  await page.getByRole('option', { name: 'AI Settings Command', exact: true }).click({ trial: true });
+});
+
 test('Tidy Tabs groups only on request, keeps pinned tabs and existing groups, and undoes', async ({
   context,
   sw,
