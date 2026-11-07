@@ -177,6 +177,19 @@ async function handle(
       return { tabId, title: saved ?? tab.title ?? '', renamed: Boolean(saved) };
     }
 
+    case 'sidebar/open': {
+      // Must run while the click that asked for it still counts as a user action.
+      if (!browser.sidePanel?.open) {
+        throw new UserFacingError('internal', "This browser doesn't support extension side panels, so the sidebar can't open here.");
+      }
+      try {
+        await browser.sidePanel.open({ windowId: await targetWindowId(request.windowId, sender) });
+      } catch (error) {
+        throw new UserFacingError('internal', `The browser wouldn't open the side panel (${error instanceof Error ? error.message : 'unknown reason'}).`);
+      }
+      return null;
+    }
+
     case 'op/cancel':
       operations.get(request.opId)?.abort();
       return null;

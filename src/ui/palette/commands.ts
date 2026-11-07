@@ -11,6 +11,7 @@ export type CommandId =
   | 'summarize-tabs'
   | 'ask-tabs'
   | 'instant-links'
+  | 'open-sidebar'
   | 'settings';
 
 export interface PaletteCommand {
@@ -101,6 +102,13 @@ export const COMMANDS: PaletteCommand[] = [
     description: 'Find and open the best result for a request, from real search results.',
     keywords: 'search navigate open find go web',
     icon: '↗',
+  },
+  {
+    id: 'open-sidebar',
+    title: 'Open Sidebar',
+    description: 'Show your pinned tabs in a column beside the page (the start of the Arc-style sidebar).',
+    keywords: 'side panel sidebar pinned favorites column',
+    icon: '▥',
   },
   {
     id: 'settings',

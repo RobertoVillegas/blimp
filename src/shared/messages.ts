@@ -76,6 +76,7 @@ export const requestSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('titles/restore'), tabIds: z.array(z.number().int()).min(1).max(100) }),
   z.object({ type: z.literal('titles/current'), tabId: z.number().int().optional() }),
+  z.object({ type: z.literal('sidebar/open'), windowId: z.number().int().optional() }),
   z.object({ type: z.literal('op/cancel'), opId: z.string() }),
   z.object({ type: z.literal('settings/open') }),
 ]);
@@ -111,6 +112,7 @@ export interface ResponseMap {
   'titles/apply': string[];
   'titles/restore': number;
   'titles/current': { tabId: number; title: string; renamed: boolean } | null;
+  'sidebar/open': null;
   'op/cancel': null;
   'settings/open': null;
 }

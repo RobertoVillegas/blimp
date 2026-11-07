@@ -169,6 +169,11 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
             .then((count) => setView({ name: 'titles-restored', count }))
             .catch((error: unknown) => fail(error));
           return;
+        case 'open-sidebar':
+          void send({ type: 'sidebar/open', windowId })
+            .then(onClose)
+            .catch((error: unknown) => fail(error));
+          return;
         case 'instant-links':
           return setView({ name: 'instant', query: '' });
         case 'settings':
