@@ -3,6 +3,7 @@ import { askPage, forgetPage } from '@/features/ask-page';
 import { crossTabCandidates, missingOrigins, runCrossTab } from '@/features/cross-tab';
 import { browserSearch, instantSearch, openResult, openResults } from '@/features/instant-links';
 import { finishPreview, previewImage, startPreview } from '@/features/link-preview';
+import { clearArchive, listArchive, restoreArchived, runAutoArchive } from '@/features/archive';
 import { askAi } from '@/features/ask-ai';
 import { closeLittleWindows, isLittleWindow, moveToMainWindow, openLittle } from '@/features/little';
 import { browseAnswer, browseFetch } from '@/features/browse';
@@ -227,6 +228,31 @@ async function handle(
 
     case 'little/close-all':
       return closeLittleWindows();
+
+    case 'archive/list':
+      return listArchive();
+
+    case 'archive/restore':
+      await restoreArchived(request.id, request.tabId ?? sender.tab?.id);
+      return null;
+
+    case 'archive/clear':
+      await clearArchive();
+      return null;
+
+    case 'archive/run':
+      return runAutoArchive(import.meta.env.MODE.startsWith('e2e') ? request.now : undefined);
+
+    case 'capture/visible': {
+      // Only the page asking may be captured, and only while it's the visible tab.
+      const tab = sender.tab;
+      if (!tab?.id || !tab.active) throw new UserFacingError('page-unavailable', 'Capture works on the tab you are looking at.');
+      try {
+        return await browser.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+      } catch {
+        throw new UserFacingError('permission', 'The browser did not allow a screenshot. Open the palette with ⌘K or the toolbar button on this page and try again.');
+      }
+    }
 
     case 'op/cancel':
       operations.get(request.opId)?.abort();

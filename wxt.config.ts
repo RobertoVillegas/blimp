@@ -61,13 +61,15 @@ export default defineConfig({
     },
   },
   hooks: {
-    // The e2e build talks to a local fixture server without a permission prompt.
     // The overlay is injected on demand through activeTab. WXT would otherwise turn the
     // runtime content script's `matches` into install-time access to every site.
     'build:manifestGenerated': (wxt, manifest) => {
-      manifest.host_permissions = wxt.config.mode === 'e2e' ? ['http://127.0.0.1/*'] : [];
+      const e2e = wxt.config.mode.startsWith('e2e');
+      // e2e builds reach the local fixture server without a prompt. The e2e-capture build also
+      // stands in for activeTab, which only a real shortcut or toolbar click grants.
+      manifest.host_permissions = wxt.config.mode === 'e2e-capture' ? ['<all_urls>'] : e2e ? ['http://127.0.0.1/*'] : [];
       // e2e can't click permission prompts, so Tidy Downloads' optional permission is granted up front.
-      if (wxt.config.mode === 'e2e') manifest.permissions = [...(manifest.permissions ?? []), 'downloads'];
+      if (e2e) manifest.permissions = [...(manifest.permissions ?? []), 'downloads'];
     },
   },
 });

@@ -162,6 +162,24 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
 
   return (
     <>
+      <section aria-labelledby="archive-heading">
+        <h2 id="archive-heading">Auto-archive</h2>
+        <label>
+          Close tabs I haven't used in
+          <select value={settings.autoArchive} onChange={(event) => void persist({ ...settings, autoArchive: event.target.value as Settings['autoArchive'] })}>
+            <option value="off">Never (off)</option>
+            <option value="12h">12 hours</option>
+            <option value="24h">24 hours</option>
+            <option value="7d">7 days</option>
+            <option value="30d">30 days</option>
+          </select>
+        </label>
+        <p className="hint">
+          Like Arc: old tabs close on their own and wait in ⌘K › Archived Tabs for 30 days. Pinned tabs, tabs in groups,
+          the tab you're on and tabs playing sound are never archived. The archive stays on this device.
+        </p>
+      </section>
+
       <section aria-labelledby="tidy-heading">
         <h2 id="tidy-heading">Tidy Tabs</h2>
         <label className="inline">

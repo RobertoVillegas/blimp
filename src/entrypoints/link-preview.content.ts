@@ -55,7 +55,7 @@ export default defineContentScript({
 
     let listSelector: string | undefined;
     const applySetting = (on: boolean) => {
-      const hosts = import.meta.env.MODE === 'e2e' ? { ...LIST_LINKS, '127.0.0.1': 'a.list-link' } : LIST_LINKS;
+      const hosts = import.meta.env.MODE.startsWith('e2e') ? { ...LIST_LINKS, '127.0.0.1': 'a.list-link' } : LIST_LINKS;
       listSelector = on ? hosts[location.hostname] : undefined;
     };
     void browser.storage.local.get('settings').then((stored) => applySetting(Boolean((stored.settings as { previewListLinks?: boolean } | undefined)?.previewListLinks)));
@@ -190,7 +190,7 @@ class Card {
     onHover: (inside: boolean) => void,
   ) {
     // Closed so the page can't read the summary; e2e builds keep it open for testing.
-    this.root = this.host.attachShadow({ mode: import.meta.env.MODE === 'e2e' ? 'open' : 'closed' });
+    this.root = this.host.attachShadow({ mode: import.meta.env.MODE.startsWith('e2e') ? 'open' : 'closed' });
     const style = document.createElement('style');
     style.textContent = CARD_CSS;
     this.box.className = 'card';

@@ -21,7 +21,7 @@ export default defineContentScript({
           void video.requestPictureInPicture().catch(() => undefined);
         });
         registered = true;
-        if (import.meta.env.MODE === 'e2e') document.documentElement.dataset.heliumMaxAutoFloat = 'ready';
+        if (import.meta.env.MODE.startsWith('e2e')) document.documentElement.dataset.heliumMaxAutoFloat = 'ready';
       } catch {
         // This browser doesn't know the action; nothing to do.
       }

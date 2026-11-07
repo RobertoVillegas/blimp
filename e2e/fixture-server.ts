@@ -173,6 +173,15 @@ navigator.mediaSession.metadata = new MediaMetadata({ title: 'Test Song', artist
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       return void res.end('<!doctype html><title>Mail message</title><h1>Message</h1>');
     }
+    // Known colors at known places, for Capture.
+    if (req.method === 'GET' && url.pathname === '/capture') {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      return void res.end(`<!doctype html><html><head><title>Capture page</title><style>
+body { margin: 0; background: #ffffff; }
+#red { position: absolute; left: 100px; top: 100px; width: 200px; height: 100px; background: rgb(255, 0, 0); }
+#blue { position: absolute; left: 400px; top: 100px; width: 100px; height: 100px; background: rgb(0, 0, 255); }
+</style></head><body><div id="red"></div><div id="blue"></div></body></html>`);
+    }
     if (req.method === 'GET' && url.pathname === '/login') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       return void res.end(LOGIN_HTML);

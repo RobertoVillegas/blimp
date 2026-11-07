@@ -3,6 +3,7 @@ import type { ShadowRootContentScriptUi } from 'wxt/utils/content-script-ui/shad
 import type { PaletteIntent, PaletteSignal } from '@/shared/messages';
 import { Palette } from '@/ui/palette/Palette';
 import { showInTopLayer } from '@/ui/top-layer';
+import { startCapture } from '@/ui/capture';
 import paletteCss from '@/ui/palette/palette.css?inline';
 
 // Injected on demand by the background (activeTab grant), never on every page.
@@ -44,7 +45,13 @@ export default defineContentScript({
                 className="hm-root hm-backdrop"
                 onMouseDown={(event) => event.target === event.currentTarget && close()}
               >
-                <Palette intent={intent} onClose={close} page={page} selection={selection} />
+                <Palette
+                  intent={intent}
+                  onClose={close}
+                  page={page}
+                  selection={selection}
+                  onCapture={() => setTimeout(() => startCapture(document.title), 0)}
+                />
               </div>,
             );
             return root;

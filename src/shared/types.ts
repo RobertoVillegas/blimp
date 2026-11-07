@@ -214,6 +214,14 @@ export interface BrowseSource {
   text: string;
 }
 
+export interface ArchivedTab {
+  id: string;
+  url: string;
+  title: string;
+  favIconUrl?: string;
+  archivedAt: number;
+}
+
 export interface PageAnswer {
   text: string;
   title: string;

@@ -53,7 +53,7 @@ Every Arc feature we know of, from Arc's own docs and from the feature modules i
 - [~] Favorites grid: Helium's pinned tabs cover it. A separate cross-window favorites grid isn't possible in Helium's sidebar from an extension
 - [~] Spaces: tab groups and profiles cover most of it
 - ✗ Changing Helium's sidebar itself: extensions can't, and Helium doesn't accept AI-written patches
-- [ ] Auto-archive: close tabs untouched for 12 h / 24 h / 7 d / 30 d (never pinned or playing ones), with an archive to restore them
+- [x] Auto-archive: close tabs untouched for 12 h / 24 h / 7 d / 30 d, never pinned, grouped, active or playing ones, with ⌘K › Archived Tabs to reopen them for 30 days (v0.8.0)
 - [ ] Air Traffic Control: rules that send links from other apps to a specific window or tab group
 - [ ] Live Folders: GitHub PRs and issues, RSS, kept up to date (in the palette)
 - [ ] Recent pages preview: the last pages you visited on a site (Notion, Figma, Docs…)
@@ -81,7 +81,7 @@ Every Arc feature we know of, from Arc's own docs and from the feature modules i
 
 ## Capture and notes
 
-- [ ] Capture: screenshot part of a page and copy or save it
+- [x] Capture: drag over part of a page (or Enter for the whole view), copied to the clipboard with a Save button (v0.8.0)
 - [ ] Easel: a whiteboard of captures and live page snippets (large; later, if ever)
 - [ ] Notes (Arc's documents)
 

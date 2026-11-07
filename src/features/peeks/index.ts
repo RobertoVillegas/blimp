@@ -43,7 +43,7 @@ export async function openPeekLink(url: string): Promise<void> {
   } catch {
     throw new UserFacingError('invalid-output', 'That link is not valid.');
   }
-  const e2e = import.meta.env.MODE === 'e2e' && parsed.hostname === '127.0.0.1';
+  const e2e = import.meta.env.MODE.startsWith('e2e') && parsed.hostname === '127.0.0.1';
   const host = parsed.hostname;
   const allowed = parsed.protocol === 'https:' && (host === 'mail.google.com' || host === 'calendar.google.com' || MEETING_HOSTS.test(host));
   if (!allowed && !e2e) throw new UserFacingError('invalid-output', 'Blimp only opens Gmail, Calendar and meeting links from a peek.');

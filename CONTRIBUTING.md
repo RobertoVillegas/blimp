@@ -20,7 +20,7 @@ pnpm check        # typecheck, unit tests, production build
 pnpm test:e2e     # loads the extension in Playwright Chromium against a mock provider
 ```
 
-Both run in CI. If you change something visible in the README screenshots, run `pnpm screenshots` and commit the new images.
+Both run in CI. `pnpm build:e2e` makes two test builds: the usual one, with access only to the local fixture server, and `e2e-capture`, with `<all_urls>` standing in for the activeTab grant that only a real shortcut or toolbar click gives, used by the Capture tests. If you change something visible in the README screenshots, run `pnpm screenshots` and commit the new images.
 
 ## How the code is organized
 

@@ -15,6 +15,7 @@ import type {
   GmailPeek,
   CalendarEvent,
   BrowseSource,
+  ArchivedTab,
   UndoResult,
 } from './types';
 
@@ -112,6 +113,12 @@ export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('little/status'), tabId: z.number().int().optional() }),
   z.object({ type: z.literal('little/to-main'), tabId: z.number().int().optional() }),
   z.object({ type: z.literal('little/close-all') }),
+  z.object({ type: z.literal('archive/list') }),
+  z.object({ type: z.literal('archive/restore'), id: z.string().max(64), tabId: z.number().int().optional() }),
+  z.object({ type: z.literal('archive/clear') }),
+  /** Runs auto-archive now; `now` lets e2e builds pretend time has passed. */
+  z.object({ type: z.literal('archive/run'), now: z.number().optional() }),
+  z.object({ type: z.literal('capture/visible') }),
   z.object({ type: z.literal('op/cancel'), opId: z.string() }),
   z.object({ type: z.literal('settings/open') }),
   z.object({ type: z.literal('shortcut/get'), name: z.string().max(50) }),
@@ -161,6 +168,11 @@ export interface ResponseMap {
   'little/status': { inLittle: boolean };
   'little/to-main': null;
   'little/close-all': number;
+  'archive/list': ArchivedTab[];
+  'archive/restore': null;
+  'archive/clear': null;
+  'archive/run': number;
+  'capture/visible': string;
   'op/cancel': null;
   'settings/open': null;
   'shortcut/get': string;

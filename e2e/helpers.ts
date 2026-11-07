@@ -10,22 +10,28 @@ declare global {
 
 export const EXTENSION = path.resolve(import.meta.dirname, '../.output/chrome-mv3-e2e');
 
+/** The e2e-capture build, which can screenshot tabs (it stands in for a real activeTab grant). */
+export const CAPTURE_EXTENSION = path.resolve(import.meta.dirname, '../.output/chrome-mv3-e2e-capture');
+
 type Fixtures = {
+  /** Which build to load; spec files that test Capture switch to CAPTURE_EXTENSION. */
+  extensionPath: string;
   server: Awaited<ReturnType<typeof startFixtureServer>>;
   context: BrowserContext;
   sw: Worker;
 };
 
 export const test = base.extend<Fixtures>({
+  extensionPath: [EXTENSION, { option: true }],
   server: async ({}, use) => {
     const server = await startFixtureServer();
     await use(server);
     await server.close();
   },
-  context: async ({}, use) => {
+  context: async ({ extensionPath }, use) => {
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium',
-      args: [`--disable-extensions-except=${EXTENSION}`, `--load-extension=${EXTENSION}`],
+      args: [`--disable-extensions-except=${extensionPath}`, `--load-extension=${extensionPath}`],
       // With Playwright's default --mute-audio, Chromium never reports a tab as audible.
       ignoreDefaultArgs: ['--mute-audio'],
     });

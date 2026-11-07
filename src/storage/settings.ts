@@ -44,6 +44,8 @@ export const settingsSchema = z.object({
     .default({ provider: 'none', baseUrl: '' }),
   /** Glanceable data from other sites, shown in the palette. */
   peeks: z.object({ gmail: z.boolean().default(false) }).default({ gmail: false }),
+  /** Close tabs unused for this long, keeping them in the archive (Arc's auto-archive). */
+  autoArchive: z.enum(['off', '12h', '24h', '7d', '30d']).default('off'),
   /** Ask the browser to float a playing video when the user switches away from its tab. */
   autoFloat: z.boolean().default(false),
   /** F08: AI filename suggestions. Turning it on requests the downloads permission. */

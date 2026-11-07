@@ -13,6 +13,8 @@ export type CommandId =
   | 'instant-links'
   | 'browse'
   | 'open-sidebar'
+  | 'archive'
+  | 'capture'
   | 'little-new'
   | 'little-to-main'
   | 'little-close'
@@ -162,6 +164,20 @@ export const COMMANDS: PaletteCommand[] = [
     description: 'Pause what is playing in any tab, or resume it.',
     keywords: 'music video audio pause play resume stop now playing',
     icon: '⏯',
+  },
+  {
+    id: 'archive',
+    title: 'Archived Tabs',
+    description: 'Tabs closed by auto-archive in the last 30 days. Reopen one with Enter.',
+    keywords: 'archive closed old history restore reopen',
+    icon: '⌫',
+  },
+  {
+    id: 'capture',
+    title: 'Capture',
+    description: 'Screenshot part of this page: drag to select, or press Enter for everything you see.',
+    keywords: 'screenshot screen capture snip image copy',
+    icon: '⬚',
   },
   {
     id: 'little-to-main',

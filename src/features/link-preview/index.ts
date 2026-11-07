@@ -16,7 +16,7 @@ const CACHE_MAX = 100;
 const PREVIEW_INPUT_TOKENS = 3_000;
 
 /** e2e builds preview pages on the local fixture server; real builds never touch private hosts. */
-const ALLOW_PRIVATE = import.meta.env.MODE === 'e2e';
+const ALLOW_PRIVATE = import.meta.env.MODE.startsWith('e2e');
 
 type CacheEntry = LinkPreview & { at: number };
 

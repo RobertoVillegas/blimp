@@ -40,6 +40,12 @@ Press ⌘K on any page to search commands and your open tabs, or copy the page's
 
 When something plays in any tab, the palette shows it at the top, like Arc's mini player: title and artist, play/pause, previous/next on YouTube, YouTube Music, Spotify and SoundCloud, mute, go to tab, and picture in picture for the video on the page you're on. **Play or Pause Media** does it from the keyboard. Mute and go-to-tab work everywhere; playback controls need access to the site, and the card asks the first time.
 
+### Auto-archive and Capture
+
+**Auto-archive** (off by default, Settings › Auto-archive) closes tabs you haven't used in 12 hours, a day, a week or a month, like Arc. Pinned tabs, tabs in groups, the tab you're on and tabs playing sound are never touched. Archived tabs wait in **⌘K › Archived Tabs** for 30 days; Enter reopens one.
+
+**Capture**: in ⌘K, run Capture, then drag over part of the page (or press Enter for everything you see). The image goes to the clipboard, with a Save button to keep it as a file.
+
 ### Little Blimp
 
 Arc's Little Arc. Press **⌥⇧N** (or run **New Little Blimp** in the palette) for a small window without a tab strip: type a search or an address and go. To keep the page, open the palette there and run **Open in Main Window**; it moves into your main window as it is, scroll position and anything you typed included. Right-click any link › **Open Link in Little Blimp** to look at it on the side. Little Blimp remembers where you put it and how big you made it. (Arc used ⌥⌘N; Chromium doesn't let extensions take ⌘+⌥ shortcuts. You can pick another key at `chrome://extensions/shortcuts`.)
@@ -216,6 +222,7 @@ Change them, or bind Tidy Tabs to its own shortcut, at `chrome://extensions/shor
 | Browse for Me | Your search goes to the search provider; the top results' text goes to the AI |
 | A download starts (if Tidy Downloads is on) | Filename, file type, the address without query strings, and the page title |
 | Unread Email, Upcoming Events | Nothing to an AI; Gmail's feed is read with your browser session, the calendar from its iCal address |
+| Capture | Nothing; the image stays on your clipboard or disk |
 | Just browsing | Nothing |
 | Twice a day (unless turned off) | GitHub's public API is asked for this repository's releases; nothing about you is sent |
 
@@ -246,6 +253,7 @@ This is an early build. It loads and runs in Helium; everything below is tested 
 | ✅ | Gmail and Calendar peeks, auto-float videos (experimental) | v0.4.0 |
 | ✅ | Arc Max complete: Ask AI, Browse for Me, verified quotes, answer-card previews, Instant Links intents, copy commands | v0.5.0 |
 | ✅ | Little Blimp (Little Arc) | v0.7.0 |
+| ✅ | Auto-archive and Capture | v0.8.0 |
 
 The full checklist of Arc features, what's done and what's next, is in [`docs/arc-features.md`](docs/arc-features.md).
 

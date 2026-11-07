@@ -16,6 +16,7 @@ import { NowPlayingCard } from './NowPlayingCard';
 import { PeekView } from './PeekView';
 import { AskAiView } from './AskAiView';
 import { BrowseView } from './BrowseView';
+import { ArchiveView } from './ArchiveView';
 import { RichText } from './RichText';
 
 export interface PaletteProps {
@@ -27,6 +28,8 @@ export interface PaletteProps {
   /** The in-page palette knows its page and the text selected when it opened. */
   page?: { title: string; url: string };
   selection?: string;
+  /** Only the in-page palette can capture its page. */
+  onCapture?: () => void;
 }
 
 type Item =
@@ -53,12 +56,13 @@ type View =
   | { name: 'copied'; what: string }
   | { name: 'ask'; question: string }
   | { name: 'browse'; query: string }
+  | { name: 'archive' }
   | { name: 'rename' }
   | { name: 'error'; message: string; retry?: () => void };
 
 const AI_COMMANDS = new Set<CommandId>(['tidy', 'tidy-titles', 'summarize-page', 'ask-page', 'summarize-tabs', 'ask-tabs', 'browse']);
 
-export function Palette({ windowId, tabId, intent, onClose, page, selection }: PaletteProps) {
+export function Palette({ windowId, tabId, intent, onClose, page, selection, onCapture }: PaletteProps) {
   const [query, setQuery] = useState('');
   const [tabs, setTabs] = useState<TabSummary[]>([]);
   const [status, setStatus] = useState<AiStatus>();
@@ -260,6 +264,16 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection }: P
           void send({ type: 'media/action', tabId: target.tabId, action: 'toggle' }).then(onClose);
           return;
         }
+        case 'archive':
+          return setView({ name: 'archive' });
+        case 'capture':
+          if (!onCapture) {
+            fail(new Error('Open the palette on the page you want to capture (⌘K there).'));
+            return;
+          }
+          onClose();
+          onCapture();
+          return;
         case 'little-new':
           void send({ type: 'little/open' }).then(onClose).catch((error: unknown) => fail(error));
           return;
@@ -287,7 +301,7 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection }: P
           return onClose();
       }
     },
-    [askPage, isDisabled, onClose, runTidy, runUndo, status, tabs, tabId, playing, page, selection],
+    [askPage, isDisabled, onClose, runTidy, runUndo, status, tabs, tabId, playing, page, selection, onCapture],
   );
 
   useEffect(() => {
@@ -549,6 +563,8 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection }: P
       {view.name === 'cross' && (
         <CrossTabView mode={view.mode} windowId={windowId} tabId={tabId} status={statusFor(status, 'tabs')} onBack={backToList} onClose={onClose} />
       )}
+
+      {view.name === 'archive' && <ArchiveView tabId={tabId} onBack={backToList} onClose={onClose} />}
 
       {view.name === 'browse' && (
         <BrowseView initialQuery={view.query} tabId={tabId} status={statusFor(status, 'ask')} onBack={backToList} onClose={onClose} />
