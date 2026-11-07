@@ -44,6 +44,21 @@ export const settingsSchema = z.object({
     .default({ provider: 'none', baseUrl: '' }),
   /** Glanceable data from other sites, shown in the palette. */
   peeks: z.object({ gmail: z.boolean().default(false) }).default({ gmail: false }),
+  /** Arc's Live Folders: GitHub searches and RSS/Atom feeds kept up to date. */
+  liveFolders: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(64),
+        name: z.string().trim().min(1).max(60),
+        kind: z.enum(['github', 'feed']),
+        /** GitHub: a preset ('review', 'mine', 'assigned') or a search query. */
+        query: z.string().max(300).default(''),
+        /** Feed: the RSS or Atom address. */
+        url: z.string().max(1000).default(''),
+      }),
+    )
+    .max(30)
+    .default([]),
   /** Close tabs unused for this long, keeping them in the archive (Arc's auto-archive). */
   autoArchive: z.enum(['off', '12h', '24h', '7d', '30d']).default('off'),
   /** Ask the browser to float a playing video when the user switches away from its tab. */

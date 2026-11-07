@@ -4,6 +4,7 @@ import { syncLinkPreviewScript } from '@/features/link-preview';
 import { syncRegisteredScript } from '@/shared/registered-scripts';
 import { closeLittleWindows, moveToMainWindow, openLittle, registerLittleWindows } from '@/features/little';
 import { registerAutoArchive } from '@/features/archive';
+import { registerLiveFolders } from '@/features/live';
 import { registerTitleKeeper } from '@/features/tab-titles';
 import { registerTidyDownloads } from '@/features/tidy-downloads';
 import { currentUpdate, registerUpdateChecks, showBadge } from '@/features/updates';
@@ -17,6 +18,7 @@ export default defineBackground(() => {
   registerTitleKeeper();
   registerLittleWindows();
   registerAutoArchive();
+  registerLiveFolders();
   void currentUpdate().then(showBadge);
   // Must be added synchronously at startup so Chrome routes downloads to it after a restart.
   registerTidyDownloads();

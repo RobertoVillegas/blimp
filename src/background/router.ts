@@ -5,6 +5,7 @@ import { browserSearch, instantSearch, openResult, openResults } from '@/feature
 import { finishPreview, previewImage, startPreview } from '@/features/link-preview';
 import { clearArchive, listArchive, restoreArchived, runAutoArchive } from '@/features/archive';
 import { askAi } from '@/features/ask-ai';
+import { listLiveFolders, markSeen, openLiveItems, refreshLiveFolders } from '@/features/live';
 import { closeLittleWindows, isLittleWindow, moveToMainWindow, openLittle } from '@/features/little';
 import { browseAnswer, browseFetch } from '@/features/browse';
 import { mediaAction, nowPlaying } from '@/features/media';
@@ -253,6 +254,22 @@ async function handle(
         throw new UserFacingError('permission', 'The browser did not allow a screenshot. Open the palette with ⌘K or the toolbar button on this page and try again.');
       }
     }
+
+    case 'live/list':
+      if (request.refresh) await refreshLiveFolders();
+      return listLiveFolders();
+
+    case 'live/refresh':
+      await refreshLiveFolders({ force: true, only: request.folderId });
+      return listLiveFolders();
+
+    case 'live/open':
+      await openLiveItems(request.folderId, request.itemIds, request.tabId ?? sender.tab?.id);
+      return null;
+
+    case 'live/seen':
+      await markSeen(request.folderId, request.itemIds);
+      return null;
 
     case 'op/cancel':
       operations.get(request.opId)?.abort();

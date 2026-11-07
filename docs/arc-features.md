@@ -55,7 +55,7 @@ Every Arc feature we know of, from Arc's own docs and from the feature modules i
 - ✗ Changing Helium's sidebar itself: extensions can't, and Helium doesn't accept AI-written patches
 - [x] Auto-archive: close tabs untouched for 12 h / 24 h / 7 d / 30 d, never pinned, grouped, active or playing ones, with ⌘K › Archived Tabs to reopen them for 30 days (v0.8.0)
 - [ ] Air Traffic Control: rules that send links from other apps to a specific window or tab group
-- [ ] Live Folders: GitHub PRs and issues, RSS, kept up to date (in the palette)
+- [x] Live Folders: GitHub PRs and issues (review requests, mine, assigned, or any search) and RSS/Atom feeds, refreshed every 30 minutes with new items marked, in ⌘K › Live Folders (v0.9.0)
 - [ ] Recent pages preview: the last pages you visited on a site (Notion, Figma, Docs…)
 
 ## Favorites previews and peeks

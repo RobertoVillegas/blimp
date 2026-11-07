@@ -16,6 +16,7 @@ import type {
   CalendarEvent,
   BrowseSource,
   ArchivedTab,
+  LiveFolderView,
   UndoResult,
 } from './types';
 
@@ -119,6 +120,10 @@ export const requestSchema = z.discriminatedUnion('type', [
   /** Runs auto-archive now; `now` lets e2e builds pretend time has passed. */
   z.object({ type: z.literal('archive/run'), now: z.number().optional() }),
   z.object({ type: z.literal('capture/visible') }),
+  z.object({ type: z.literal('live/list'), refresh: z.boolean().optional() }),
+  z.object({ type: z.literal('live/refresh'), folderId: z.string().max(64).optional() }),
+  z.object({ type: z.literal('live/open'), folderId: z.string().max(64), itemIds: z.array(z.string().max(500)).min(1).max(10), tabId: z.number().int().optional() }),
+  z.object({ type: z.literal('live/seen'), folderId: z.string().max(64), itemIds: z.array(z.string().max(500)).max(100) }),
   z.object({ type: z.literal('op/cancel'), opId: z.string() }),
   z.object({ type: z.literal('settings/open') }),
   z.object({ type: z.literal('shortcut/get'), name: z.string().max(50) }),
@@ -173,6 +178,10 @@ export interface ResponseMap {
   'archive/clear': null;
   'archive/run': number;
   'capture/visible': string;
+  'live/list': LiveFolderView[];
+  'live/refresh': LiveFolderView[];
+  'live/open': null;
+  'live/seen': null;
   'op/cancel': null;
   'settings/open': null;
   'shortcut/get': string;

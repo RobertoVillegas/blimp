@@ -214,6 +214,25 @@ export interface BrowseSource {
   text: string;
 }
 
+export interface LiveItem {
+  id: string;
+  title: string;
+  url: string;
+  subtitle: string;
+  /** ISO date, or empty when the source doesn't say. */
+  date: string;
+}
+
+export interface LiveFolderView {
+  id: string;
+  name: string;
+  kind: 'github' | 'feed';
+  items: (LiveItem & { unread: boolean })[];
+  unread: number;
+  fetchedAt?: number;
+  error?: string;
+}
+
 export interface ArchivedTab {
   id: string;
   url: string;

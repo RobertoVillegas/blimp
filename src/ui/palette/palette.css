@@ -706,3 +706,18 @@
 .hm-rich strong {
   font-weight: 600;
 }
+
+.hm-unread .hm-result-title {
+  font-weight: 600;
+}
+
+.hm-result-title .hm-dot {
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+
+.hm-focus-none:focus {
+  outline: none;
+}

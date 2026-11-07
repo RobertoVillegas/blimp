@@ -62,6 +62,8 @@ export async function startFixtureServer() {
   const requests: MockRequest[] = [];
   /** Every GET path, to prove what was (and wasn't) fetched. */
   const gets: string[] = [];
+  /** Posts in the test feed; tests add more with /feed/publish. */
+  let feedPosts = 2;
 
   const server = http.createServer((req, res) => {
     const cors = {
@@ -181,6 +183,31 @@ body { margin: 0; background: #ffffff; }
 #red { position: absolute; left: 100px; top: 100px; width: 200px; height: 100px; background: rgb(255, 0, 0); }
 #blue { position: absolute; left: 400px; top: 100px; width: 100px; height: 100px; background: rgb(0, 0, 255); }
 </style></head><body><div id="red"></div><div id="blue"></div></body></html>`);
+    }
+    // A GitHub search API and an RSS feed, for Live Folders.
+    if (req.method === 'GET' && url.pathname === '/gh/search/issues') {
+      const authorized = req.headers.authorization === 'Bearer test-token';
+      res.writeHead(authorized ? 200 : 401, { 'content-type': 'application/json', ...cors, 'access-control-allow-headers': '*' });
+      return void res.end(
+        JSON.stringify({
+          items: authorized
+            ? [{ id: 1, title: 'Add dark mode', html_url: 'https://github.com/acme/web/pull/7', number: 7, repository_url: 'https://api.github.com/repos/acme/web', updated_at: '2026-11-06T10:00:00Z', user: { login: 'ana' } }]
+            : [],
+          query: url.searchParams.get('q'),
+        }),
+      );
+    }
+    if (req.method === 'GET' && url.pathname === '/feed/publish') {
+      feedPosts++;
+      return void res.writeHead(204).end();
+    }
+    if (req.method === 'GET' && url.pathname === '/feed.xml') {
+      const items = Array.from({ length: feedPosts }, (_, i) => i + 1)
+        .reverse()
+        .map((n) => `<item><title>Post ${n}</title><link>${origin}/page/news-${n % 2 ? 'a' : 'b'}?post=${n}</link><guid>post-${n}</guid></item>`)
+        .join('');
+      res.writeHead(200, { 'content-type': 'application/rss+xml; charset=utf-8' });
+      return void res.end(`<?xml version="1.0"?><rss version="2.0"><channel><title>Fixture Blog</title>${items}</channel></rss>`);
     }
     if (req.method === 'GET' && url.pathname === '/login') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });

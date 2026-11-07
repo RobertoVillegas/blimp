@@ -4,6 +4,8 @@ import { send } from '@/shared/send';
 import { SEARCH_PROVIDERS, searchWeb } from '@/features/instant-links/adapters';
 import { SEARCH_KEY_ID } from '@/features/instant-links';
 import { CALENDAR_SECRET_ID } from '@/features/peeks';
+import { GITHUB_TOKEN_ID } from '@/features/live';
+import { GITHUB_QUERIES } from '@/features/live/sources';
 import { GMAIL_ORIGIN } from '@/features/peeks/gmail';
 import { originPattern } from '@/shared/url';
 import { getApiKey, setApiKey } from '@/storage/secrets';
@@ -20,9 +22,10 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
   const [searchBase, setSearchBase] = useState(settings.search.baseUrl);
   const [searchKey, setSearchKey] = useState('');
   const [hasSearchKey, setHasSearchKey] = useState(false);
-  const [notices, setNotices] = useState<Record<'previews' | 'search' | 'downloads' | 'updates' | 'video' | 'peeks', Notice>>({
+  const [notices, setNotices] = useState<Record<'previews' | 'search' | 'downloads' | 'updates' | 'video' | 'peeks' | 'live', Notice>>({
     video: undefined,
     peeks: undefined,
+    live: undefined,
     previews: undefined,
     search: undefined,
     downloads: undefined,
@@ -30,6 +33,11 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
   });
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>();
   const [calendarUrl, setCalendarUrl] = useState('');
+  const [githubToken, setGithubToken] = useState('');
+  const [hasGithubToken, setHasGithubToken] = useState(false);
+  const [newKind, setNewKind] = useState<'review' | 'mine' | 'assigned' | 'search' | 'feed'>('review');
+  const [newValue, setNewValue] = useState('');
+  const [newName, setNewName] = useState('');
   const [hasCalendar, setHasCalendar] = useState(false);
 
   const note = (key: keyof typeof notices, value: Notice) => setNotices((current) => ({ ...current, [key]: value }));
@@ -39,6 +47,7 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
     void getApiKey(SEARCH_KEY_ID).then((key) => setHasSearchKey(Boolean(key)));
     void send({ type: 'update/status' }).then(setUpdateStatus);
     void getApiKey(CALENDAR_SECRET_ID).then((url) => setHasCalendar(Boolean(url)));
+    void getApiKey(GITHUB_TOKEN_ID).then((token) => setHasGithubToken(Boolean(token)));
     if (location.hash === '#updates') requestAnimationFrame(() => document.getElementById('updates')?.scrollIntoView());
   }, []);
 
@@ -110,6 +119,59 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
     } catch (error) {
       note('peeks', { tone: 'error', text: error instanceof Error ? error.message : String(error) });
     }
+  }
+
+  async function saveGithubToken() {
+    if (!(await browser.permissions.request({ origins: ['https://api.github.com/*'] }))) {
+      note('live', { tone: 'error', text: 'Live Folders need access to api.github.com for GitHub.' });
+      return;
+    }
+    await setApiKey(GITHUB_TOKEN_ID, githubToken.trim(), settings.keyStorage);
+    setHasGithubToken(Boolean(githubToken.trim()));
+    setGithubToken('');
+    note('live', { tone: 'ok', text: githubToken.trim() ? 'GitHub token saved.' : 'GitHub token removed.' });
+  }
+
+  async function addLiveFolder() {
+    const isFeed = newKind === 'feed';
+    const value = newValue.trim();
+    if ((isFeed || newKind === 'search') && !value) {
+      note('live', { tone: 'error', text: isFeed ? 'Paste the feed address.' : 'Type a GitHub search, for example is:open is:pr repo:acme/web.' });
+      return;
+    }
+    if (isFeed) {
+      const pattern = originPattern(value);
+      if (!pattern) {
+        note('live', { tone: 'error', text: 'The feed address must start with http:// or https://.' });
+        return;
+      }
+      if (!(await browser.permissions.request({ origins: [pattern] }))) {
+        note('live', { tone: 'error', text: `Helium needs to let Blimp read ${pattern} to follow this feed.` });
+        return;
+      }
+    } else if (!(await browser.permissions.request({ origins: ['https://api.github.com/*'] }))) {
+      note('live', { tone: 'error', text: 'Live Folders need access to api.github.com for GitHub.' });
+      return;
+    }
+    const name =
+      newName.trim() ||
+      (isFeed ? (originPattern(value) ?? value).replace(/^https?:\/\//, '').replace(/\/\*$/, '') : newKind === 'search' ? value.slice(0, 40) : GITHUB_QUERIES[newKind].label);
+    const folder = {
+      id: crypto.randomUUID().slice(0, 12),
+      name,
+      kind: isFeed ? ('feed' as const) : ('github' as const),
+      query: isFeed ? '' : newKind === 'search' ? value : newKind,
+      url: isFeed ? value : '',
+    };
+    await persist({ ...settings, liveFolders: [...settings.liveFolders, folder] });
+    setNewValue('');
+    setNewName('');
+    const folders = await send({ type: 'live/refresh', folderId: folder.id });
+    const added = folders.find((item) => item.id === folder.id);
+    note(
+      'live',
+      added?.error ? { tone: 'error', text: `Added, but: ${added.error}` } : { tone: 'ok', text: `Added “${name}” with ${added?.items.length ?? 0} items. Open it from ⌘K › Live Folders.` },
+    );
   }
 
   async function setTidyDownloads(on: boolean) {
@@ -262,6 +324,81 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
           </span>
         </label>
         <Status notice={notices.peeks} />
+      </section>
+
+      <section aria-labelledby="live-heading">
+        <h2 id="live-heading">Live Folders</h2>
+        <p className="hint">
+          Like Arc's: folders that keep themselves up to date, in ⌘K › Live Folders. New items are marked; they refresh every
+          30 minutes. Feeds work for blogs, YouTube channels and GitHub releases (add <code>.atom</code> to a releases page).
+        </p>
+        {settings.liveFolders.length > 0 && (
+          <ul className="profiles" aria-label="Your Live Folders">
+            {settings.liveFolders.map((folder) => (
+              <li key={folder.id}>
+                <span className="profile-name">{folder.name}</span>
+                <span className="profile-meta">
+                  {folder.kind === 'feed' ? folder.url : folder.query in GITHUB_QUERIES ? 'GitHub' : `GitHub: ${folder.query}`}{' '}
+                  <button
+                    className="danger"
+                    aria-label={`Remove ${folder.name}`}
+                    onClick={() => void persist({ ...settings, liveFolders: settings.liveFolders.filter((item) => item.id !== folder.id) })}
+                  >
+                    Remove
+                  </button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <label>
+          Add
+          <select value={newKind} onChange={(event) => setNewKind(event.target.value as typeof newKind)} aria-label="Kind of Live Folder">
+            <option value="review">GitHub: {GITHUB_QUERIES.review.label}</option>
+            <option value="mine">GitHub: {GITHUB_QUERIES.mine.label}</option>
+            <option value="assigned">GitHub: {GITHUB_QUERIES.assigned.label}</option>
+            <option value="search">GitHub: a search of my own</option>
+            <option value="feed">RSS or Atom feed</option>
+          </select>
+        </label>
+        {(newKind === 'feed' || newKind === 'search') && (
+          <label>
+            {newKind === 'feed' ? 'Feed address' : 'GitHub search'}
+            <input
+              value={newValue}
+              onChange={(event) => setNewValue(event.target.value)}
+              placeholder={newKind === 'feed' ? 'https://example.com/feed.xml' : 'is:open is:pr repo:acme/web'}
+              spellCheck={false}
+            />
+          </label>
+        )}
+        <label>
+          Name (optional)
+          <input value={newName} onChange={(event) => setNewName(event.target.value)} />
+        </label>
+        <div className="actions">
+          <button onClick={() => void addLiveFolder()}>Add Live Folder</button>
+        </div>
+        <label>
+          GitHub token
+          <span className="row">
+            <input
+              type="password"
+              value={githubToken}
+              onChange={(event) => setGithubToken(event.target.value)}
+              placeholder={hasGithubToken ? 'A token is saved; paste to replace, or leave empty and save to remove' : 'github_pat_…'}
+              autoComplete="off"
+            />
+            <button type="button" onClick={() => void saveGithubToken()}>
+              Save
+            </button>
+          </span>
+          <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noreferrer">
+            Create a read-only fine-grained token
+          </a>
+          <span className="hint">Read access to issues and pull requests is enough. It's kept like your API keys.</span>
+        </label>
+        <Status notice={notices.live} />
       </section>
 
       <section aria-labelledby="video-heading">

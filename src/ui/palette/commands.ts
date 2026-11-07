@@ -14,6 +14,7 @@ export type CommandId =
   | 'browse'
   | 'open-sidebar'
   | 'archive'
+  | 'live'
   | 'capture'
   | 'little-new'
   | 'little-to-main'
@@ -164,6 +165,13 @@ export const COMMANDS: PaletteCommand[] = [
     description: 'Pause what is playing in any tab, or resume it.',
     keywords: 'music video audio pause play resume stop now playing',
     icon: '⏯',
+  },
+  {
+    id: 'live',
+    title: 'Live Folders',
+    description: 'GitHub pull requests and issues, and RSS feeds, kept up to date with what is new marked.',
+    keywords: 'live folders github pull requests prs issues rss feeds news updates',
+    icon: '◉',
   },
   {
     id: 'archive',

@@ -17,6 +17,7 @@ import { PeekView } from './PeekView';
 import { AskAiView } from './AskAiView';
 import { BrowseView } from './BrowseView';
 import { ArchiveView } from './ArchiveView';
+import { LiveFoldersView } from './LiveFoldersView';
 import { RichText } from './RichText';
 
 export interface PaletteProps {
@@ -57,6 +58,7 @@ type View =
   | { name: 'ask'; question: string }
   | { name: 'browse'; query: string }
   | { name: 'archive' }
+  | { name: 'live' }
   | { name: 'rename' }
   | { name: 'error'; message: string; retry?: () => void };
 
@@ -266,6 +268,8 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection, onC
         }
         case 'archive':
           return setView({ name: 'archive' });
+        case 'live':
+          return setView({ name: 'live' });
         case 'capture':
           if (!onCapture) {
             fail(new Error('Open the palette on the page you want to capture (⌘K there).'));
@@ -563,6 +567,8 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection, onC
       {view.name === 'cross' && (
         <CrossTabView mode={view.mode} windowId={windowId} tabId={tabId} status={statusFor(status, 'tabs')} onBack={backToList} onClose={onClose} />
       )}
+
+      {view.name === 'live' && <LiveFoldersView tabId={tabId} onBack={backToList} onClose={onClose} />}
 
       {view.name === 'archive' && <ArchiveView tabId={tabId} onBack={backToList} onClose={onClose} />}
 

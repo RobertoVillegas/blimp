@@ -40,6 +40,10 @@ Press ⌘K on any page to search commands and your open tabs, or copy the page's
 
 When something plays in any tab, the palette shows it at the top, like Arc's mini player: title and artist, play/pause, previous/next on YouTube, YouTube Music, Spotify and SoundCloud, mute, go to tab, and picture in picture for the video on the page you're on. **Play or Pause Media** does it from the keyboard. Mute and go-to-tab work everywhere; playback controls need access to the site, and the card asks the first time.
 
+### Live Folders
+
+Like Arc's: folders that keep themselves up to date, in **⌘K › Live Folders**. Follow GitHub pull requests waiting for your review, your own PRs, what's assigned to you or any GitHub search (with a read-only token), or any RSS or Atom feed: blogs, YouTube channels, a repository's releases. They refresh every 30 minutes; new items get a dot, and you can open them all at once or mark them read. Set them up in Settings › Live Folders.
+
 ### Auto-archive and Capture
 
 **Auto-archive** (off by default, Settings › Auto-archive) closes tabs you haven't used in 12 hours, a day, a week or a month, like Arc. Pinned tabs, tabs in groups, the tab you're on and tabs playing sound are never touched. Archived tabs wait in **⌘K › Archived Tabs** for 30 days; Enter reopens one.
@@ -223,6 +227,7 @@ Change them, or bind Tidy Tabs to its own shortcut, at `chrome://extensions/shor
 | A download starts (if Tidy Downloads is on) | Filename, file type, the address without query strings, and the page title |
 | Unread Email, Upcoming Events | Nothing to an AI; Gmail's feed is read with your browser session, the calendar from its iCal address |
 | Capture | Nothing; the image stays on your clipboard or disk |
+| Live Folders | GitHub gets your searches with your token; feeds are fetched without cookies. Nothing goes to an AI |
 | Just browsing | Nothing |
 | Twice a day (unless turned off) | GitHub's public API is asked for this repository's releases; nothing about you is sent |
 
@@ -254,6 +259,7 @@ This is an early build. It loads and runs in Helium; everything below is tested 
 | ✅ | Arc Max complete: Ask AI, Browse for Me, verified quotes, answer-card previews, Instant Links intents, copy commands | v0.5.0 |
 | ✅ | Little Blimp (Little Arc) | v0.7.0 |
 | ✅ | Auto-archive and Capture | v0.8.0 |
+| ✅ | Live Folders | v0.9.0 |
 
 The full checklist of Arc features, what's done and what's next, is in [`docs/arc-features.md`](docs/arc-features.md).
 
