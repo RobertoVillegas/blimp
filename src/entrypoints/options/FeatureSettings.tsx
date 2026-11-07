@@ -254,9 +254,20 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
         </label>
         <p className="hint">
           Like Arc: leave a tab while its video plays and it keeps playing in a small window you can move anywhere; come back
-          and it returns. The browser does the floating and may ask once per site. Nothing is sent anywhere. For a video
-          you want to float right now, use Picture in Picture in the palette.
+          and it returns. Nothing is sent anywhere. The browser does the floating, and it only does it when:
         </p>
+        <ul className="hint">
+          <li>this option is on and the video's page was loaded (or reloaded) after turning it on;</li>
+          <li>the video is playing with sound (muted videos don't float);</li>
+          <li>
+            the site is allowed to use automatic picture in picture. Until the browser has seen you watch a lot there, add the
+            site (for example youtube.com) under Allowed:{' '}
+            <button onClick={() => void browser.tabs.create({ url: 'chrome://settings/content/autoPictureInPicture' })}>
+              Open automatic picture-in-picture settings
+            </button>
+          </li>
+        </ul>
+        <p className="hint">For a video you want to float right now, use Picture in Picture in the palette.</p>
         <Status notice={notices.video} />
       </section>
 

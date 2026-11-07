@@ -69,7 +69,7 @@ Every Arc feature we know of, from Arc's own docs and from the feature modules i
 - [x] Media controls / mini player: Now playing in the palette (v0.3.9) with play/pause, previous/next on known players, mute, go to tab, picture in picture
 - [ ] Mic and camera toggles for Google Meet in the mini player
 - [x] Picture in Picture from the palette (v0.3.8)
-- [~] Auto picture in picture when leaving a tab (v0.4.0, experimental: the browser decides whether to float)
+- [~] Auto picture in picture when leaving a tab (v0.4.0): works only for audible videos on sites allowed in the browser's automatic picture-in-picture settings (or that it has seen you watch a lot); Settings › Video links there
 - [x] **Helium:** native picture-in-picture window, movable to any corner
 
 ## Customization
