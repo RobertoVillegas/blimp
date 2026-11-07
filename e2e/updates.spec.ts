@@ -56,7 +56,15 @@ test('update notice, then copying new files and pressing Reload picks them up an
     fs.writeFileSync(manifestPath, JSON.stringify({ ...manifest, version: '9.9.9' }));
 
     const extensionUrl = sw.url().replace('background.js', '');
-    await settings.locator('.update-banner').getByRole('button', { name: 'reload it now' }).click();
+    // The once-a-minute disk check may reload first and close this page mid-click; either way
+    // the assertions below check that the new build is running.
+    await settings
+      .locator('.update-banner')
+      .getByRole('button', { name: 'reload it now' })
+      .click()
+      .catch((error: Error) => {
+        if (!/closed/.test(error.message)) throw error;
+      });
 
     // Playwright doesn't report the restarted worker (same URL), so read the new state from an extension page.
     const fresh = await context.newPage();
