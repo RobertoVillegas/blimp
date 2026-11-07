@@ -502,3 +502,43 @@
   background: var(--hm-selected);
   font-size: 12px;
 }
+
+.hm-titles li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  align-items: center;
+  gap: 8px;
+  padding-right: 10px;
+}
+
+.hm-title-old {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--hm-muted);
+}
+
+.hm-title-new {
+  font: inherit;
+  padding: 4px 8px;
+  border: 1px solid var(--hm-border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+
+.hm-title-new:focus-visible {
+  outline: 2px solid var(--hm-accent);
+  outline-offset: 1px;
+}
+
+.hm-access {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.hm-access p {
+  margin: 0;
+}

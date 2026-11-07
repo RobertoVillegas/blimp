@@ -45,7 +45,7 @@ Run **Tidy Tabs** and the model reads your tab titles and URLs. It invents group
 - It only runs when you ask. Never on a timer, never when a tab opens.
 - Pinned tabs and groups you made yourself are left alone. If you'd like new tabs to join your existing groups instead (a new PHP tab into your "PHP" group), turn on **Also add tabs to groups I already have** in Settings. Your groups keep their names and colors, and Undo takes the added tabs back out.
 - Tabs that don't fit anywhere stay ungrouped. There's no "Misc" group.
-- It names groups. It never renames, closes or discards a tab.
+- It names groups. It doesn't rename, close or discard tabs; renaming is a separate command (below).
 - If the model returns anything that doesn't match your real tabs, nothing changes.
 - **Undo Tidy Tabs** puts every tab back where it was and tells you about tabs that moved in the meantime.
 
@@ -100,6 +100,12 @@ With no search provider set up, it hands the query to your browser's normal sear
 ### Tidy Downloads
 
 Off by default. When it's on, each download gets a clearer name before it's saved: `inv_8812.pdf` becomes `Acme invoice 8812.pdf`. The extension never changes, the file's contents are never read, and if the AI takes more than 4 seconds the browser's own name is used. Files you already downloaded are left alone.
+
+### Tab names
+
+**Tidy Tab Titles** gives your pinned tabs short names, the way Arc did: "Inbox (3) - you@gmail.com - Gmail" becomes "(3) Mail" and "Hooks reference – React" becomes "React Hooks". You see every proposed name first, can edit or skip any of them, and nothing changes until you press Rename. **Rename Tab** names any tab yourself. **Restore Tab Titles** puts the sites' titles back.
+
+Names stick when the site rewrites its title (unread counts keep updating in front of the name) and after reloads and restarts, as long as Helium Max has access to that site; it asks the first time. Under the hood the extension sets the page's title, since browsers don't let extensions edit the tab strip directly.
 
 ### AI profiles
 
@@ -178,6 +184,7 @@ Change them, or bind Tidy Tabs to its own shortcut, at `chrome://extensions/shor
 | --- | --- |
 | Searching in the palette | Nothing |
 | Tidy Tabs | Titles and URLs of the ungrouped, unpinned tabs in the window |
+| Tidy Tab Titles | Titles and URLs of the pinned tabs in the window (Rename Tab sends nothing) |
 | Summarize Page, Ask Page | Visible text of the current page, and your questions |
 | Summarize Tabs, Ask Across Tabs | Visible text of the tabs you tick, and your question |
 | Shift-hover a link (if turned on) | Text of the linked page, downloaded without your cookies |
@@ -207,6 +214,7 @@ This is an early build. It loads and runs in Helium; everything below is tested 
 | ✅ | Update notice, reloads itself after you copy a new build in | v0.3 |
 | ✅ | Tidy into existing groups, wake sleeping tabs, a model per feature | v0.3 |
 | ✅ | OpenCode Go models on Anthropic Messages and OpenAI Responses | v0.3 |
+| ✅ | Tidy Tab Titles, Rename Tab | v0.3.5 |
 
 [Jev](docs/jev.md), TypeSafe's decision model, was looked at and parked for now.
 

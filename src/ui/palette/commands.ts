@@ -3,6 +3,9 @@ import type { AiFeature } from '@/shared/types';
 export type CommandId =
   | 'tidy'
   | 'undo-tidy'
+  | 'tidy-titles'
+  | 'rename-tab'
+  | 'restore-titles'
   | 'summarize-page'
   | 'ask-page'
   | 'summarize-tabs'
@@ -37,6 +40,28 @@ export const COMMANDS: PaletteCommand[] = [
     description: 'Ungroup what the last Tidy Tabs created and restore tab order.',
     keywords: 'revert restore ungroup',
     icon: '↶',
+  },
+  {
+    id: 'tidy-titles',
+    title: 'Tidy Tab Titles',
+    description: 'Give your pinned tabs short names. You see them before anything changes.',
+    keywords: 'rename pinned names titles short clean',
+    icon: 'Aa',
+    sends: 'titles and URLs of your pinned tabs',
+  },
+  {
+    id: 'rename-tab',
+    title: 'Rename Tab',
+    description: 'Give this tab a name of your own.',
+    keywords: 'title name label',
+    icon: '✎',
+  },
+  {
+    id: 'restore-titles',
+    title: 'Restore Tab Titles',
+    description: "Give the tabs in this window their sites' own titles back.",
+    keywords: 'undo reset original titles names',
+    icon: '↺',
   },
   {
     id: 'summarize-page',
@@ -89,12 +114,24 @@ export const COMMANDS: PaletteCommand[] = [
 /** Which per-feature AI profile a command uses (Settings › Models per feature). */
 export const FEATURE_OF: Partial<Record<CommandId, AiFeature>> = {
   tidy: 'tidy',
+  'tidy-titles': 'tidy',
   'summarize-page': 'page',
   'ask-page': 'page',
   'summarize-tabs': 'tabs',
   'ask-tabs': 'tabs',
   'instant-links': 'instant',
 };
+
+/** Rank for a command that matches: its title equal to, starting with, or containing the query wins. */
+export function titleRank(query: string, title: string): number {
+  const q = query.trim().toLowerCase();
+  const t = title.toLowerCase();
+  if (!q) return 0;
+  if (t === q) return 0;
+  if (t.startsWith(q)) return 1;
+  if (t.includes(q)) return 2;
+  return 3;
+}
 
 export function matches(query: string, ...fields: string[]): boolean {
   const haystack = fields.join(' ').toLowerCase();

@@ -146,6 +146,17 @@ export interface InstantLinksResult {
   rankedBy?: string;
 }
 
+export interface TitleProposal {
+  tabId: number;
+  url: string;
+  favIconUrl?: string;
+  /** The site's own title. */
+  original: string;
+  /** The name Helium Max shows now, if any. */
+  current?: string;
+  proposed: string;
+}
+
 export interface PageAnswer {
   text: string;
   title: string;

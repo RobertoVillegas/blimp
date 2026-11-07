@@ -214,6 +214,17 @@ test('Summarize and Ask Page use visible article text only', async ({ context, s
   expect(Object.keys(stored).filter((key) => key.startsWith('page:'))).toEqual([]);
 });
 
+test('the palette in its own window works on the tab it was opened for, not on itself', async ({ context, sw, server }) => {
+  await configureMockProvider(sw, server.origin);
+  const [article] = await openPages(context, server.origin, ['recipe-tacos']);
+  const tabId = await sw.evaluate(async (url) => (await chrome.tabs.query({ url }))[0]!.id!, article!.url());
+  const popup = await context.newPage();
+  await popup.goto(sw.url().replace('background.js', `palette.html?tabId=${tabId}`));
+  await popup.getByRole('combobox').fill('summarize page');
+  await popup.getByRole('combobox').press('Enter');
+  await expect(popup.getByText('MOCK SUMMARY of "Street tacos recipe".')).toBeVisible();
+});
+
 test('popup palette explains that browser pages cannot be read', async ({ context, sw, server }) => {
   await configureMockProvider(sw, server.origin);
   const extensionId = new URL(sw.url()).host;

@@ -3,10 +3,11 @@ import type { PaletteIntent, UpdateStatus } from '@/shared/messages';
 import { send } from '@/shared/send';
 import type { AiStatus, PageAnswer, ProfileSummary, TabSummary, TidyResult, UndoResult } from '@/shared/types';
 import { domainOf } from '@/shared/url';
-import { COMMANDS, FEATURE_OF, matches, type CommandId, type PaletteCommand } from './commands';
+import { COMMANDS, FEATURE_OF, matches, titleRank, type CommandId, type PaletteCommand } from './commands';
 import { CrossTabView } from './CrossTabView';
 import { Footer, statusFor } from './Footer';
 import { InstantLinksView } from './InstantLinksView';
+import { RenameTabView, TabTitlesView } from './TabTitlesView';
 import { RichText } from './RichText';
 
 export interface PaletteProps {
@@ -32,9 +33,12 @@ type View =
   | { name: 'page'; turns: { question: string | null; answer: PageAnswer }[]; pending?: string | null }
   | { name: 'cross'; mode: 'summarize' | 'ask' }
   | { name: 'instant'; query: string }
+  | { name: 'titles' }
+  | { name: 'titles-restored'; count: number }
+  | { name: 'rename' }
   | { name: 'error'; message: string; retry?: () => void };
 
-const AI_COMMANDS = new Set<CommandId>(['tidy', 'summarize-page', 'ask-page', 'summarize-tabs', 'ask-tabs']);
+const AI_COMMANDS = new Set<CommandId>(['tidy', 'tidy-titles', 'summarize-page', 'ask-page', 'summarize-tabs', 'ask-tabs']);
 
 export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
   const [query, setQuery] = useState('');
@@ -61,9 +65,10 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
   useEffect(refresh, [refresh]);
 
   const items = useMemo<Item[]>(() => {
-    const commands = COMMANDS.filter((command) =>
-      matches(query, command.title, command.keywords, command.description),
-    ).map((command): Item => ({ kind: 'command', command }));
+    const commands = COMMANDS.filter((command) => matches(query, command.title, command.keywords, command.description))
+      // Stable sort: list order breaks ties.
+      .sort((a, b) => titleRank(query, a.title) - titleRank(query, b.title))
+      .map((command): Item => ({ kind: 'command', command }));
     // Profiles only show up when asked for, so the default list stays commands + tabs.
     const profileItems = query
       ? profiles
@@ -154,6 +159,16 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
           return setView({ name: 'cross', mode: 'summarize' });
         case 'ask-tabs':
           return setView({ name: 'cross', mode: 'ask' });
+        case 'tidy-titles':
+          return setView({ name: 'titles' });
+        case 'rename-tab':
+          return setView({ name: 'rename' });
+        case 'restore-titles':
+          setView({ name: 'running', label: 'Restoring titles…' });
+          void send({ type: 'titles/restore', tabIds: tabs.map((tab) => tab.id).concat(tabId ?? []) })
+            .then((count) => setView({ name: 'titles-restored', count }))
+            .catch((error: unknown) => fail(error));
+          return;
         case 'instant-links':
           return setView({ name: 'instant', query: '' });
         case 'settings':
@@ -161,7 +176,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
           return onClose();
       }
     },
-    [askPage, isDisabled, onClose, runTidy, runUndo, status],
+    [askPage, isDisabled, onClose, runTidy, runUndo, status, tabs, tabId],
   );
 
   useEffect(() => {
@@ -376,6 +391,16 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
       {view.name === 'cross' && (
         <CrossTabView mode={view.mode} windowId={windowId} tabId={tabId} status={statusFor(status, 'tabs')} onBack={backToList} onClose={onClose} />
       )}
+
+      {view.name === 'titles-restored' && (
+        <ResultPanel title="Tab titles restored" onBack={backToList}>
+          <p>{view.count ? `${tabsLabel(view.count)} got their site's title back.` : 'No tab in this window had a name from Helium Max.'}</p>
+        </ResultPanel>
+      )}
+
+      {view.name === 'titles' && <TabTitlesView windowId={windowId} status={statusFor(status, 'tidy')} onBack={backToList} />}
+
+      {view.name === 'rename' && <RenameTabView tabId={tabId} onBack={backToList} onClose={onClose} />}
 
       {view.name === 'instant' && (
         <InstantLinksView initialQuery={view.query} tabId={tabId} status={statusFor(status, 'instant')} onBack={backToList} onClose={onClose} />

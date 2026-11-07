@@ -106,6 +106,12 @@ window.addLateCover = () => {
 };
 </script></body></html>`);
     }
+    // Behaves like Gmail: the title carries an unread count and the page rewrites it.
+    if (req.method === 'GET' && url.pathname === '/inbox') {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      return void res.end(`<!doctype html><html><head><title>Inbox (3) - someone@example.com - Example Mail</title></head>
+<body><h1>Inbox</h1><script>window.setUnread = (n) => { document.title = 'Inbox (' + n + ') - someone@example.com - Example Mail'; };</script></body></html>`);
+    }
     if (req.method === 'GET' && url.pathname === '/login') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       return void res.end(LOGIN_HTML);
@@ -187,6 +193,15 @@ function respond(model: string, messages: { role: string; content: string }[], u
     const count = Math.max(...[...user.matchAll(/(?:<source n="|\[)(\d+)/g)].map((m) => Number(m[1])));
     const question = /Question: (.*)/.exec(user)?.[1];
     return `${question ? `ANSWER to "${question}".` : 'CROSS SUMMARY.'}\n- First point [1].\n- Second point [2][${count}].\n- Ignored citation [99].`;
+  }
+  if (system.startsWith('You give pinned browser tabs short, clear names')) {
+    const lines = user.split('\n').filter((line) => /^\[\d+\]/.test(line));
+    return JSON.stringify({
+      titles: lines.map((line) => {
+        const n = Number(/^\[(\d+)\]/.exec(line)![1]);
+        return { tab: n, title: /Inbox/.test(line) ? 'Mail' : /Hooks/.test(line) ? '"React Hooks"' : `Tab ${n}` };
+      }),
+    });
   }
   if (system.startsWith('You pick which search result')) return JSON.stringify({ best: 2, why: 'Official React documentation' });
   if (system.startsWith('You rename a file')) return JSON.stringify({ name: 'Acme invoice 8812.pdf' });

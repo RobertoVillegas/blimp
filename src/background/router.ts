@@ -3,6 +3,7 @@ import { askPage, forgetPage } from '@/features/ask-page';
 import { crossTabCandidates, missingOrigins, runCrossTab } from '@/features/cross-tab';
 import { browserSearch, instantSearch, openResult } from '@/features/instant-links';
 import { finishPreview, previewImage, startPreview } from '@/features/link-preview';
+import { applyTitles, proposeTitles, restoreTitles, titleKey } from '@/features/tab-titles';
 import { canUndoTidy, tidyTabs, undoTidyTabs } from '@/features/tidy-tabs';
 import { AUTO_UPDATED_KEY, checkForUpdate, currentUpdate, reloadIfNewerOnDisk } from '@/features/updates';
 import { chromeTabsPort } from '@/features/tidy-tabs/chrome-port';
@@ -94,7 +95,7 @@ async function handle(
       return crossTabCandidates(await targetWindowId(request.windowId, sender));
 
     case 'cross/missing-origins':
-      return missingOrigins(request.tabIds, sender.tab?.id ?? request.tabId);
+      return missingOrigins(request.tabIds, request.tabId ?? sender.tab?.id);
 
     case 'cross/run': {
       const windowId = await targetWindowId(request.windowId, sender);
@@ -102,6 +103,9 @@ async function handle(
         runCrossTab({ windowId, tabIds: request.tabIds, question: request.question, wake: request.wake, signal }),
       );
     }
+
+    case 'permissions/has':
+      return browser.permissions.contains({ origins: [request.origin] });
 
     case 'permissions/open-grant': {
       // Content scripts can't show permission prompts, so a small extension window asks instead.
@@ -129,7 +133,7 @@ async function handle(
       return withOperation(request.opId, (signal) => instantSearch(request.query, signal));
 
     case 'instant/open':
-      await openResult(request.url, sender.tab?.id ?? request.tabId);
+      await openResult(request.url, request.tabId ?? sender.tab?.id);
       return null;
 
     case 'instant/web-search':
@@ -154,6 +158,25 @@ async function handle(
       await browser.tabs.create({ url: browser.runtime.getURL('/options.html#updates') });
       return null;
 
+    case 'titles/propose': {
+      const windowId = await targetWindowId(request.windowId, sender);
+      return withOperation(request.opId, (signal) => proposeTitles(windowId, signal));
+    }
+
+    case 'titles/apply':
+      return applyTitles(request.items);
+
+    case 'titles/restore':
+      return restoreTitles(request.tabIds);
+
+    case 'titles/current': {
+      const tabId = targetTabId(request.tabId, sender);
+      const tab = await browser.tabs.get(tabId);
+      const key = tab.url ? titleKey(tab.url) : null;
+      const saved = key ? ((await browser.storage.local.get('tabTitles')).tabTitles as Record<string, string> | undefined)?.[key] : undefined;
+      return { tabId, title: saved ?? tab.title ?? '', renamed: Boolean(saved) };
+    }
+
     case 'op/cancel':
       operations.get(request.opId)?.abort();
       return null;
@@ -174,17 +197,20 @@ async function withOperation<T>(opId: string, run: (signal: AbortSignal) => Prom
   }
 }
 
-/** The palette's window: the sender's tab for the overlay, an explicit id for the popup. */
+/**
+ * The palette's window. The popup palette names it explicitly (in its own popup window, the
+ * sender's tab would be the palette itself); the overlay uses the tab it runs in.
+ */
 async function targetWindowId(explicit: number | undefined, sender: Browser.runtime.MessageSender) {
-  if (sender.tab?.windowId !== undefined) return sender.tab.windowId;
   if (explicit !== undefined) return explicit;
+  if (sender.tab?.windowId !== undefined) return sender.tab.windowId;
   const window = await browser.windows.getLastFocused({ windowTypes: ['normal'] });
   if (window.id === undefined) throw new UserFacingError('internal', 'No browser window found.');
   return window.id;
 }
 
 function targetTabId(explicit: number | undefined, sender: Browser.runtime.MessageSender): number {
-  const tabId = sender.tab?.id ?? explicit;
+  const tabId = explicit ?? sender.tab?.id;
   if (tabId === undefined) throw new UserFacingError('page-unavailable', 'No page selected.');
   return tabId;
 }

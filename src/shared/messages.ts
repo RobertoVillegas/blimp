@@ -10,6 +10,7 @@ import type {
   ProfileSummary,
   TabSummary,
   TidyResult,
+  TitleProposal,
   UndoResult,
 } from './types';
 
@@ -44,6 +45,7 @@ export const requestSchema = z.discriminatedUnion('type', [
     question: z.string().max(4000).nullable(),
     wake: z.boolean().optional(),
   }),
+  z.object({ type: z.literal('permissions/has'), origin: z.string().max(300) }),
   z.object({ type: z.literal('permissions/open-grant'), origins: z.array(z.string().max(300)).min(1).max(100) }),
   z.object({ type: z.literal('preview/start'), opId: z.string(), url: z.string().max(4000) }),
   z.object({
@@ -67,6 +69,13 @@ export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('update/status') }),
   z.object({ type: z.literal('update/check') }),
   z.object({ type: z.literal('update/show') }),
+  z.object({ type: z.literal('titles/propose'), opId: z.string(), windowId: z.number().int().optional() }),
+  z.object({
+    type: z.literal('titles/apply'),
+    items: z.array(z.object({ tabId: z.number().int(), title: z.string().max(200) })).min(1).max(100),
+  }),
+  z.object({ type: z.literal('titles/restore'), tabIds: z.array(z.number().int()).min(1).max(100) }),
+  z.object({ type: z.literal('titles/current'), tabId: z.number().int().optional() }),
   z.object({ type: z.literal('op/cancel'), opId: z.string() }),
   z.object({ type: z.literal('settings/open') }),
 ]);
@@ -88,6 +97,7 @@ export interface ResponseMap {
   'cross/missing-origins': string[];
   'cross/run': CrossTabResult;
   'permissions/open-grant': null;
+  'permissions/has': boolean;
   'preview/start': PreviewStart;
   'preview/finish': LinkPreview;
   'preview/image': string | null;
@@ -97,6 +107,10 @@ export interface ResponseMap {
   'update/status': UpdateStatus;
   'update/check': UpdateStatus;
   'update/show': null;
+  'titles/propose': TitleProposal[];
+  'titles/apply': string[];
+  'titles/restore': number;
+  'titles/current': { tabId: number; title: string; renamed: boolean } | null;
   'op/cancel': null;
   'settings/open': null;
 }

@@ -34,7 +34,7 @@ Both run in CI. If you change something visible in the README screenshots, run `
 These come from the [product spec](docs/PRD.md) and aren't negotiable in a PR:
 
 - Nothing runs on its own. Tidy Tabs and every AI command run only when the user asks.
-- Never rename, close or discard a user's tab, and never rename the user's own tab groups.
+- Never close or discard a user's tab, and never rename the user's own tab groups. Tabs are renamed only by an explicit command, and Restore Tab Titles must always undo it.
 - Treat page text and model output as untrusted. Validate before acting, and render model output as text.
 - Ask for permissions at the point of use, not at install.
 - Say what will be sent where before sending it.
