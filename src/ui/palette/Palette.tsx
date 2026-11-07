@@ -65,6 +65,7 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection }: P
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
   const [update, setUpdate] = useState<UpdateStatus['update']>(null);
   const [playing, setPlaying] = useState<NowPlaying[]>([]);
+  const [inLittle, setInLittle] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [selected, setSelected] = useState(0);
   const [view, setView] = useState<View>({ name: 'list' });
@@ -83,13 +84,17 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection }: P
     void send({ type: 'profiles/list' }).then(setProfiles).catch(() => setProfiles([]));
     void send({ type: 'update/status' }).then((status) => setUpdate(status.update)).catch(() => setUpdate(null));
     refreshMedia();
+    void send({ type: 'little/status', tabId }).then((status) => setInLittle(status.inLittle)).catch(() => setInLittle(false));
     void send({ type: 'tidy/can-undo' }).then(setCanUndo).catch(() => setCanUndo(false));
   }, [windowId, refreshMedia]);
 
   useEffect(refresh, [refresh]);
 
   const items = useMemo<Item[]>(() => {
-    const commands = COMMANDS.filter((command) => matches(query, command.title, command.keywords, command.description))
+    const commands = COMMANDS.filter((command) => command.id !== 'little-to-main' || inLittle)
+      .filter((command) => matches(query, command.title, command.keywords, command.description))
+      // In a Little Blimp window, keeping the page is the likeliest command.
+      .sort((a, b) => (inLittle ? Number(b.id === 'little-to-main') - Number(a.id === 'little-to-main') : 0))
       // Stable sort: list order breaks ties.
       .sort((a, b) => titleRank(query, a.title) - titleRank(query, b.title))
       .map((command): Item => ({ kind: 'command', command }));
@@ -117,7 +122,7 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection }: P
         ? [{ kind: 'update', version: update.version }]
         : [];
     return [...commands, ...profileItems, ...tabItems, ...instant, ...updateItem];
-  }, [profiles, query, tabs, update]);
+  }, [profiles, query, tabs, update, inLittle]);
 
   useEffect(() => setSelected(0), [query]);
 
@@ -255,6 +260,15 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection }: P
           void send({ type: 'media/action', tabId: target.tabId, action: 'toggle' }).then(onClose);
           return;
         }
+        case 'little-new':
+          void send({ type: 'little/open' }).then(onClose).catch((error: unknown) => fail(error));
+          return;
+        case 'little-to-main':
+          void send({ type: 'little/to-main', tabId }).then(onClose).catch((error: unknown) => fail(error));
+          return;
+        case 'little-close':
+          void send({ type: 'little/close-all' }).then(onClose).catch((error: unknown) => fail(error));
+          return;
         case 'open-sidebar':
           // Extension pages (the palette in its own window) may open it from this click; the
           // in-page palette can't, because the click doesn't count once it leaves the page.

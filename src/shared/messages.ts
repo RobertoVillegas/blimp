@@ -108,6 +108,10 @@ export const requestSchema = z.discriminatedUnion('type', [
       .min(1)
       .max(8),
   }),
+  z.object({ type: z.literal('little/open'), url: z.string().max(4000).optional() }),
+  z.object({ type: z.literal('little/status'), tabId: z.number().int().optional() }),
+  z.object({ type: z.literal('little/to-main'), tabId: z.number().int().optional() }),
+  z.object({ type: z.literal('little/close-all') }),
   z.object({ type: z.literal('op/cancel'), opId: z.string() }),
   z.object({ type: z.literal('settings/open') }),
   z.object({ type: z.literal('shortcut/get'), name: z.string().max(50) }),
@@ -153,6 +157,10 @@ export interface ResponseMap {
   'ai/ask': string;
   'browse/fetch': BrowseFetchPage[];
   'browse/answer': string;
+  'little/open': null;
+  'little/status': { inLittle: boolean };
+  'little/to-main': null;
+  'little/close-all': number;
   'op/cancel': null;
   'settings/open': null;
   'shortcut/get': string;

@@ -4,6 +4,7 @@ import { crossTabCandidates, missingOrigins, runCrossTab } from '@/features/cros
 import { browserSearch, instantSearch, openResult, openResults } from '@/features/instant-links';
 import { finishPreview, previewImage, startPreview } from '@/features/link-preview';
 import { askAi } from '@/features/ask-ai';
+import { closeLittleWindows, isLittleWindow, moveToMainWindow, openLittle } from '@/features/little';
 import { browseAnswer, browseFetch } from '@/features/browse';
 import { mediaAction, nowPlaying } from '@/features/media';
 import { calendarPeek, gmailPeek, openPeekLink } from '@/features/peeks';
@@ -209,6 +210,23 @@ async function handle(
 
     case 'browse/answer':
       return withOperation(request.opId, (signal) => browseAnswer(request.query, request.sources, signal));
+
+    case 'little/open':
+      await openLittle(request.url);
+      return null;
+
+    case 'little/status': {
+      const tabId = request.tabId ?? sender.tab?.id;
+      const tab = tabId === undefined ? undefined : await browser.tabs.get(tabId).catch(() => undefined);
+      return { inLittle: await isLittleWindow(tab?.windowId) };
+    }
+
+    case 'little/to-main':
+      await moveToMainWindow(targetTabId(request.tabId, sender));
+      return null;
+
+    case 'little/close-all':
+      return closeLittleWindows();
 
     case 'op/cancel':
       operations.get(request.opId)?.abort();

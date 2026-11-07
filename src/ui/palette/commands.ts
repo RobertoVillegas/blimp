@@ -13,6 +13,9 @@ export type CommandId =
   | 'instant-links'
   | 'browse'
   | 'open-sidebar'
+  | 'little-new'
+  | 'little-to-main'
+  | 'little-close'
   | 'pip'
   | 'media-toggle'
   | 'copy-url'
@@ -159,6 +162,27 @@ export const COMMANDS: PaletteCommand[] = [
     description: 'Pause what is playing in any tab, or resume it.',
     keywords: 'music video audio pause play resume stop now playing',
     icon: '⏯',
+  },
+  {
+    id: 'little-to-main',
+    title: 'Open in Main Window',
+    description: 'Keep this Little Blimp page: move it into your main window, as it is.',
+    keywords: 'little blimp keep move main window tab',
+    icon: '⤢',
+  },
+  {
+    id: 'little-new',
+    title: 'New Little Blimp',
+    description: 'A small window for a quick search or a one-off page (⌥⇧N).',
+    keywords: 'little arc quick window popup search',
+    icon: '◱',
+  },
+  {
+    id: 'little-close',
+    title: 'Close Little Blimp Windows',
+    description: 'Close every Little Blimp window.',
+    keywords: 'little arc close windows',
+    icon: '⊠',
   },
   {
     id: 'open-sidebar',

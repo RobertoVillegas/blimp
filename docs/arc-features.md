@@ -35,12 +35,12 @@ Every Arc feature we know of, from Arc's own docs and from the feature modules i
 
 ## Little Arc
 
-- [ ] Little Arc window: a small, simple window for quick searches and one-off pages, opened with its own shortcut
-- [ ] "Open in…": move the page from Little Arc to the main window
+- [x] Little Blimp window: a small window without a tab strip for a quick search or address, opened with ⌥⇧N or from the palette (v0.7.0). Arc used ⌥⌘N; Chromium doesn't let extensions use ⌘+⌥ shortcuts
+- [x] "Open in…": Open in Main Window moves the page into your main window as it is, scroll and typing included (v0.7.0)
 - [ ] Links from other apps open in Little Arc
-- [ ] Open a link in Little Arc by clicking it with a modifier key
-- [ ] Remember the Little Arc window size
-- [ ] Close or show all Little Arc windows
+- [~] Open a link in Little Arc: right-click › Open Link in Little Blimp (v0.7.0). A modifier-click isn't there yet
+- [x] Remember the Little Arc window size and position, falling back to centered when that spot is off screen (v0.7.0)
+- [x] Close all Little Arc windows, from the palette or the toolbar icon's menu (v0.7.0)
 - [ ] Archive old Little Arcs after a while
 
 ## Tabs, sidebar and organization

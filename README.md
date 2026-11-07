@@ -40,6 +40,10 @@ Press ⌘K on any page to search commands and your open tabs, or copy the page's
 
 When something plays in any tab, the palette shows it at the top, like Arc's mini player: title and artist, play/pause, previous/next on YouTube, YouTube Music, Spotify and SoundCloud, mute, go to tab, and picture in picture for the video on the page you're on. **Play or Pause Media** does it from the keyboard. Mute and go-to-tab work everywhere; playback controls need access to the site, and the card asks the first time.
 
+### Little Blimp
+
+Arc's Little Arc. Press **⌥⇧N** (or run **New Little Blimp** in the palette) for a small window without a tab strip: type a search or an address and go. To keep the page, open the palette there and run **Open in Main Window**; it moves into your main window as it is, scroll position and anything you typed included. Right-click any link › **Open Link in Little Blimp** to look at it on the side. Little Blimp remembers where you put it and how big you made it. (Arc used ⌥⌘N; Chromium doesn't let extensions take ⌘+⌥ shortcuts. You can pick another key at `chrome://extensions/shortcuts`.)
+
 ### Peeks: Gmail and Calendar
 
 **Unread Email** shows your unread Gmail (sender, subject, snippet) and opens a message in your Gmail tab; **Upcoming Events** shows today and tomorrow from your Google Calendar with a Join button for Meet, Zoom or Teams links. Turn them on in Settings › Peeks: Gmail uses the account you're signed in to in this browser, and Calendar uses the calendar's secret iCal address, kept like an API key. Nothing from either goes to an AI.
@@ -190,6 +194,7 @@ If a model rejects a setting (newer OpenAI and other reasoning models refuse `te
 | --- | --- |
 | ⌘K | Open or close the palette |
 | ⇧⌘K | Same, for when ⌘K is taken |
+| ⌥⇧N | New Little Blimp window |
 | ↑ ↓ | Move through results |
 | Enter | Run the command or switch to the tab |
 | Esc | Back, then close |
@@ -240,6 +245,7 @@ This is an early build. It loads and runs in Helium; everything below is tested 
 | ✅ | Now playing controls in the palette | v0.3.9 |
 | ✅ | Gmail and Calendar peeks, auto-float videos (experimental) | v0.4.0 |
 | ✅ | Arc Max complete: Ask AI, Browse for Me, verified quotes, answer-card previews, Instant Links intents, copy commands | v0.5.0 |
+| ✅ | Little Blimp (Little Arc) | v0.7.0 |
 
 The full checklist of Arc features, what's done and what's next, is in [`docs/arc-features.md`](docs/arc-features.md).
 

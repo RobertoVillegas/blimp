@@ -169,6 +169,7 @@ export function App() {
   const edit = (patch: Partial<Profile>) => setDraft({ ...draft, ...patch });
   const paletteShortcut = shortcuts.find((command) => command.name === 'open-palette')?.shortcut;
   const fallbackShortcut = shortcuts.find((command) => command.name === 'open-palette-fallback')?.shortcut;
+  const littleShortcut = shortcuts.find((command) => command.name === 'little-blimp')?.shortcut;
 
   return (
     <main>
@@ -422,7 +423,8 @@ export function App() {
       <section aria-labelledby="shortcuts-heading">
         <h2 id="shortcuts-heading">Keyboard shortcuts</h2>
         <p>
-          Palette: <kbd>{paletteShortcut || 'not set'}</kbd> · Fallback: <kbd>{fallbackShortcut || 'not set'}</kbd>
+          Palette: <kbd>{paletteShortcut || 'not set'}</kbd> · Fallback: <kbd>{fallbackShortcut || 'not set'}</kbd> · Little
+          Blimp: <kbd>{littleShortcut || 'not set'}</kbd>
         </p>
         {!paletteShortcut && (
           <p className="warning">

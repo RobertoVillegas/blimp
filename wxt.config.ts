@@ -45,6 +45,13 @@ export default defineConfig({
         suggested_key: { default: 'Ctrl+Shift+S', mac: 'Command+Shift+S' },
         description: 'Open the Blimp sidebar',
       },
+      'little-blimp': {
+        suggested_key: { default: 'Alt+Shift+N', mac: 'Alt+Shift+N' },
+        description: 'Open a Little Blimp window',
+      },
+      'little-to-main': {
+        description: 'Move the Little Blimp page into the main window',
+      },
       'tidy-tabs': {
         description: 'Tidy Tabs: group ungrouped tabs in this window',
       },

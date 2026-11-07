@@ -2,6 +2,7 @@ import { openPalette } from '@/background/palette';
 import { hasRunningOperations, registerRouter } from '@/background/router';
 import { syncLinkPreviewScript } from '@/features/link-preview';
 import { syncRegisteredScript } from '@/shared/registered-scripts';
+import { closeLittleWindows, moveToMainWindow, openLittle, registerLittleWindows } from '@/features/little';
 import { registerTitleKeeper } from '@/features/tab-titles';
 import { registerTidyDownloads } from '@/features/tidy-downloads';
 import { currentUpdate, registerUpdateChecks, showBadge } from '@/features/updates';
@@ -13,6 +14,7 @@ export default defineBackground(() => {
   registerRouter();
   registerUpdateChecks(hasRunningOperations);
   registerTitleKeeper();
+  registerLittleWindows();
   void currentUpdate().then(showBadge);
   // Must be added synchronously at startup so Chrome routes downloads to it after a restart.
   registerTidyDownloads();
@@ -37,15 +39,28 @@ export default defineBackground(() => {
   // toolbar icon's menu, never to a message from a page.
   browser.contextMenus.removeAll(() => {
     browser.contextMenus.create({ id: 'open-sidebar', title: 'Open sidebar', contexts: ['action'] });
+    browser.contextMenus.create({ id: 'little-link', title: 'Open Link in Little Blimp', contexts: ['link'], targetUrlPatterns: ['http://*/*', 'https://*/*'] });
+    browser.contextMenus.create({ id: 'little-close', title: 'Close Little Blimp windows', contexts: ['action'] });
   });
   browser.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === 'open-sidebar' && tab?.windowId !== undefined) void openSidebar(tab.windowId);
+    if (info.menuItemId === 'little-link' && info.linkUrl) void openLittle(info.linkUrl).catch(() => undefined);
+    if (info.menuItemId === 'little-close') void closeLittleWindows();
   });
 
   browser.commands.onCommand.addListener(async (command, tab) => {
     if (command === 'open-sidebar') {
       // Call before any await: the user action only counts for the first synchronous step.
       if (tab?.windowId !== undefined) void openSidebar(tab.windowId);
+      return;
+    }
+    if (command === 'little-blimp') {
+      void openLittle();
+      return;
+    }
+    if (command === 'little-to-main') {
+      const current = tab ?? (await activeTab());
+      if (current?.id !== undefined) void moveToMainWindow(current.id).catch(() => undefined);
       return;
     }
     const target = tab ?? (await activeTab());
