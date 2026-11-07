@@ -30,4 +30,13 @@ export const ollama: ProviderAdapter = {
     if (typeof content !== 'string') throw new Error('No message in response');
     return content;
   },
+
+  modelsRequest(config) {
+    return { url: joinUrl(config.baseUrl, 'api/tags'), init: { method: 'GET' } };
+  },
+
+  parseModels(body) {
+    const models = (body as { models?: { name?: unknown }[] })?.models;
+    return Array.isArray(models) ? models.map((model) => model.name).filter((name): name is string => typeof name === 'string') : [];
+  },
 };

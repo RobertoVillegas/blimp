@@ -79,8 +79,8 @@ export const COMMANDS: PaletteCommand[] = [
   {
     id: 'settings',
     title: 'AI Settings',
-    description: 'Provider, model, API key and privacy options.',
-    keywords: 'provider key model options preferences configure',
+    description: 'Profiles, models, API keys and privacy options. Type "profile" to switch profiles here.',
+    keywords: 'provider key model options preferences configure profile',
     icon: '⚙',
   },
 ];

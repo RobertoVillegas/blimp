@@ -37,7 +37,13 @@ async function configureMockProvider(sw: Worker, origin: string, model = 'mock')
   await sw.evaluate(
     async ({ baseUrl, model }) => {
       await chrome.storage.local.set({
-        settings: { provider: 'custom', providers: { custom: { model, baseUrl } } },
+        settings: {
+          activeProfileId: 'local',
+          profiles: [
+            { id: 'local', preset: 'custom', name: 'Local mock', model, baseUrl },
+            { id: 'local-b', preset: 'custom', name: 'Second mock', model: 'mock-b', baseUrl },
+          ],
+        },
       });
     },
     { baseUrl: `${origin}/v1`, model },
@@ -98,7 +104,7 @@ test('palette opens, filters commands and tabs without AI, closes on Esc', async
 
   const input = await openPalette(sw, first!);
   await expect(first!.getByRole('option', { name: 'Tidy Tabs Command', exact: true })).toBeVisible();
-  await expect(first!.getByText('Custom (OpenAI-compatible) · mock')).toBeVisible();
+  await expect(first!.getByText('Local mock · mock')).toBeVisible();
 
   await input.fill('paris');
   await expect(first!.getByRole('option')).toHaveCount(1);
@@ -160,6 +166,24 @@ test('Tidy Tabs groups only on request, keeps pinned tabs and existing groups, a
   await pages[1]!.getByRole('button', { name: 'Undo Tidy Tabs' }).click();
   await expect(pages[1]!.getByText('Tidy Tabs undone')).toBeVisible();
   expect(await windowState(sw)).toEqual(before);
+});
+
+test('switching AI profile from the palette changes the model used', async ({ context, sw, server }) => {
+  await configureMockProvider(sw, server.origin);
+  const [page] = await openPages(context, server.origin, ['recipe-tacos']);
+
+  const input = await openPalette(sw, page!);
+  await input.fill('profile second');
+  await expect(page!.getByRole('option', { name: /Use Second mock/ })).toBeVisible();
+  await input.press('Enter');
+  await expect(page!.getByText('Second mock · mock-b')).toBeVisible();
+
+  await input.fill('summarize page');
+  await input.press('Enter');
+  await expect(page!.getByText(/MOCK SUMMARY/)).toBeVisible();
+  expect(server.requests.at(-1)!.body.model).toBe('mock-b');
+  const stored = await sw.evaluate(() => chrome.storage.local.get('settings'));
+  expect((stored.settings as { activeProfileId: string }).activeProfileId).toBe('local-b');
 });
 
 test('invalid model output changes nothing', async ({ context, sw, server }) => {

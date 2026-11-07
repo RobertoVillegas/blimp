@@ -1,12 +1,14 @@
 import { z } from 'zod';
 import type { SerializedError } from './errors';
-import type { AiStatus, PageAnswer, TabSummary, TidyResult, UndoResult } from './types';
+import type { AiStatus, PageAnswer, ProfileSummary, TabSummary, TidyResult, UndoResult } from './types';
 
 /** Requests the UI (content-script palette, popup palette, options page) may send to the background. */
 export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('tabs/list'), windowId: z.number().int().optional() }),
   z.object({ type: z.literal('tabs/activate'), tabId: z.number().int() }),
   z.object({ type: z.literal('ai/status') }),
+  z.object({ type: z.literal('profiles/list') }),
+  z.object({ type: z.literal('profiles/activate'), profileId: z.string() }),
   z.object({ type: z.literal('tidy/run'), opId: z.string(), windowId: z.number().int().optional() }),
   z.object({ type: z.literal('tidy/undo'), windowId: z.number().int().optional() }),
   z.object({ type: z.literal('tidy/can-undo') }),
@@ -27,6 +29,8 @@ export interface ResponseMap {
   'tabs/list': TabSummary[];
   'tabs/activate': null;
   'ai/status': AiStatus;
+  'profiles/list': ProfileSummary[];
+  'profiles/activate': AiStatus;
   'tidy/run': TidyResult;
   'tidy/undo': UndoResult;
   'tidy/can-undo': boolean;

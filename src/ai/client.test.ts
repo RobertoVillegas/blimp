@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { complete, completeJson, redactKeys } from './client';
+import { profileConfig } from './active';
+import { complete, completeJson, listModels, redactKeys } from './client';
 import { extractJson } from './json';
 import type { ProviderConfig } from './types';
 
@@ -18,7 +19,7 @@ function sent(fetchImpl: ReturnType<typeof mockFetch>) {
 describe('provider wire formats', () => {
   it('OpenAI: chat/completions with bearer key and max_completion_tokens', async () => {
     const fetchImpl = mockFetch(200, { choices: [{ message: { content: 'hello' } }] });
-    const config: ProviderConfig = { id: 'openai', model: 'm', baseUrl: 'https://api.openai.com/v1', apiKey: 'sk-test' };
+    const config: ProviderConfig = { adapter: 'openai', label: 'OpenAI', model: 'm', baseUrl: 'https://api.openai.com/v1', apiKey: 'sk-test', needsKey: true };
     expect(await complete(config, { ...request, json: true }, { fetchImpl })).toBe('hello');
     const { url, headers, body } = sent(fetchImpl);
     expect(url).toBe('https://api.openai.com/v1/chat/completions');
@@ -30,7 +31,7 @@ describe('provider wire formats', () => {
 
   it('custom endpoint: no key required, uses max_tokens', async () => {
     const fetchImpl = mockFetch(200, { choices: [{ message: { content: 'ok' } }] });
-    await complete({ id: 'custom', model: 'm', baseUrl: 'http://127.0.0.1:8080/v1/' }, request, { fetchImpl });
+    await complete({ adapter: 'openai-compatible', label: 'Local', model: 'm', baseUrl: 'http://127.0.0.1:8080/v1/' }, request, { fetchImpl });
     const { url, headers, body } = sent(fetchImpl);
     expect(url).toBe('http://127.0.0.1:8080/v1/chat/completions');
     expect(headers.authorization).toBeUndefined();
@@ -39,7 +40,7 @@ describe('provider wire formats', () => {
 
   it('Anthropic: messages API with system field and browser-access header', async () => {
     const fetchImpl = mockFetch(200, { content: [{ type: 'text', text: 'a' }, { type: 'text', text: 'b' }] });
-    const config: ProviderConfig = { id: 'anthropic', model: 'claude', baseUrl: 'https://api.anthropic.com/v1', apiKey: 'k' };
+    const config: ProviderConfig = { adapter: 'anthropic', label: 'Anthropic', model: 'claude', baseUrl: 'https://api.anthropic.com/v1', apiKey: 'k' };
     expect(await complete(config, request, { fetchImpl })).toBe('ab');
     const { url, headers, body } = sent(fetchImpl);
     expect(url).toBe('https://api.anthropic.com/v1/messages');
@@ -52,7 +53,8 @@ describe('provider wire formats', () => {
   it('Gemini: generateContent with key header, model role and JSON mime type', async () => {
     const fetchImpl = mockFetch(200, { candidates: [{ content: { parts: [{ text: '{"a":1}' }] } }] });
     const config: ProviderConfig = {
-      id: 'gemini',
+      adapter: 'gemini',
+      label: 'Gemini',
       model: 'gemini-x',
       baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
       apiKey: 'AIzaTest',
@@ -71,7 +73,7 @@ describe('provider wire formats', () => {
 
   it('Ollama: /api/chat, non-streaming, JSON format', async () => {
     const fetchImpl = mockFetch(200, { message: { content: 'local' } });
-    await complete({ id: 'ollama', model: 'llama', baseUrl: 'http://localhost:11434' }, { ...request, json: true }, { fetchImpl });
+    await complete({ adapter: 'ollama', label: 'Ollama', model: 'llama', baseUrl: 'http://localhost:11434' }, { ...request, json: true }, { fetchImpl });
     const { url, body } = sent(fetchImpl);
     expect(url).toBe('http://localhost:11434/api/chat');
     expect(body.stream).toBe(false);
@@ -80,8 +82,65 @@ describe('provider wire formats', () => {
   });
 });
 
+describe('presets', () => {
+  const ok = () => mockFetch(200, { choices: [{ message: { content: 'ok' } }] });
+  const profile = (preset: 'deepseek' | 'mistral' | 'opencode' | 'openrouter') =>
+    profileConfig({ id: preset, preset, name: preset, model: 'm', baseUrl: '' }, 'key');
+
+  it.each([
+    ['deepseek', 'https://api.deepseek.com/chat/completions'],
+    ['mistral', 'https://api.mistral.ai/v1/chat/completions'],
+    ['opencode', 'https://opencode.ai/zen/v1/chat/completions'],
+    ['openrouter', 'https://openrouter.ai/api/v1/chat/completions'],
+  ] as const)('%s speaks Chat Completions at %s with max_tokens', async (preset, expected) => {
+    const fetchImpl = ok();
+    await complete(profile(preset), request, { fetchImpl });
+    const { url, headers, body } = sent(fetchImpl);
+    expect(url).toBe(expected);
+    expect(headers.authorization).toBe('Bearer key');
+    expect(body.max_tokens).toBe(50);
+    expect(body.max_completion_tokens).toBeUndefined();
+  });
+
+  it('OpenRouter identifies the app', async () => {
+    const fetchImpl = ok();
+    await complete(profile('openrouter'), request, { fetchImpl });
+    expect(sent(fetchImpl).headers['x-title']).toBe('Helium Max');
+  });
+
+  it('keyed presets refuse to run without a key', async () => {
+    const fetchImpl = ok();
+    const config = profileConfig({ id: 'deepseek', preset: 'deepseek', name: 'DeepSeek', model: 'm', baseUrl: '' }, undefined);
+    await expect(complete(config, request, { fetchImpl })).rejects.toThrow('Add the API key for DeepSeek');
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});
+
+describe('listModels', () => {
+  it('reads OpenAI-style, Gemini and Ollama model lists', async () => {
+    const compatible = { adapter: 'openai-compatible' as const, label: 'M', model: '', baseUrl: 'https://api.mistral.ai/v1', apiKey: 'k' };
+    const openAiFetch = mockFetch(200, { data: [{ id: 'b-model' }, { id: 'a-model' }, { id: 'a-model' }] });
+    expect(await listModels(compatible, { fetchImpl: openAiFetch })).toEqual(['a-model', 'b-model']);
+    expect(openAiFetch.mock.calls[0]![0]).toBe('https://api.mistral.ai/v1/models');
+
+    const geminiFetch = mockFetch(200, {
+      models: [
+        { name: 'models/gemini-x', supportedGenerationMethods: ['generateContent'] },
+        { name: 'models/embedding', supportedGenerationMethods: ['embedContent'] },
+      ],
+    });
+    const gemini = { adapter: 'gemini' as const, label: 'G', model: '', baseUrl: 'https://g/v1beta', apiKey: 'k' };
+    expect(await listModels(gemini, { fetchImpl: geminiFetch })).toEqual(['gemini-x']);
+
+    const ollamaFetch = mockFetch(200, { models: [{ name: 'llama3.2:latest' }] });
+    const ollama = { adapter: 'ollama' as const, label: 'O', model: '', baseUrl: 'http://localhost:11434' };
+    expect(await listModels(ollama, { fetchImpl: ollamaFetch })).toEqual(['llama3.2:latest']);
+    expect(ollamaFetch.mock.calls[0]![0]).toBe('http://localhost:11434/api/tags');
+  });
+});
+
 describe('errors', () => {
-  const openai: ProviderConfig = { id: 'openai', model: 'm', baseUrl: 'https://api.openai.com/v1', apiKey: 'sk-x' };
+  const openai: ProviderConfig = { adapter: 'openai', label: 'OpenAI', model: 'm', baseUrl: 'https://api.openai.com/v1', apiKey: 'sk-x', needsKey: true };
 
   it('refuses to call a keyed provider without a key', async () => {
     const fetchImpl = mockFetch(200, {});

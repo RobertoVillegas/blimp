@@ -1,7 +1,6 @@
 import type { z } from 'zod';
-import type { ProviderId } from '@/shared/types';
+import type { AdapterKind } from '@/shared/types';
 import { UserFacingError } from '@/shared/errors';
-import { PROVIDERS } from './catalog';
 import { extractJson } from './json';
 import { anthropic } from './providers/anthropic';
 import { gemini } from './providers/gemini';
@@ -9,10 +8,9 @@ import { ollama } from './providers/ollama';
 import { openAiCompatible } from './providers/openai-compatible';
 import type { CompletionRequest, ProviderAdapter, ProviderConfig } from './types';
 
-const ADAPTERS: Record<ProviderId, ProviderAdapter> = {
+const ADAPTERS: Record<AdapterKind, ProviderAdapter> = {
   openai: openAiCompatible,
-  openrouter: openAiCompatible,
-  custom: openAiCompatible,
+  'openai-compatible': openAiCompatible,
   anthropic,
   gemini,
   ollama,
@@ -30,40 +28,53 @@ export async function complete(
   request: CompletionRequest,
   { timeoutMs = DEFAULT_TIMEOUT_MS, fetchImpl = fetch }: CompleteOptions = {},
 ): Promise<string> {
-  const info = PROVIDERS[config.id];
   if (!config.model) throw new UserFacingError('not-configured', 'Choose a model in AI Settings.');
+  const adapter = ADAPTERS[config.adapter];
+  const body = await send(config, adapter.buildRequest(config, request), request.signal, timeoutMs, fetchImpl);
+  try {
+    return adapter.parseResponse(body);
+  } catch {
+    throw new UserFacingError('invalid-output', `${config.label} returned no text. Check the model ID.`);
+  }
+}
+
+/** Model IDs the endpoint says this key can use. */
+export async function listModels(config: ProviderConfig, { fetchImpl = fetch }: CompleteOptions = {}): Promise<string[]> {
+  const adapter = ADAPTERS[config.adapter];
+  const body = await send(config, adapter.modelsRequest(config), undefined, 20_000, fetchImpl);
+  return [...new Set(adapter.parseModels(body))].sort();
+}
+
+async function send(
+  config: ProviderConfig,
+  { url, init }: { url: string; init: RequestInit },
+  cancel: AbortSignal | undefined,
+  timeoutMs: number,
+  fetchImpl: typeof fetch,
+): Promise<unknown> {
   if (!config.baseUrl) throw new UserFacingError('not-configured', 'Set a base URL in AI Settings.');
-  if (info.needsKey && !config.apiKey) {
-    throw new UserFacingError('not-configured', `Add your ${info.label} API key in AI Settings.`);
+  if (config.needsKey && !config.apiKey) {
+    throw new UserFacingError('not-configured', `Add the API key for ${config.label} in AI Settings.`);
   }
 
   const timeout = AbortSignal.timeout(timeoutMs);
-  const signal = request.signal ? AbortSignal.any([request.signal, timeout]) : timeout;
-  const { url, init } = ADAPTERS[config.id].buildRequest(config, request);
-
+  const signal = cancel ? AbortSignal.any([cancel, timeout]) : timeout;
   let response: Response;
   try {
     response = await fetchImpl(url, { ...init, signal, credentials: 'omit', redirect: 'error' });
-  } catch (error) {
-    if (request.signal?.aborted) throw new UserFacingError('cancelled', 'Cancelled.');
+  } catch {
+    if (cancel?.aborted) throw new UserFacingError('cancelled', 'Cancelled.');
     if (timeout.aborted) {
-      throw new UserFacingError('timeout', `${info.label} did not answer within ${timeoutMs / 1000}s.`);
+      throw new UserFacingError('timeout', `${config.label} did not answer within ${timeoutMs / 1000}s.`);
     }
-    throw new UserFacingError('network', networkMessage(config.id, info.label));
+    throw new UserFacingError('network', networkMessage(config));
   }
 
-  if (!response.ok) throw await httpError(response, info.label);
-
-  let body: unknown;
+  if (!response.ok) throw await httpError(response, config.label);
   try {
-    body = await response.json();
+    return await response.json();
   } catch {
-    throw new UserFacingError('invalid-output', `${info.label} returned a response that is not JSON.`);
-  }
-  try {
-    return ADAPTERS[config.id].parseResponse(body);
-  } catch {
-    throw new UserFacingError('invalid-output', `${info.label} returned no text. Check the model ID.`);
+    throw new UserFacingError('invalid-output', `${config.label} returned a response that is not JSON.`);
   }
 }
 
@@ -85,12 +96,11 @@ export async function completeJson<T>(
   return parsed.data;
 }
 
-function networkMessage(id: ProviderId, label: string): string {
-  if (id === 'ollama') {
+function networkMessage(config: ProviderConfig): string {
+  if (config.adapter === 'ollama') {
     return 'Could not reach Ollama. Make sure it is running and allows extension origins (OLLAMA_ORIGINS="chrome-extension://*").';
   }
-  if (id === 'custom') return 'Could not reach the custom endpoint. Check the base URL and that it allows CORS.';
-  return `Could not reach ${label}. Check your connection and that the API permission was granted.`;
+  return `Could not reach ${config.label}. Check the base URL, your connection, and that site access was granted in AI Settings.`;
 }
 
 async function httpError(response: Response, label: string): Promise<UserFacingError> {

@@ -7,6 +7,9 @@ const PROVIDER_ORIGINS = [
   'https://api.anthropic.com/*',
   'https://generativelanguage.googleapis.com/*',
   'https://openrouter.ai/*',
+  'https://api.deepseek.com/*',
+  'https://api.mistral.ai/*',
+  'https://opencode.ai/*',
 ];
 
 export default defineConfig({

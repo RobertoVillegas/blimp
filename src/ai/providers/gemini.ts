@@ -33,4 +33,20 @@ export const gemini: ProviderAdapter = {
     if (!Array.isArray(parts)) throw new Error('No candidates in response');
     return parts.map((part) => part.text ?? '').join('');
   },
+
+  modelsRequest(config) {
+    return {
+      url: joinUrl(config.baseUrl, 'models?pageSize=200'),
+      init: { method: 'GET', headers: { 'x-goog-api-key': config.apiKey ?? '' } },
+    };
+  },
+
+  parseModels(body) {
+    const models = (body as { models?: { name?: unknown; supportedGenerationMethods?: unknown }[] })?.models;
+    if (!Array.isArray(models)) return [];
+    return models
+      .filter((model) => Array.isArray(model.supportedGenerationMethods) && model.supportedGenerationMethods.includes('generateContent'))
+      .map((model) => (typeof model.name === 'string' ? model.name.replace(/^models\//, '') : ''))
+      .filter(Boolean);
+  },
 };

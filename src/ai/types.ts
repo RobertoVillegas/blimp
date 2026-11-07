@@ -1,4 +1,4 @@
-import type { ProviderId } from '@/shared/types';
+import type { AdapterKind } from '@/shared/types';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -16,26 +16,20 @@ export interface CompletionRequest {
 }
 
 export interface ProviderConfig {
-  id: ProviderId;
+  adapter: AdapterKind;
+  /** Human name used in errors, e.g. the profile name. */
+  label: string;
   model: string;
   baseUrl: string;
   apiKey?: string;
+  needsKey?: boolean;
+  headers?: Record<string, string>;
 }
 
-/** Wire format for one provider: build the HTTP request and read the text back out. */
+/** Wire format for one protocol: build HTTP requests and read results back out. */
 export interface ProviderAdapter {
   buildRequest(config: ProviderConfig, request: CompletionRequest): { url: string; init: RequestInit };
   parseResponse(body: unknown): string;
-}
-
-export interface ProviderInfo {
-  id: ProviderId;
-  label: string;
-  hosted: boolean;
-  needsKey: boolean;
-  /** Users may edit the base URL (proxies, Azure-style gateways, remote Ollama). */
-  editableBaseUrl: boolean;
-  defaultBaseUrl: string;
-  modelPlaceholder: string;
-  keyUrl?: string;
+  modelsRequest(config: ProviderConfig): { url: string; init: RequestInit };
+  parseModels(body: unknown): string[];
 }

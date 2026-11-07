@@ -42,7 +42,7 @@ export async function startFixtureServer() {
     const cors = {
       'access-control-allow-origin': '*',
       'access-control-allow-headers': 'content-type, authorization',
-      'access-control-allow-methods': 'POST, OPTIONS',
+      'access-control-allow-methods': 'GET, POST, OPTIONS',
     };
     if (req.method === 'OPTIONS') return void res.writeHead(204, cors).end();
 
@@ -51,6 +51,11 @@ export async function startFixtureServer() {
     if (req.method === 'GET' && PAGES[slug]) {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       return void res.end(articleHtml(slug));
+    }
+
+    if (req.method === 'GET' && url.pathname === '/v1/models') {
+      res.writeHead(200, { 'content-type': 'application/json', ...cors });
+      return void res.end(JSON.stringify({ data: [{ id: 'mock' }, { id: 'mock-b' }] }));
     }
 
     if (req.method === 'POST' && url.pathname === '/v1/chat/completions') {

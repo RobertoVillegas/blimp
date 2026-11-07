@@ -131,3 +131,70 @@ kbd {
   border: 1px solid var(--border);
   border-radius: 4px;
 }
+
+.profiles {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.profiles li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  cursor: pointer;
+}
+
+.profiles li + li {
+  border-top: 1px solid var(--border);
+}
+
+.profiles li[aria-selected='true'] {
+  background: rgb(128 128 128 / 0.14);
+}
+
+.profiles li:focus-visible {
+  outline: 2px solid Highlight;
+  outline-offset: -2px;
+}
+
+.profile-name {
+  font-weight: 500;
+}
+
+.profile-meta {
+  color: var(--muted);
+  font-size: 13px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ok);
+  border: 1px solid currentColor;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.actions {
+  flex-wrap: wrap;
+}

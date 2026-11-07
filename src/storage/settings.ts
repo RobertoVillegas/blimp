@@ -1,18 +1,21 @@
 import { z } from 'zod';
-import { PROVIDER_IDS, PROVIDERS } from '@/ai/catalog';
-import type { ProviderId } from '@/shared/types';
+import { PRESET_IDS, PRESETS, SEEDED_PRESETS } from '@/ai/presets';
+import type { PresetId } from '@/shared/types';
 
-const providerSettingsSchema = z.object({
+const profileSchema = z.object({
+  id: z.string().min(1).max(64),
+  preset: z.enum(PRESET_IDS as [PresetId, ...PresetId[]]),
+  name: z.string().trim().min(1).max(60),
   model: z.string().trim().max(200).default(''),
+  /** Empty means the preset's default base URL. */
   baseUrl: z.string().trim().max(500).default(''),
 });
 
+export type Profile = z.infer<typeof profileSchema>;
+
 export const settingsSchema = z.object({
-  provider: z.enum(PROVIDER_IDS as [ProviderId, ...ProviderId[]]).default('openai'),
-  providers: z
-    .record(z.string(), providerSettingsSchema)
-    .default({})
-    .transform((value) => value as Partial<Record<ProviderId, z.infer<typeof providerSettingsSchema>>>),
+  profiles: z.array(profileSchema).max(50),
+  activeProfileId: z.string(),
   temperature: z.number().min(0).max(2).default(0.2),
   maxOutputTokens: z.number().int().min(64).max(32_000).default(1200),
   /** Upper bound on page text sent per request (estimated tokens). */
@@ -24,20 +27,56 @@ export type Settings = z.infer<typeof settingsSchema>;
 
 const KEY = 'settings';
 
+export function newProfile(preset: PresetId, existing: Profile[] = []): Profile {
+  const base = PRESETS[preset].label;
+  const taken = new Set(existing.map((profile) => profile.name));
+  let name = base;
+  for (let n = 2; taken.has(name); n++) name = `${base} ${n}`;
+  const id = existing.some((profile) => profile.id === preset) ? `${preset}-${crypto.randomUUID().slice(0, 8)}` : preset;
+  return { id, preset, name, model: '', baseUrl: '' };
+}
+
+export function defaultSettings(): Settings {
+  const profiles: Profile[] = [];
+  for (const preset of SEEDED_PRESETS) profiles.push(newProfile(preset, profiles));
+  return settingsSchema.parse({ profiles, activeProfileId: profiles[0]!.id });
+}
+
+/** v0.1 stored one entry per provider; keys were saved under the provider id, which becomes the profile id. */
+function migrateV01(stored: unknown): unknown {
+  const old = stored as { provider?: PresetId; providers?: Record<string, { model?: string; baseUrl?: string }> } | undefined;
+  if (!old?.provider || !old.providers || 'profiles' in old) return stored;
+  const settings = defaultSettings();
+  for (const [preset, saved] of Object.entries(old.providers)) {
+    if (!PRESET_IDS.includes(preset as PresetId)) continue;
+    const existing = settings.profiles.find((profile) => profile.id === preset);
+    const profile = existing ?? newProfile(preset as PresetId, settings.profiles);
+    Object.assign(profile, { model: saved.model ?? '', baseUrl: saved.baseUrl ?? '' });
+    if (!existing) settings.profiles.push(profile);
+  }
+  if (settings.profiles.some((profile) => profile.id === old.provider)) settings.activeProfileId = old.provider;
+  return { ...old, profiles: settings.profiles, activeProfileId: settings.activeProfileId };
+}
+
 export async function loadSettings(): Promise<Settings> {
   const stored = await browser.storage.local.get(KEY);
-  const parsed = settingsSchema.safeParse(stored[KEY] ?? {});
-  return parsed.success ? parsed.data : settingsSchema.parse({});
+  const parsed = settingsSchema.safeParse(migrateV01(stored[KEY]));
+  if (!parsed.success || parsed.data.profiles.length === 0) return defaultSettings();
+  const settings = parsed.data;
+  if (!settings.profiles.some((profile) => profile.id === settings.activeProfileId)) {
+    settings.activeProfileId = settings.profiles[0]!.id;
+  }
+  return settings;
 }
 
 export async function saveSettings(settings: Settings): Promise<void> {
   await browser.storage.local.set({ [KEY]: settingsSchema.parse(settings) });
 }
 
-export function providerSettings(settings: Settings, id: ProviderId = settings.provider) {
-  const saved = settings.providers[id];
-  return {
-    model: saved?.model || '',
-    baseUrl: saved?.baseUrl || PROVIDERS[id].defaultBaseUrl,
-  };
+export function activeProfile(settings: Settings): Profile {
+  return settings.profiles.find((profile) => profile.id === settings.activeProfileId) ?? settings.profiles[0]!;
+}
+
+export function profileBaseUrl(profile: Profile): string {
+  return profile.baseUrl || PRESETS[profile.preset].defaultBaseUrl;
 }

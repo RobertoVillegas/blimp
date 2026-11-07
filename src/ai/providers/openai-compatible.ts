@@ -1,13 +1,15 @@
-import type { ProviderAdapter } from '../types';
+import type { ProviderAdapter, ProviderConfig } from '../types';
 import { joinUrl } from './http';
 
-/** OpenAI Chat Completions, also spoken by OpenRouter and most self-hosted gateways. */
+function headers(config: ProviderConfig): Record<string, string> {
+  const result: Record<string, string> = { 'content-type': 'application/json', ...config.headers };
+  if (config.apiKey) result.authorization = `Bearer ${config.apiKey}`;
+  return result;
+}
+
+/** OpenAI Chat Completions, also spoken by DeepSeek, Mistral, OpenCode Zen, OpenRouter and most gateways. */
 export const openAiCompatible: ProviderAdapter = {
   buildRequest(config, request) {
-    const headers: Record<string, string> = { 'content-type': 'application/json' };
-    if (config.apiKey) headers.authorization = `Bearer ${config.apiKey}`;
-    if (config.id === 'openrouter') headers['x-title'] = 'Helium Max';
-
     const body: Record<string, unknown> = {
       model: config.model,
       messages: [{ role: 'system', content: request.system }, ...request.messages],
@@ -15,13 +17,13 @@ export const openAiCompatible: ProviderAdapter = {
     if (request.temperature !== undefined) body.temperature = request.temperature;
     if (request.maxOutputTokens !== undefined) {
       // OpenAI's current models reject `max_tokens`; compatible servers mostly only know `max_tokens`.
-      body[config.id === 'openai' ? 'max_completion_tokens' : 'max_tokens'] = request.maxOutputTokens;
+      body[config.adapter === 'openai' ? 'max_completion_tokens' : 'max_tokens'] = request.maxOutputTokens;
     }
     if (request.json) body.response_format = { type: 'json_object' };
 
     return {
       url: joinUrl(config.baseUrl, 'chat/completions'),
-      init: { method: 'POST', headers, body: JSON.stringify(body) },
+      init: { method: 'POST', headers: headers(config), body: JSON.stringify(body) },
     };
   },
 
@@ -35,5 +37,14 @@ export const openAiCompatible: ProviderAdapter = {
         .join('');
     }
     throw new Error('No message content in response');
+  },
+
+  modelsRequest(config) {
+    return { url: joinUrl(config.baseUrl, 'models'), init: { method: 'GET', headers: headers(config) } };
+  },
+
+  parseModels(body) {
+    const data = (body as { data?: { id?: unknown }[] })?.data;
+    return Array.isArray(data) ? data.map((model) => model.id).filter((id): id is string => typeof id === 'string') : [];
   },
 };

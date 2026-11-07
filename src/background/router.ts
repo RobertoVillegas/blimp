@@ -2,6 +2,7 @@ import { aiStatus } from '@/ai/active';
 import { askPage, forgetPage } from '@/features/ask-page';
 import { canUndoTidy, tidyTabs, undoTidyTabs } from '@/features/tidy-tabs';
 import { chromeTabsPort } from '@/features/tidy-tabs/chrome-port';
+import { loadSettings, saveSettings } from '@/storage/settings';
 import { UserFacingError, serializeError } from '@/shared/errors';
 import { requestSchema, type Reply, type Request, type ResponseMap } from '@/shared/messages';
 import type { TabSummary } from '@/shared/types';
@@ -41,6 +42,25 @@ async function handle(
 
     case 'ai/status':
       return aiStatus();
+
+    case 'profiles/list': {
+      const settings = await loadSettings();
+      return settings.profiles.map((profile) => ({
+        id: profile.id,
+        name: profile.name,
+        model: profile.model,
+        active: profile.id === settings.activeProfileId,
+      }));
+    }
+
+    case 'profiles/activate': {
+      const settings = await loadSettings();
+      if (!settings.profiles.some((profile) => profile.id === request.profileId)) {
+        throw new UserFacingError('not-configured', 'That AI profile no longer exists.');
+      }
+      await saveSettings({ ...settings, activeProfileId: request.profileId });
+      return aiStatus();
+    }
 
     case 'tidy/run': {
       const windowId = await targetWindowId(request.windowId, sender);

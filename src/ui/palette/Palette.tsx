@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { send, type PaletteIntent } from '@/shared/messages';
-import type { AiStatus, PageAnswer, TabSummary, TidyResult, UndoResult } from '@/shared/types';
+import type { AiStatus, PageAnswer, ProfileSummary, TabSummary, TidyResult, UndoResult } from '@/shared/types';
 import { domainOf } from '@/shared/url';
 import { COMMANDS, matches, type CommandId, type PaletteCommand } from './commands';
 import { RichText } from './RichText';
@@ -13,7 +13,10 @@ export interface PaletteProps {
   onClose: () => void;
 }
 
-type Item = { kind: 'command'; command: PaletteCommand } | { kind: 'tab'; tab: TabSummary };
+type Item =
+  | { kind: 'command'; command: PaletteCommand }
+  | { kind: 'profile'; profile: ProfileSummary }
+  | { kind: 'tab'; tab: TabSummary };
 
 type View =
   | { name: 'list' }
@@ -29,6 +32,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
   const [query, setQuery] = useState('');
   const [tabs, setTabs] = useState<TabSummary[]>([]);
   const [status, setStatus] = useState<AiStatus>();
+  const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
   const [canUndo, setCanUndo] = useState(false);
   const [selected, setSelected] = useState(0);
   const [view, setView] = useState<View>({ name: 'list' });
@@ -40,6 +44,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
   const refresh = useCallback(() => {
     void send({ type: 'tabs/list', windowId }).then(setTabs).catch(() => setTabs([]));
     void send({ type: 'ai/status' }).then(setStatus).catch(() => undefined);
+    void send({ type: 'profiles/list' }).then(setProfiles).catch(() => setProfiles([]));
     void send({ type: 'tidy/can-undo' }).then(setCanUndo).catch(() => setCanUndo(false));
   }, [windowId]);
 
@@ -49,12 +54,18 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
     const commands = COMMANDS.filter((command) =>
       matches(query, command.title, command.keywords, command.description),
     ).map((command): Item => ({ kind: 'command', command }));
+    // Profiles only show up when asked for, so the default list stays commands + tabs.
+    const profileItems = query
+      ? profiles
+          .filter((profile) => matches(query, 'profile switch use model ai', profile.name, profile.model))
+          .map((profile): Item => ({ kind: 'profile', profile }))
+      : [];
     const tabItems = tabs
       .filter((tab) => (query ? matches(query, tab.title, tab.url) : !tab.active))
       .slice(0, query ? 30 : 6)
       .map((tab): Item => ({ kind: 'tab', tab }));
-    return [...commands, ...tabItems];
-  }, [query, tabs]);
+    return [...commands, ...profileItems, ...tabItems];
+  }, [profiles, query, tabs]);
 
   useEffect(() => setSelected(0), [query]);
 
@@ -139,6 +150,16 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
   const activate = (item: Item | undefined) => {
     if (!item) return;
     if (item.kind === 'command') return runCommand(item.command);
+    if (item.kind === 'profile') {
+      void send({ type: 'profiles/activate', profileId: item.profile.id })
+        .then((next) => {
+          setStatus(next);
+          setQuery('');
+          refresh();
+        })
+        .catch((error: unknown) => fail(error));
+      return;
+    }
     void send({ type: 'tabs/activate', tabId: item.tab.id }).then(onClose);
   };
 
@@ -196,7 +217,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
             {items.length === 0 && <li className="hm-empty">No commands or tabs match “{query}”.</li>}
             {items.map((item, index) => (
               <ItemRow
-                key={item.kind === 'command' ? item.command.id : `tab-${item.tab.id}`}
+                key={itemKey(item)}
                 id={optionId(index)}
                 item={item}
                 selected={index === selected}
@@ -329,6 +350,12 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
   );
 }
 
+function itemKey(item: Item): string {
+  if (item.kind === 'command') return item.command.id;
+  if (item.kind === 'profile') return `profile-${item.profile.id}`;
+  return `tab-${item.tab.id}`;
+}
+
 function ItemRow({
   id,
   item,
@@ -360,7 +387,15 @@ function ItemRow({
       onMouseMove={onHover}
       onClick={onClick}
     >
-      {item.kind === 'command' ? (
+      {item.kind === 'profile' ? (
+        <>
+          <span className="hm-icon" aria-hidden="true">
+            {item.profile.active ? '●' : '○'}
+          </span>
+          <span className="hm-item-title">Use {item.profile.name}</span>
+          <span className="hm-item-hint">{item.profile.active ? 'Active profile' : item.profile.model || 'No model set'}</span>
+        </>
+      ) : item.kind === 'command' ? (
         <>
           <span className="hm-icon" aria-hidden="true">
             {item.command.icon}
@@ -386,8 +421,8 @@ function Footer({ status, command }: { status?: AiStatus; command?: PaletteComma
   if (command?.sends && status) {
     note = status.configured
       ? status.hosted
-        ? `Sends ${command.sends} to ${status.providerLabel}.`
-        : `Uses ${status.providerLabel}; ${command.sends} stay on this device.`
+        ? `Sends ${command.sends} to ${status.profileName}.`
+        : `Uses ${status.profileName}; ${command.sends} stay on this device.`
       : `${status.problem} Enter opens AI Settings.`;
   }
   return (
@@ -395,7 +430,7 @@ function Footer({ status, command }: { status?: AiStatus; command?: PaletteComma
       <span className="hm-note">{note}</span>
       {status && (
         <span className="hm-provider" title={status.configured ? undefined : status.problem}>
-          {status.configured ? `${status.providerLabel} · ${status.model}` : 'AI not set up'}
+          {status.configured ? `${status.profileName} · ${status.model}` : `${status.profileName}: not set up`}
         </span>
       )}
     </footer>

@@ -1,5 +1,3 @@
-import type { ProviderId } from '@/shared/types';
-
 /**
  * API keys live only in extension contexts:
  * - session: `storage.session`, restricted to trusted contexts and cleared when the browser quits.
@@ -9,13 +7,13 @@ import type { ProviderId } from '@/shared/types';
 const DB_NAME = 'helium-max-secrets';
 const STORE = 'keys';
 
-const sessionKey = (id: ProviderId) => `secret:${id}`;
+const sessionKey = (profileId: string) => `secret:${profileId}`;
 
 export async function restrictSessionStorage(): Promise<void> {
   await browser.storage.session.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' });
 }
 
-export async function getApiKey(id: ProviderId): Promise<string | undefined> {
+export async function getApiKey(id: string): Promise<string | undefined> {
   const session = await browser.storage.session.get(sessionKey(id));
   const value = session[sessionKey(id)];
   if (typeof value === 'string' && value) return value;
@@ -23,7 +21,7 @@ export async function getApiKey(id: ProviderId): Promise<string | undefined> {
 }
 
 export async function setApiKey(
-  id: ProviderId,
+  id: string,
   key: string,
   storage: 'session' | 'persistent',
 ): Promise<void> {
@@ -33,7 +31,7 @@ export async function setApiKey(
   else await browser.storage.session.set({ [sessionKey(id)]: key });
 }
 
-async function clearApiKey(id: ProviderId): Promise<void> {
+export async function clearApiKey(id: string): Promise<void> {
   await browser.storage.session.remove(sessionKey(id));
   await idbDelete(id);
 }
@@ -66,15 +64,15 @@ function tx<T>(
   });
 }
 
-async function idbGet(id: ProviderId): Promise<string | undefined> {
+async function idbGet(id: string): Promise<string | undefined> {
   const value = await tx(await openDb(), 'readonly', (store) => store.get(id));
   return typeof value === 'string' && value ? value : undefined;
 }
 
-async function idbSet(id: ProviderId, key: string): Promise<void> {
+async function idbSet(id: string, key: string): Promise<void> {
   await tx(await openDb(), 'readwrite', (store) => store.put(key, id));
 }
 
-async function idbDelete(id: ProviderId): Promise<void> {
+async function idbDelete(id: string): Promise<void> {
   await tx(await openDb(), 'readwrite', (store) => store.delete(id));
 }

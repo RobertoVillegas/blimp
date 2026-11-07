@@ -24,11 +24,30 @@ export interface TabSummary {
   groupId: number;
 }
 
-export type ProviderId = 'openai' | 'anthropic' | 'gemini' | 'openrouter' | 'ollama' | 'custom';
+export type PresetId =
+  | 'openai'
+  | 'anthropic'
+  | 'gemini'
+  | 'deepseek'
+  | 'mistral'
+  | 'opencode'
+  | 'openrouter'
+  | 'ollama'
+  | 'custom';
+
+/** Wire protocol a profile speaks. */
+export type AdapterKind = 'openai' | 'openai-compatible' | 'anthropic' | 'gemini' | 'ollama';
+
+export interface ProfileSummary {
+  id: string;
+  name: string;
+  model: string;
+  active: boolean;
+}
 
 export interface AiStatus {
-  provider: ProviderId;
-  providerLabel: string;
+  profileId: string;
+  profileName: string;
   model: string;
   configured: boolean;
   /** Hosted providers receive page text when a feature is invoked; local ones don't leave the machine. */
