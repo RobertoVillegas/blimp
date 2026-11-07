@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b2d42"/>
+      <stop offset="1" stop-color="#16171f"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#bg)"/>
+  <rect x="4.5" y="4.5" width="119" height="119" rx="27.5" fill="none" stroke="#ffffff" stroke-opacity="0.12"/>
+  <!-- three tab groups being tidied: stacked bars -->
+  <rect x="28" y="34" width="44" height="14" rx="7" fill="#7aa2ff"/>
+  <rect x="28" y="57" width="60" height="14" rx="7" fill="#f2b84b"/>
+  <rect x="28" y="80" width="32" height="14" rx="7" fill="#5ccf9a"/>
+  <!-- spark -->
+  <path d="M96 22 l4.2 11.8 L112 38 l-11.8 4.2 L96 54 l-4.2-11.8 L80 38 l11.8-4.2 z" fill="#ffffff"/>
+</svg>

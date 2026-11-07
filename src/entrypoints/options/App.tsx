@@ -245,7 +245,7 @@ export function App() {
             />
             {preset.keyUrl && (
               <a href={preset.keyUrl} target="_blank" rel="noreferrer">
-                Get a {preset.label} key
+                Get an API key from {preset.label}
               </a>
             )}
           </label>

@@ -250,12 +250,12 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
               <li key={group.title}>
                 <span className={`hm-dot hm-color-${group.color}`} aria-hidden="true" />
                 {group.title}
-                <span className="hm-muted"> · {group.tabCount} tabs</span>
+                <span className="hm-muted"> · {tabsLabel(group.tabCount)}</span>
               </li>
             ))}
           </ul>
           <p className="hm-muted">
-            {view.result.ungroupedCount} tabs left ungrouped
+            {view.result.ungroupedCount ? `${tabsLabel(view.result.ungroupedCount)} left ungrouped` : 'Every tab found a group'}
             {view.result.skippedCount ? `, ${view.result.skippedCount} skipped because they changed meanwhile` : ''}.
           </p>
           <button className="hm-button" autoFocus onClick={() => void runUndo()}>
@@ -266,7 +266,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
 
       {view.name === 'undo-done' && (
         <ResultPanel title="Tidy Tabs undone" onBack={backToList}>
-          <p>{view.result.restoredCount} tabs restored.</p>
+          <p>{tabsLabel(view.result.restoredCount)} restored.</p>
           {view.result.conflicts.map((conflict) => (
             <p key={conflict} className="hm-warning">
               {conflict}
@@ -348,6 +348,10 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
       )}
     </div>
   );
+}
+
+function tabsLabel(count: number): string {
+  return `${count} ${count === 1 ? 'tab' : 'tabs'}`;
 }
 
 function itemKey(item: Item): string {

@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "test:e2e": "pnpm build:e2e && playwright test",
     "check": "pnpm typecheck && pnpm test && pnpm build",
-    "postinstall": "wxt prepare"
+    "postinstall": "wxt prepare",
+    "screenshots": "pnpm build:e2e && SCREENSHOTS=1 playwright test e2e/screenshots"
   },
   "dependencies": {
     "react": "^19.2.4",
