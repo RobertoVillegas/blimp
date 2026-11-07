@@ -72,6 +72,65 @@ export interface UndoResult {
   conflicts: string[];
 }
 
+export interface CrossTabCandidate {
+  tabId: number;
+  title: string;
+  url: string;
+  favIconUrl?: string;
+  active: boolean;
+  /** Why the tab can't be read; absent when it can. */
+  blocked?: string;
+}
+
+export interface CrossTabSource {
+  n: number;
+  tabId: number;
+  title: string;
+  url: string;
+  truncated: boolean;
+}
+
+export interface CrossTabSkipped {
+  tabId: number;
+  title: string;
+  url: string;
+  reason: string;
+}
+
+export interface CrossTabResult {
+  text: string;
+  sources: CrossTabSource[];
+  skipped: CrossTabSkipped[];
+  /** Number of model calls; >1 means the tabs were summarized in batches first. */
+  calls: number;
+}
+
+export interface LinkPreview {
+  url: string;
+  title: string;
+  domain: string;
+  summary?: string;
+  /** Set instead of `summary` when the page could not be summarized honestly. */
+  unavailable?: string;
+}
+
+export interface SearchCandidate {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
+export interface InstantLinksResult {
+  configured: boolean;
+  providerLabel: string;
+  results: SearchCandidate[];
+  /** Index into `results` of the recommended link, if any. */
+  best: number | null;
+  /** One line from the model on why `best` fits, or why ranking was skipped. */
+  note?: string;
+  rankedBy?: string;
+}
+
 export interface PageAnswer {
   text: string;
   title: string;

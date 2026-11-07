@@ -1,11 +1,15 @@
 import { aiStatus } from '@/ai/active';
 import { askPage, forgetPage } from '@/features/ask-page';
+import { crossTabCandidates, missingOrigins, runCrossTab } from '@/features/cross-tab';
+import { browserSearch, instantSearch, openResult } from '@/features/instant-links';
+import { finishPreview, startPreview } from '@/features/link-preview';
 import { canUndoTidy, tidyTabs, undoTidyTabs } from '@/features/tidy-tabs';
 import { chromeTabsPort } from '@/features/tidy-tabs/chrome-port';
 import { loadSettings, saveSettings } from '@/storage/settings';
 import { UserFacingError, serializeError } from '@/shared/errors';
 import { requestSchema, type Reply, type Request, type ResponseMap } from '@/shared/messages';
 import type { TabSummary } from '@/shared/types';
+import { originPattern } from '@/shared/url';
 
 const operations = new Map<string, AbortController>();
 
@@ -80,6 +84,49 @@ async function handle(
 
     case 'page/forget':
       await forgetPage(targetTabId(request.tabId, sender));
+      return null;
+
+    case 'cross/candidates':
+      return crossTabCandidates(await targetWindowId(request.windowId, sender));
+
+    case 'cross/missing-origins':
+      return missingOrigins(request.tabIds, sender.tab?.id ?? request.tabId);
+
+    case 'cross/run': {
+      const windowId = await targetWindowId(request.windowId, sender);
+      return withOperation(request.opId, (signal) =>
+        runCrossTab({ windowId, tabIds: request.tabIds, question: request.question, signal }),
+      );
+    }
+
+    case 'permissions/open-grant': {
+      // Content scripts can't show permission prompts, so a small extension window asks instead.
+      const origins = request.origins.filter((origin) => originPattern(origin.replace(/\*$/, '')) === origin);
+      if (origins.length === 0) throw new UserFacingError('permission', 'Nothing to grant.');
+      await browser.windows.create({
+        url: browser.runtime.getURL(`/grant.html?${new URLSearchParams({ origins: origins.join(' ') })}`),
+        type: 'popup',
+        width: 440,
+        height: 420,
+      });
+      return null;
+    }
+
+    case 'preview/start':
+      return withOperation(request.opId, (signal) => startPreview(request.url, signal));
+
+    case 'preview/finish':
+      return withOperation(request.opId, (signal) => finishPreview(request.page, signal));
+
+    case 'instant/search':
+      return withOperation(request.opId, (signal) => instantSearch(request.query, signal));
+
+    case 'instant/open':
+      await openResult(request.url, sender.tab?.id ?? request.tabId);
+      return null;
+
+    case 'instant/web-search':
+      await browserSearch(request.query);
       return null;
 
     case 'op/cancel':

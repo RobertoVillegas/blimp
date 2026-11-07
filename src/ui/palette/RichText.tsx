@@ -1,8 +1,11 @@
+import type { ReactNode } from 'react';
+
 /**
  * Renders model output as text only: paragraphs and "- " bullets. No HTML, links or markdown
  * are interpreted, so page-derived or model-derived content cannot inject markup.
+ * `inline` may turn parts of each line into elements (citations), still from plain text.
  */
-export function RichText({ text }: { text: string }) {
+export function RichText({ text, inline = (line) => line }: { text: string; inline?: (line: string) => ReactNode }) {
   const blocks: { type: 'p' | 'ul'; lines: string[] }[] = [];
   for (const raw of text.split('\n')) {
     const line = raw.trim();
@@ -30,11 +33,11 @@ export function RichText({ text }: { text: string }) {
           block.type === 'ul' ? (
             <ul key={index}>
               {block.lines.map((line, i) => (
-                <li key={i}>{stripEmphasis(line)}</li>
+                <li key={i}>{inline(stripEmphasis(line))}</li>
               ))}
             </ul>
           ) : (
-            <p key={index}>{stripEmphasis(block.lines.join(' '))}</p>
+            <p key={index}>{inline(stripEmphasis(block.lines.join(' ')))}</p>
           ),
         )}
     </div>

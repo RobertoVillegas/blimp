@@ -58,7 +58,7 @@ export const COMMANDS: PaletteCommand[] = [
     description: 'One synthesis across the tabs in this window, with sources.',
     keywords: 'cross research synthesis',
     icon: '⧉',
-    milestone: 'M2',
+    sends: 'the text of the tabs you pick',
   },
   {
     id: 'ask-tabs',
@@ -66,15 +66,14 @@ export const COMMANDS: PaletteCommand[] = [
     description: 'Ask a question answered from several tabs.',
     keywords: 'cross research question',
     icon: '⁇',
-    milestone: 'M2',
+    sends: 'the text of the tabs you pick and your question',
   },
   {
     id: 'instant-links',
     title: 'Instant Links',
-    description: 'Find and open the best result for a request.',
-    keywords: 'search navigate open find go',
+    description: 'Find and open the best result for a request, from real search results.',
+    keywords: 'search navigate open find go web',
     icon: '↗',
-    milestone: 'M3',
   },
   {
     id: 'settings',

@@ -198,3 +198,11 @@ kbd {
 .actions {
   flex-wrap: wrap;
 }
+
+main.grant {
+  padding: 24px;
+}
+
+main.grant h1 {
+  font-size: 18px;
+}

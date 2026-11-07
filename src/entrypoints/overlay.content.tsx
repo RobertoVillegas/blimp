@@ -69,6 +69,12 @@ export default defineContentScript({
       window,
       'keydown',
       (event) => {
+        // Esc closes the palette even when focus has drifted back to the page.
+        if (event.key === 'Escape' && ui && !event.composedPath().includes(ui.shadowHost)) {
+          event.preventDefault();
+          close();
+          return;
+        }
         if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k') {
           event.preventDefault();
           event.stopPropagation();

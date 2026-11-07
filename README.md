@@ -6,7 +6,7 @@
 
 <p align="center">
   The Arc Max features I missed, rebuilt as one extension for <a href="https://helium.computer/">Helium</a>.<br>
-  ⌘K palette · Tidy Tabs · ask the page you're reading · your own AI key
+  ⌘K palette · Tidy Tabs · ask a page or a whole window of tabs · Shift-hover previews · your own AI key
 </p>
 
 <p align="center">
@@ -61,6 +61,46 @@ It only reads text you can see in the article. It skips menus, footers, hidden e
 
 <br clear="right">
 
+### Ask across tabs
+
+<img src="docs/images/cross-answer.png" width="520" align="right" alt="An answer to 'Is my PHP 8.2 server affected?' built from three tabs, with numbered citation chips after each claim and a Sources list">
+
+**Summarize Tabs** and **Ask Across Tabs** work over several tabs at once. You pick the tabs first; nothing is read until you press the button. The answer puts a numbered chip after each claim, and clicking a number takes you to that tab.
+
+Tabs that can't be read are listed under **Skipped** with the reason: browser pages, sleeping tabs (Helium Max won't reload them), sites you haven't given access to. When there's more text than fits in one request, it summarizes in batches first and then combines them, with a cap so a big window can't run up your bill.
+
+<details>
+<summary>Picking the tabs</summary>
+<br>
+<img src="docs/images/cross-select.png" width="520" alt="Ask across tabs: a question field and a checklist of open tabs with three PHP tabs selected">
+</details>
+
+<br clear="right">
+
+### Shift-hover link previews
+
+<img src="docs/images/link-preview.png" width="520" align="right" alt="A preview card above a link, with the page title and a three-sentence summary of the linked page">
+
+Hold Shift over a link and a card tells you what's on the other side, without opening a tab. This is off until you turn it on in Settings, because it needs access to the sites you visit.
+
+The linked page is downloaded without your cookies, so anything behind a sign-in shows as unavailable instead of a made-up summary. Hovering without Shift sends nothing, and holding Shift while you type in a field doesn't trigger it either.
+
+<br clear="right">
+
+### Instant Links
+
+<img src="docs/images/instant-links.png" width="520" align="right" alt="Search results for 'download latest php' with the php.net downloads page marked Best match and a one-line reason">
+
+Type what you want, like "download latest php", then pick **Instant Links** (or the "Instant Links: …" row at the bottom of the palette). The results come from a real search engine, [Brave Search API](https://brave.com/search/api/) or your own [SearXNG](https://docs.searxng.org/), and the AI only picks the best match. Every URL is shown before you open it, and the extension refuses to open anything that wasn't in the results.
+
+With no search provider set up, it hands the query to your browser's normal search engine instead of guessing a URL.
+
+<br clear="right">
+
+### Tidy Downloads
+
+Off by default. When it's on, each download gets a clearer name before it's saved: `inv_8812.pdf` becomes `Acme invoice 8812.pdf`. The extension never changes, the file's contents are never read, and if the AI takes more than 4 seconds the browser's own name is used. Files you already downloaded are left alone.
+
 ### AI profiles
 
 <img src="docs/images/profiles-palette.png" width="520" align="right" alt="Typing 'profile' in the palette lists OpenCode Go (active), DeepSeek, Mistral – DeepSeek and Anthropic">
@@ -83,6 +123,7 @@ You don't need Node to try it.
    - **Save and use**. Helium asks to let the extension reach that provider's API; allow it.
    - **Test connection**. You should get "Connected".
 5. Open any article and press ⌘K.
+6. Optional, further down in Settings: turn on **Link previews** and **Tidy Downloads**, and set up a search provider for **Instant Links**.
 
 <details>
 <summary>What Settings looks like</summary>
@@ -128,9 +169,15 @@ Change them, or bind Tidy Tabs to its own shortcut, at `chrome://extensions/shor
 | Searching in the palette | Nothing |
 | Tidy Tabs | Titles and URLs of the ungrouped, unpinned tabs in the window |
 | Summarize Page, Ask Page | Visible text of the current page, and your questions |
+| Summarize Tabs, Ask Across Tabs | Visible text of the tabs you tick, and your question |
+| Shift-hover a link (if turned on) | Text of the linked page, downloaded without your cookies |
+| Instant Links | Your query goes to the search provider; its results and your query go to the AI |
+| A download starts (if Tidy Downloads is on) | Filename, file type, the address without query strings, and the page title |
 | Just browsing | Nothing |
 
-The palette footer tells you which provider a command will use before you run it. Helium Max asks for no site access when you install it. The palette gets into a page only after you press the shortcut or the toolbar button, and the extension asks for an API origin only when you save a profile that uses it.
+The palette footer tells you which provider a command will use before you run it. Helium Max asks for no site access when you install it. The palette gets into a page only after you press the shortcut or the toolbar button. Everything else is asked for when you use it: an API origin when you save a profile, a site when you include one of its tabs, all sites only if you turn on link previews, and the downloads permission only for Tidy Downloads.
+
+Previews never fetch local addresses (`localhost`, `192.168.x.x`, `*.local`, Tailscale's `100.64.0.0/10` and so on), so a webpage can't use the extension to poke at your network.
 
 ## Status
 
@@ -142,10 +189,10 @@ This is an early build. Everything below is tested in Chromium; **I haven't run 
 | ✅ | Tidy Tabs with Undo | M1 |
 | ✅ | AI profiles (bring your own key) | M1 |
 | ✅ | Summarize and Ask Page | M1 |
-| ⏳ | Shift-hover link previews | M2 |
-| ⏳ | Summarize and ask across tabs, with sources | M2 |
-| ⏳ | Instant Links (search results you can open in one step) | M3 |
-| ⏳ | Tidy Downloads (better filenames, opt-in) | M3 |
+| ✅ | Shift-hover link previews | M2 |
+| ✅ | Summarize and ask across tabs, with sources | M2 |
+| ✅ | Instant Links (search results you can open in one step) | M3 |
+| ✅ | Tidy Downloads (better filenames, opt-in) | M3 |
 
 [Jev](docs/jev.md), TypeSafe's decision model, was looked at and parked for now.
 
@@ -166,14 +213,18 @@ Built with [WXT](https://wxt.dev), React and TypeScript. The background service 
 
 ```text
 src/
-  entrypoints/    background worker, overlay content script, palette popup, settings page
-  background/     message router, palette opener (overlay or popup)
+  entrypoints/        background worker, palette overlay, hover script, palette popup, settings, grant page
+  background/         message router, palette opener (overlay or popup)
   features/
-    tidy-tabs/    prompt, plan validation, apply, snapshot and undo
-    ask-page/     in-page text extraction, grounded Q&A
-  ai/             provider presets, wire adapters, model lists, errors
-  storage/        settings and profiles, per-profile keys
-  ui/palette/     the palette, shared by the overlay and the popup
-  shared/         message contracts, types, URL guards
-e2e/              Playwright tests and the README screenshot script
+    tidy-tabs/        prompt, plan validation, apply, snapshot and undo
+    ask-page/         in-page text extraction, grounded Q&A
+    cross-tab/        tab picking, batching, cited synthesis
+    link-preview/     private-network guard, capped fetch, cache, hover script registration
+    instant-links/    Brave and SearXNG adapters, ranking, open-only-real-results
+    tidy-downloads/   safe filenames, onDeterminingFilename with a 4 s deadline
+  ai/                 provider presets, wire adapters, model lists, errors
+  storage/            settings and profiles, per-profile keys
+  ui/palette/         the palette, shared by the overlay and the popup
+  shared/             message contracts, types, URL guards, citations
+e2e/                  Playwright tests and the README screenshot script
 ```

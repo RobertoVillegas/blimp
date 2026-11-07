@@ -4,6 +4,7 @@ import { complete, listModels } from '@/ai/client';
 import { PRESET_IDS, PRESETS, isHostedEndpoint } from '@/ai/presets';
 import type { PresetId } from '@/shared/types';
 import { originPattern } from '@/shared/url';
+import { FeatureSettings } from './FeatureSettings';
 import { clearAllSecrets, clearApiKey, getApiKey, setApiKey } from '@/storage/secrets';
 import {
   loadSettings,
@@ -299,6 +300,8 @@ export function App() {
         )}
       </section>
 
+      <FeatureSettings settings={settings} persist={persist} />
+
       <section aria-labelledby="keys-heading">
         <h2 id="keys-heading">API keys</h2>
         <fieldset>
@@ -379,7 +382,8 @@ export function App() {
         <h2 id="privacy-heading">Privacy</h2>
         <ul>
           <li>Tidy Tabs only runs when you ask. It names groups, never individual tabs, and never closes tabs.</li>
-          <li>Page text is read only when you run Summarize or Ask Page, and only from the page you're on.</li>
+          <li>Page text is read only when you run a page or tabs command, and only from the pages you chose.</li>
+          <li>Link previews and Tidy Downloads are off until you turn them on above.</li>
           <li>Conversations and the undo snapshot live in memory for this browser session and are not saved to disk.</li>
           <li>Helium Max asks for site access only for the providers you configure.</li>
         </ul>

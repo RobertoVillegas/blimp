@@ -10,6 +10,7 @@ const PROVIDER_ORIGINS = [
   'https://api.deepseek.com/*',
   'https://api.mistral.ai/*',
   'https://opencode.ai/*',
+  'https://api.search.brave.com/*',
 ];
 
 export default defineConfig({
@@ -20,7 +21,8 @@ export default defineConfig({
     description:
       'Local-first, bring-your-own-key AI for Helium: command palette, Tidy Tabs, page Q&A and more.',
     minimum_chrome_version: '120',
-    permissions: ['activeTab', 'scripting', 'storage', 'tabs', 'tabGroups'],
+    permissions: ['activeTab', 'scripting', 'search', 'storage', 'tabs', 'tabGroups'],
+    optional_permissions: ['downloads'],
     optional_host_permissions: [
       ...PROVIDER_ORIGINS,
       'http://localhost/*',
@@ -52,6 +54,8 @@ export default defineConfig({
     // runtime content script's `matches` into install-time access to every site.
     'build:manifestGenerated': (wxt, manifest) => {
       manifest.host_permissions = wxt.config.mode === 'e2e' ? ['http://127.0.0.1/*'] : [];
+      // e2e can't click permission prompts, so Tidy Downloads' optional permission is granted up front.
+      if (wxt.config.mode === 'e2e') manifest.permissions = [...(manifest.permissions ?? []), 'downloads'];
     },
   },
 });

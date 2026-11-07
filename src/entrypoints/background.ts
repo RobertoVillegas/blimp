@@ -1,10 +1,25 @@
 import { openPalette } from '@/background/palette';
 import { registerRouter } from '@/background/router';
+import { syncLinkPreviewScript } from '@/features/link-preview';
+import { registerTidyDownloads } from '@/features/tidy-downloads';
+import { loadSettings } from '@/storage/settings';
 import { restrictSessionStorage } from '@/storage/secrets';
 
 export default defineBackground(() => {
   void restrictSessionStorage();
   registerRouter();
+  // Must be added synchronously at startup so Chrome routes downloads to it after a restart.
+  registerTidyDownloads();
+  browser.permissions.onAdded.addListener(({ permissions }) => {
+    if (permissions?.includes('downloads')) registerTidyDownloads();
+  });
+
+  // Settings are the source of truth for the hover script; Settings and tests just write storage.
+  const syncPreviews = async () => syncLinkPreviewScript((await loadSettings()).linkPreviews);
+  void syncPreviews();
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.settings) void syncPreviews();
+  });
 
   browser.action.onClicked.addListener((tab) => void openPalette(tab));
 

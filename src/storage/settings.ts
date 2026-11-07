@@ -21,6 +21,18 @@ export const settingsSchema = z.object({
   /** Upper bound on page text sent per request (estimated tokens). */
   maxInputTokens: z.number().int().min(1000).max(200_000).default(12_000),
   keyStorage: z.enum(['session', 'persistent']).default('session'),
+  /** F05: Shift-hover previews. Turning it on requests http(s) site access. */
+  linkPreviews: z.boolean().default(false),
+  /** F07: where Instant Links gets real candidate URLs. */
+  search: z
+    .object({
+      provider: z.enum(['none', 'brave', 'searxng']).default('none'),
+      /** SearXNG instance URL; unused for Brave. */
+      baseUrl: z.string().trim().max(500).default(''),
+    })
+    .default({ provider: 'none', baseUrl: '' }),
+  /** F08: AI filename suggestions. Turning it on requests the downloads permission. */
+  tidyDownloads: z.boolean().default(false),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;

@@ -26,7 +26,11 @@ Results from the 2026-11-06 spike. The extension was exercised in **Playwright C
 | Undo restores exact order, keeps pinned tabs and user groups | ✅ e2e + unit | ☐ |
 | `storage.session` blocked from content scripts | ✅ e2e | ☐ |
 | Provider calls from the service worker | ✅ against the local mock only | ☐ one real call per hosted provider; Ollama with `OLLAMA_ORIGINS` |
-| `downloads.onDeterminingFilename` | Not started (M3) | ☐ |
+| Cross-tab reading via `scripting.executeScript` + per-site optional host permissions | ✅ e2e (grant prompt itself not automatable) | ☐ check the grant window flow from the overlay |
+| `scripting.registerContentScripts` for the hover script, injected only where access is granted | ✅ e2e | ☐ |
+| Shift-hover preview: cookie-less fetch, private-network guard, sign-in detection | ✅ e2e + unit | ☐ try a few real sites |
+| `search.query` fallback for Instant Links | ✅ e2e (button shown; opening the engine not asserted) | ☐ check it uses Helium's default engine |
+| Optional `downloads` permission + `onDeterminingFilename`, one `suggest()`, 4 s fallback | ✅ e2e with real files on disk (Playwright's download interception turned off) | ☐ |
 
 ## Risks to verify
 
@@ -43,3 +47,7 @@ Results from the 2026-11-06 spike. The extension was exercised in **Playwright C
 3. Press ⌘K on a normal HTTPS page: the overlay opens and Esc closes it. Try ⇧⌘K and the toolbar button. Press ⌘K on `helium://settings`: the popup palette opens.
 4. Open about 12 mixed tabs, pin one, and put two in a group by hand. Run Tidy Tabs, check the group names and colors, then Undo.
 5. Run Summarize Page on an article and ask a follow-up. On a PDF or browser page, check that the error is clear.
+6. Ask Across Tabs with tabs from two or three different sites; allow access in the window that opens; click the citation numbers.
+7. Turn on Link previews in Settings, reload a page, hold Shift over links: an article, a sign-in page, a PDF.
+8. Set up Brave Search or SearXNG and try Instant Links; then set it to None and check the fallback search.
+9. Turn on Tidy Downloads and download a PDF with an ugly name; then try with the active profile pointed at something slow or broken.

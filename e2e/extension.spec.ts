@@ -1,84 +1,5 @@
-import path from 'node:path';
-import { chromium, expect, test as base, type BrowserContext, type Page, type Worker } from '@playwright/test';
-import { startFixtureServer } from './fixture-server';
-
-// Callbacks passed to `sw.evaluate` run inside the extension's service worker.
-declare const chrome: typeof browser;
-
-const EXTENSION = path.resolve(import.meta.dirname, '../.output/chrome-mv3-e2e');
-
-type Fixtures = {
-  server: Awaited<ReturnType<typeof startFixtureServer>>;
-  context: BrowserContext;
-  sw: Worker;
-};
-
-const test = base.extend<Fixtures>({
-  server: async ({}, use) => {
-    const server = await startFixtureServer();
-    await use(server);
-    await server.close();
-  },
-  context: async ({}, use) => {
-    const context = await chromium.launchPersistentContext('', {
-      channel: 'chromium',
-      args: [`--disable-extensions-except=${EXTENSION}`, `--load-extension=${EXTENSION}`],
-    });
-    await use(context);
-    await context.close();
-  },
-  sw: async ({ context }, use) => {
-    const sw = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'));
-    await use(sw);
-  },
-});
-
-async function configureMockProvider(sw: Worker, origin: string, model = 'mock') {
-  await sw.evaluate(
-    async ({ baseUrl, model }) => {
-      await chrome.storage.local.set({
-        settings: {
-          activeProfileId: 'local',
-          profiles: [
-            { id: 'local', preset: 'custom', name: 'Local mock', model, baseUrl },
-            { id: 'local-b', preset: 'custom', name: 'Second mock', model: 'mock-b', baseUrl },
-          ],
-        },
-      });
-    },
-    { baseUrl: `${origin}/v1`, model },
-  );
-}
-
-/** Open pages in one window; returns them in tab order. Closes the blank start tab. */
-async function openPages(context: BrowserContext, origin: string, slugs: string[]): Promise<Page[]> {
-  const blank = context.pages();
-  const pages: Page[] = [];
-  for (const slug of slugs) {
-    const page = await context.newPage();
-    await page.goto(`${origin}/page/${slug}`);
-    pages.push(page);
-  }
-  for (const page of blank) await page.close();
-  return pages;
-}
-
-/** Same path the toolbar/⌘K handler takes: inject the overlay script, then toggle it. */
-async function openPalette(sw: Worker, page: Page) {
-  await page.bringToFront();
-  await sw.evaluate(async (url) => {
-    const [tab] = await chrome.tabs.query({ url });
-    try {
-      await chrome.tabs.sendMessage(tab!.id!, { type: 'palette/toggle' });
-    } catch {
-      await chrome.scripting.executeScript({ target: { tabId: tab!.id! }, files: ['/content-scripts/overlay.js'] });
-      await chrome.tabs.sendMessage(tab!.id!, { type: 'palette/toggle' });
-    }
-  }, page.url());
-  const input = page.getByRole('combobox', { name: 'Search commands and tabs' });
-  await expect(input).toBeFocused();
-  return input;
-}
+import type { Worker } from '@playwright/test';
+import { configureMockProvider, expect, openPages, openPalette, test } from './helpers';
 
 async function windowState(sw: Worker) {
   return sw.evaluate(async () => {
@@ -107,7 +28,8 @@ test('palette opens, filters commands and tabs without AI, closes on Esc', async
   await expect(first!.getByText('Local mock · mock')).toBeVisible();
 
   await input.fill('paris');
-  await expect(first!.getByRole('option')).toHaveCount(1);
+  // The matching tab, then the offer to search the web for the typed text.
+  await expect(first!.getByRole('option')).toHaveText([/Paris weather forecast/, /Instant Links: “paris”/]);
   await input.press('Enter');
   await expect.poll(() => second!.evaluate(() => document.visibilityState)).toBe('visible');
 

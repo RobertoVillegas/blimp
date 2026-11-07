@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { send, type PaletteIntent } from '@/shared/messages';
+import type { PaletteIntent } from '@/shared/messages';
+import { send } from '@/shared/send';
 import type { AiStatus, PageAnswer, ProfileSummary, TabSummary, TidyResult, UndoResult } from '@/shared/types';
 import { domainOf } from '@/shared/url';
 import { COMMANDS, matches, type CommandId, type PaletteCommand } from './commands';
+import { CrossTabView } from './CrossTabView';
+import { Footer } from './Footer';
+import { InstantLinksView } from './InstantLinksView';
 import { RichText } from './RichText';
 
 export interface PaletteProps {
@@ -16,7 +20,8 @@ export interface PaletteProps {
 type Item =
   | { kind: 'command'; command: PaletteCommand }
   | { kind: 'profile'; profile: ProfileSummary }
-  | { kind: 'tab'; tab: TabSummary };
+  | { kind: 'tab'; tab: TabSummary }
+  | { kind: 'instant'; query: string };
 
 type View =
   | { name: 'list' }
@@ -24,9 +29,11 @@ type View =
   | { name: 'tidy-done'; result: TidyResult }
   | { name: 'undo-done'; result: UndoResult }
   | { name: 'page'; turns: { question: string | null; answer: PageAnswer }[]; pending?: string | null }
+  | { name: 'cross'; mode: 'summarize' | 'ask' }
+  | { name: 'instant'; query: string }
   | { name: 'error'; message: string; retry?: () => void };
 
-const AI_COMMANDS = new Set<CommandId>(['tidy', 'summarize-page', 'ask-page']);
+const AI_COMMANDS = new Set<CommandId>(['tidy', 'summarize-page', 'ask-page', 'summarize-tabs', 'ask-tabs']);
 
 export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
   const [query, setQuery] = useState('');
@@ -64,7 +71,9 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
       .filter((tab) => (query ? matches(query, tab.title, tab.url) : !tab.active))
       .slice(0, query ? 30 : 6)
       .map((tab): Item => ({ kind: 'tab', tab }));
-    return [...commands, ...profileItems, ...tabItems];
+    // Any typed text can become an Instant Links search.
+    const instant: Item[] = query.trim() ? [{ kind: 'instant', query: query.trim() }] : [];
+    return [...commands, ...profileItems, ...tabItems, ...instant];
   }, [profiles, query, tabs]);
 
   useEffect(() => setSelected(0), [query]);
@@ -132,6 +141,12 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
         case 'ask-page':
           setFollowUp('');
           return setView({ name: 'page', turns: [] });
+        case 'summarize-tabs':
+          return setView({ name: 'cross', mode: 'summarize' });
+        case 'ask-tabs':
+          return setView({ name: 'cross', mode: 'ask' });
+        case 'instant-links':
+          return setView({ name: 'instant', query: '' });
         case 'settings':
           void send({ type: 'settings/open' });
           return onClose();
@@ -150,6 +165,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
   const activate = (item: Item | undefined) => {
     if (!item) return;
     if (item.kind === 'command') return runCommand(item.command);
+    if (item.kind === 'instant') return setView({ name: 'instant', query: item.query });
     if (item.kind === 'profile') {
       void send({ type: 'profiles/activate', profileId: item.profile.id })
         .then((next) => {
@@ -334,6 +350,14 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
         </div>
       )}
 
+      {view.name === 'cross' && (
+        <CrossTabView mode={view.mode} windowId={windowId} tabId={tabId} status={status} onBack={backToList} onClose={onClose} />
+      )}
+
+      {view.name === 'instant' && (
+        <InstantLinksView initialQuery={view.query} tabId={tabId} status={status} onBack={backToList} onClose={onClose} />
+      )}
+
       {view.name === 'error' && (
         <ResultPanel title="That didn't work" onBack={backToList}>
           <p className="hm-warning" role="alert">
@@ -357,6 +381,7 @@ function tabsLabel(count: number): string {
 function itemKey(item: Item): string {
   if (item.kind === 'command') return item.command.id;
   if (item.kind === 'profile') return `profile-${item.profile.id}`;
+  if (item.kind === 'instant') return 'instant';
   return `tab-${item.tab.id}`;
 }
 
@@ -391,7 +416,15 @@ function ItemRow({
       onMouseMove={onHover}
       onClick={onClick}
     >
-      {item.kind === 'profile' ? (
+      {item.kind === 'instant' ? (
+        <>
+          <span className="hm-icon" aria-hidden="true">
+            ↗
+          </span>
+          <span className="hm-item-title">Instant Links: “{item.query}”</span>
+          <span className="hm-item-hint">Search the web</span>
+        </>
+      ) : item.kind === 'profile' ? (
         <>
           <span className="hm-icon" aria-hidden="true">
             {item.profile.active ? '●' : '○'}
@@ -417,27 +450,6 @@ function ItemRow({
         </>
       )}
     </li>
-  );
-}
-
-function Footer({ status, command }: { status?: AiStatus; command?: PaletteCommand }) {
-  let note = command?.description ?? 'Enter to run · ↑↓ to move · Esc to close';
-  if (command?.sends && status) {
-    note = status.configured
-      ? status.hosted
-        ? `Sends ${command.sends} to ${status.profileName}.`
-        : `Uses ${status.profileName}; ${command.sends} stay on this device.`
-      : `${status.problem} Enter opens AI Settings.`;
-  }
-  return (
-    <footer className="hm-footer">
-      <span className="hm-note">{note}</span>
-      {status && (
-        <span className="hm-provider" title={status.configured ? undefined : status.problem}>
-          {status.configured ? `${status.profileName} · ${status.model}` : `${status.profileName}: not set up`}
-        </span>
-      )}
-    </footer>
   );
 }
 
