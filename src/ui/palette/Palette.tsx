@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { PaletteIntent } from '@/shared/messages';
+import type { PaletteIntent, UpdateStatus } from '@/shared/messages';
 import { send } from '@/shared/send';
 import type { AiStatus, PageAnswer, ProfileSummary, TabSummary, TidyResult, UndoResult } from '@/shared/types';
 import { domainOf } from '@/shared/url';
-import { COMMANDS, matches, type CommandId, type PaletteCommand } from './commands';
+import { COMMANDS, FEATURE_OF, matches, type CommandId, type PaletteCommand } from './commands';
 import { CrossTabView } from './CrossTabView';
-import { Footer } from './Footer';
+import { Footer, statusFor } from './Footer';
 import { InstantLinksView } from './InstantLinksView';
 import { RichText } from './RichText';
 
@@ -21,7 +21,8 @@ type Item =
   | { kind: 'command'; command: PaletteCommand }
   | { kind: 'profile'; profile: ProfileSummary }
   | { kind: 'tab'; tab: TabSummary }
-  | { kind: 'instant'; query: string };
+  | { kind: 'instant'; query: string }
+  | { kind: 'update'; version: string };
 
 type View =
   | { name: 'list' }
@@ -40,6 +41,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
   const [tabs, setTabs] = useState<TabSummary[]>([]);
   const [status, setStatus] = useState<AiStatus>();
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
+  const [update, setUpdate] = useState<UpdateStatus['update']>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [selected, setSelected] = useState(0);
   const [view, setView] = useState<View>({ name: 'list' });
@@ -52,6 +54,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
     void send({ type: 'tabs/list', windowId }).then(setTabs).catch(() => setTabs([]));
     void send({ type: 'ai/status' }).then(setStatus).catch(() => undefined);
     void send({ type: 'profiles/list' }).then(setProfiles).catch(() => setProfiles([]));
+    void send({ type: 'update/status' }).then((status) => setUpdate(status.update)).catch(() => setUpdate(null));
     void send({ type: 'tidy/can-undo' }).then(setCanUndo).catch(() => setCanUndo(false));
   }, [windowId]);
 
@@ -73,8 +76,13 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
       .map((tab): Item => ({ kind: 'tab', tab }));
     // Any typed text can become an Instant Links search.
     const instant: Item[] = query.trim() ? [{ kind: 'instant', query: query.trim() }] : [];
-    return [...commands, ...profileItems, ...tabItems, ...instant];
-  }, [profiles, query, tabs]);
+    // A new release is mentioned last on the empty list, or when searched for.
+    const updateItem: Item[] =
+      update && (!query || matches(query, 'update upgrade new version release', update.version))
+        ? [{ kind: 'update', version: update.version }]
+        : [];
+    return [...commands, ...profileItems, ...tabItems, ...instant, ...updateItem];
+  }, [profiles, query, tabs, update]);
 
   useEffect(() => setSelected(0), [query]);
 
@@ -126,7 +134,8 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
   const runCommand = useCallback(
     (command: PaletteCommand) => {
       if (isDisabled(command)) return;
-      if (AI_COMMANDS.has(command.id) && status && !status.configured) {
+      const effective = statusFor(status, FEATURE_OF[command.id]);
+      if (AI_COMMANDS.has(command.id) && effective && !effective.configured) {
         void send({ type: 'settings/open' });
         onClose();
         return;
@@ -166,6 +175,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
     if (!item) return;
     if (item.kind === 'command') return runCommand(item.command);
     if (item.kind === 'instant') return setView({ name: 'instant', query: item.query });
+    if (item.kind === 'update') return void send({ type: 'update/show' }).then(onClose);
     if (item.kind === 'profile') {
       void send({ type: 'profiles/activate', profileId: item.profile.id })
         .then((next) => {
@@ -266,7 +276,10 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
               <li key={group.title}>
                 <span className={`hm-dot hm-color-${group.color}`} aria-hidden="true" />
                 {group.title}
-                <span className="hm-muted"> · {tabsLabel(group.tabCount)}</span>
+                <span className="hm-muted">
+                  {' '}
+                  · {group.existing ? `${tabsLabel(group.tabCount)} added to your group` : tabsLabel(group.tabCount)}
+                </span>
               </li>
             ))}
           </ul>
@@ -351,11 +364,11 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
       )}
 
       {view.name === 'cross' && (
-        <CrossTabView mode={view.mode} windowId={windowId} tabId={tabId} status={status} onBack={backToList} onClose={onClose} />
+        <CrossTabView mode={view.mode} windowId={windowId} tabId={tabId} status={statusFor(status, 'tabs')} onBack={backToList} onClose={onClose} />
       )}
 
       {view.name === 'instant' && (
-        <InstantLinksView initialQuery={view.query} tabId={tabId} status={status} onBack={backToList} onClose={onClose} />
+        <InstantLinksView initialQuery={view.query} tabId={tabId} status={statusFor(status, 'instant')} onBack={backToList} onClose={onClose} />
       )}
 
       {view.name === 'error' && (
@@ -382,6 +395,7 @@ function itemKey(item: Item): string {
   if (item.kind === 'command') return item.command.id;
   if (item.kind === 'profile') return `profile-${item.profile.id}`;
   if (item.kind === 'instant') return 'instant';
+  if (item.kind === 'update') return 'update';
   return `tab-${item.tab.id}`;
 }
 
@@ -416,7 +430,15 @@ function ItemRow({
       onMouseMove={onHover}
       onClick={onClick}
     >
-      {item.kind === 'instant' ? (
+      {item.kind === 'update' ? (
+        <>
+          <span className="hm-icon" aria-hidden="true">
+            ↑
+          </span>
+          <span className="hm-item-title">Helium Max {item.version} is available</span>
+          <span className="hm-item-hint">How to update</span>
+        </>
+      ) : item.kind === 'instant' ? (
         <>
           <span className="hm-icon" aria-hidden="true">
             ↗

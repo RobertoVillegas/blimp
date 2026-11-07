@@ -42,6 +42,7 @@ export const requestSchema = z.discriminatedUnion('type', [
     windowId: z.number().int().optional(),
     tabIds: z.array(z.number().int()).min(1).max(100),
     question: z.string().max(4000).nullable(),
+    wake: z.boolean().optional(),
   }),
   z.object({ type: z.literal('permissions/open-grant'), origins: z.array(z.string().max(300)).min(1).max(100) }),
   z.object({ type: z.literal('preview/start'), opId: z.string(), url: z.string().max(4000) }),
@@ -61,6 +62,9 @@ export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('instant/search'), opId: z.string(), query: z.string().trim().min(1).max(500) }),
   z.object({ type: z.literal('instant/open'), url: z.string().max(4000), tabId: z.number().int().optional() }),
   z.object({ type: z.literal('instant/web-search'), query: z.string().trim().min(1).max(500) }),
+  z.object({ type: z.literal('update/status') }),
+  z.object({ type: z.literal('update/check') }),
+  z.object({ type: z.literal('update/show') }),
   z.object({ type: z.literal('op/cancel'), opId: z.string() }),
   z.object({ type: z.literal('settings/open') }),
 ]);
@@ -87,8 +91,16 @@ export interface ResponseMap {
   'instant/search': InstantLinksResult;
   'instant/open': null;
   'instant/web-search': null;
+  'update/status': UpdateStatus;
+  'update/check': UpdateStatus;
+  'update/show': null;
   'op/cancel': null;
   'settings/open': null;
+}
+
+export interface UpdateStatus {
+  current: string;
+  update: { version: string; pageUrl: string; downloadUrl: string } | null;
 }
 
 export type PreviewStart = { kind: 'done'; preview: LinkPreview } | { kind: 'parse'; html: string; finalUrl: string };

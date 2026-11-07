@@ -98,3 +98,31 @@ describe('applyPlan + restoreSnapshot', () => {
     expect(tabs.groups.size).toBe(0);
   });
 });
+
+describe('adding to existing groups', () => {
+  it('adds tabs to the user group without renaming it, and Undo takes them back out', async () => {
+    const tabs = new FakeTabs([{ id: 1, groupId: 9 }, { id: 2, groupId: 9 }, ...ids(3, 4, 5)]);
+    tabs.groups.get(9)!.title = 'PHP';
+    const before = structuredClone(tabs.groups.get(9));
+    const snapshot = await takeSnapshot(tabs, 1);
+
+    const { record } = await applyPlan(tabs, snapshot, [{ title: 'PHP', color: 'grey', tabIds: [4], existingGroupId: 9 }]);
+    expect(tabs.order()).toEqual([1, 2, 4, 3, 5]);
+    expect(tabs.tabs.find((tab) => tab.id === 4)!.groupId).toBe(9);
+    expect(tabs.groups.get(9)).toEqual(before);
+
+    const result = await restoreSnapshot(tabs, record);
+    expect(result).toEqual({ restoredCount: 1, conflicts: [] });
+    expect(tabs.order()).toEqual([1, 2, 3, 4, 5]);
+    expect(tabs.tabs.filter((tab) => tab.groupId === 9).map((tab) => tab.id)).toEqual([1, 2]);
+    expect(tabs.groups.get(9)).toEqual(before);
+  });
+
+  it('skips a group the user closed meanwhile', async () => {
+    const tabs = new FakeTabs([{ id: 1, groupId: 9 }, ...ids(2, 3)]);
+    const snapshot = await takeSnapshot(tabs, 1);
+    tabs.close(1);
+    const { applied } = await applyPlan(tabs, snapshot, [{ title: 'Gone', color: 'grey', tabIds: [2], existingGroupId: 9 }]);
+    expect(applied).toEqual([]);
+  });
+});

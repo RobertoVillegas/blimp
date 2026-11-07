@@ -43,7 +43,7 @@ Press ⌘K on any page to search commands and your open tabs. Type part of a tab
 Run **Tidy Tabs** and the model reads your tab titles and URLs. It invents group names that fit what you have open, like "PHP docs & CVEs" or "Madrid trip", and Helium Max turns them into real tab groups.
 
 - It only runs when you ask. Never on a timer, never when a tab opens.
-- Pinned tabs and groups you made yourself are left alone.
+- Pinned tabs and groups you made yourself are left alone. If you'd like new tabs to join your existing groups instead (a new PHP tab into your "PHP" group), turn on **Also add tabs to groups I already have** in Settings. Your groups keep their names and colors, and Undo takes the added tabs back out.
 - Tabs that don't fit anywhere stay ungrouped. There's no "Misc" group.
 - It names groups. It never renames, closes or discards a tab.
 - If the model returns anything that doesn't match your real tabs, nothing changes.
@@ -67,7 +67,7 @@ It only reads text you can see in the article. It skips menus, footers, hidden e
 
 **Summarize Tabs** and **Ask Across Tabs** work over several tabs at once. You pick the tabs first; nothing is read until you press the button. The answer puts a numbered chip after each claim, and clicking a number takes you to that tab.
 
-Tabs that can't be read are listed under **Skipped** with the reason: browser pages, sleeping tabs (Helium Max won't reload them), sites you haven't given access to. When there's more text than fits in one request, it summarizes in batches first and then combines them, with a cap so a big window can't run up your bill.
+Tabs that can't be read are listed under **Skipped** with the reason: browser pages, sites you haven't given access to, and sleeping tabs unless you tick **Wake sleeping tabs**, which loads them in the background without switching to them. When there's more text than fits in one request, it summarizes in batches first and then combines them, with a cap so a big window can't run up your bill.
 
 <details>
 <summary>Picking the tabs</summary>
@@ -107,7 +107,7 @@ Off by default. When it's on, each download gets a clearer name before it's save
 
 Each profile is a provider plus a model plus a key. On first run you get one for OpenAI, Anthropic, Gemini, DeepSeek, Mistral and OpenCode Go, so you only paste a key. Add as many more as you like, for example two Mistral profiles pointing at different models.
 
-Type `profile` in the palette to switch which one is active.
+Type `profile` in the palette to switch which one is active. Under **Models per feature** in Settings you can also give a feature its own profile, say a fast, cheap model for link previews and filenames and a stronger one for answers across tabs.
 
 <br clear="right">
 
@@ -131,7 +131,15 @@ You don't need Node to try it.
 <img src="docs/images/settings.png" width="520" alt="Settings page with the profile list (OpenCode Go active, DeepSeek, Mistral – DeepSeek, Anthropic) and the OpenCode Go profile form">
 </details>
 
-To update, download the new zip, replace the folder's contents, and click the reload arrow on the extension's card.
+### Updating
+
+A folder-loaded extension can't update itself, so Helium Max checks this repository's releases twice a day and tells you when there's a new one: a ↑ on the toolbar icon, a row at the bottom of the palette, and steps in Settings › Updates.
+
+1. Download the new zip (the link in Settings, or [helium-max-chrome.zip](https://github.com/RobertoVillegas/helium-max/releases/latest/download/helium-max-chrome.zip), which is always the newest).
+2. Unzip it and copy everything into your Helium Max folder, replacing the old files.
+3. Press **Reload Helium Max** in Settings › Updates.
+
+Profiles and settings stay. Keys you kept only for the session need to be entered again. You can turn the check off in Settings.
 
 > [!NOTE]
 > Keys are kept only until you quit the browser, unless you choose **On this device across restarts** in Settings. That option stores them unencrypted in the extension's own storage, which webpages can't read but anyone with your browser profile on disk can.
@@ -145,10 +153,12 @@ To update, download the new zip, replace the folder's contents, and click the re
 | Google Gemini | `generativelanguage.googleapis.com/v1beta` | |
 | DeepSeek | `api.deepseek.com` | |
 | Mistral AI | `api.mistral.ai/v1` | Mistral also hosts DeepSeek and other third-party models. **Load models** shows the IDs your key can use. |
-| OpenCode Go | `opencode.ai/zen/go/v1` | Your Go subscription key. Only models Go serves over Chat Completions are listed (DeepSeek, GLM, Kimi, MiMo and others). To use DeepSeek there, enable the **Global** region in your OpenCode workspace privacy settings. |
+| OpenCode Go | `opencode.ai/zen/go/v1` | Your Go subscription key. Pick a model from **Load models** and the right API is set for you: Chat Completions (DeepSeek, GLM, Kimi, MiMo), Anthropic Messages (Claude, Qwen, MiniMax) or OpenAI Responses (GPT, Grok). Gemini models in Go aren't supported yet. To use DeepSeek there, enable the **Global** region in your OpenCode workspace privacy settings. |
 | OpenRouter | `openrouter.ai/api/v1` | Add it with **Add profile**. |
 | Ollama | `localhost:11434` | Runs on your machine. Start it with `OLLAMA_ORIGINS="chrome-extension://*" ollama serve`. |
-| Custom | anything | Any server that speaks the OpenAI Chat Completions API. |
+| Custom | anything | Any server that speaks OpenAI Chat Completions, OpenAI Responses or Anthropic Messages; pick which under **API**. |
+
+If a model rejects a setting (newer OpenAI and other reasoning models refuse `temperature`, some servers refuse JSON mode), Helium Max retries once without it.
 
 ## Keyboard
 
@@ -164,7 +174,7 @@ Change them, or bind Tidy Tabs to its own shortcut, at `chrome://extensions/shor
 
 ## What gets sent, and when
 
-| You run | The active profile's provider receives |
+| You run | The provider of the profile that feature uses receives |
 | --- | --- |
 | Searching in the palette | Nothing |
 | Tidy Tabs | Titles and URLs of the ungrouped, unpinned tabs in the window |
@@ -174,6 +184,7 @@ Change them, or bind Tidy Tabs to its own shortcut, at `chrome://extensions/shor
 | Instant Links | Your query goes to the search provider; its results and your query go to the AI |
 | A download starts (if Tidy Downloads is on) | Filename, file type, the address without query strings, and the page title |
 | Just browsing | Nothing |
+| Twice a day (unless turned off) | GitHub's public API is asked for this repository's releases; nothing about you is sent |
 
 The palette footer tells you which provider a command will use before you run it. Helium Max asks for no site access when you install it. The palette gets into a page only after you press the shortcut or the toolbar button. Everything else is asked for when you use it: an API origin when you save a profile, a site when you include one of its tabs, all sites only if you turn on link previews, and the downloads permission only for Tidy Downloads.
 
@@ -181,7 +192,7 @@ Previews never fetch local addresses (`localhost`, `192.168.x.x`, `*.local`, Tai
 
 ## Status
 
-This is an early build. Everything below is tested in Chromium; **I haven't run it in Helium itself yet**. The checklist for that is in [`docs/compatibility.md`](docs/compatibility.md). The provider adapters are unit-tested against each API's request format but have only been run against a local mock, not real keys.
+This is an early build. It loads and runs in Helium; everything below is tested end to end in Chromium against a mock provider. The Helium checklist is in [`docs/compatibility.md`](docs/compatibility.md). The provider adapters are unit-tested against each API's request format but haven't been run against every real provider.
 
 | | Feature | |
 | --- | --- | --- |
@@ -193,10 +204,15 @@ This is an early build. Everything below is tested in Chromium; **I haven't run 
 | ✅ | Summarize and ask across tabs, with sources | M2 |
 | ✅ | Instant Links (search results you can open in one step) | M3 |
 | ✅ | Tidy Downloads (better filenames, opt-in) | M3 |
+| ✅ | Update notice and one-click reload | v0.3 |
+| ✅ | Tidy into existing groups, wake sleeping tabs, a model per feature | v0.3 |
+| ✅ | OpenCode Go models on Anthropic Messages and OpenAI Responses | v0.3 |
 
 [Jev](docs/jev.md), TypeSafe's decision model, was looked at and parked for now.
 
 ## Development
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how the code is organized, and [SECURITY.md](SECURITY.md) for the threat model and how to report a vulnerability.
 
 ```sh
 pnpm install

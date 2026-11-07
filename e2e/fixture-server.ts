@@ -168,8 +168,12 @@ function respond(model: string, messages: { role: string; content: string }[], u
       if (topic) byTopic.set(topic, [...(byTopic.get(topic) ?? []), ref]);
     }
     const colors = ['blue', 'cyan', 'orange'];
+    // When the user's own groups are offered, React tabs join an existing "React docs" group.
+    const existing = new Map([...user.matchAll(/\[(G\d+)\] "([^"]*)"/g)].map((m) => [m[2]!, m[1]!]));
     return '```json\n' + JSON.stringify({
-      groups: [...byTopic].map(([name, tabs], i) => ({ name, color: colors[i], tabs })),
+      groups: [...byTopic].map(([name, tabs], i) =>
+        existing.has(name) ? { existing: existing.get(name), tabs } : { name, color: colors[i], tabs },
+      ),
     }) + '\n```';
   }
   const page = messages.find((m) => m.role === 'user')?.content ?? '';

@@ -47,6 +47,7 @@ export const gemini: ProviderAdapter = {
     return models
       .filter((model) => Array.isArray(model.supportedGenerationMethods) && model.supportedGenerationMethods.includes('generateContent'))
       .map((model) => (typeof model.name === 'string' ? model.name.replace(/^models\//, '') : ''))
-      .filter(Boolean);
+      .filter(Boolean)
+      .map((id) => ({ id }));
   },
 };

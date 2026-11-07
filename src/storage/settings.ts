@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { PRESET_IDS, PRESETS, SEEDED_PRESETS } from '@/ai/presets';
-import type { PresetId } from '@/shared/types';
+import { AI_FEATURES, type AiFeature, type PresetId } from '@/shared/types';
 
 const profileSchema = z.object({
   id: z.string().min(1).max(64),
@@ -9,6 +9,8 @@ const profileSchema = z.object({
   model: z.string().trim().max(200).default(''),
   /** Empty means the preset's default base URL. */
   baseUrl: z.string().trim().max(500).default(''),
+  /** For gateways serving several APIs (OpenCode Go, custom): which one this model uses. */
+  api: z.enum(['chat', 'messages', 'responses']).optional(),
 });
 
 export type Profile = z.infer<typeof profileSchema>;
@@ -21,6 +23,13 @@ export const settingsSchema = z.object({
   /** Upper bound on page text sent per request (estimated tokens). */
   maxInputTokens: z.number().int().min(1000).max(200_000).default(12_000),
   keyStorage: z.enum(['session', 'persistent']).default('session'),
+  /** Profile ids some features use instead of the active profile; missing ids fall back to it. */
+  featureProfiles: z
+    .partialRecord(z.enum(AI_FEATURES), z.string())
+    .default({})
+    .transform((value) => value as Partial<Record<AiFeature, string>>),
+  /** Let Tidy Tabs add tabs to groups the user already has (never renames them). Off per the PRD default. */
+  tidyIntoExistingGroups: z.boolean().default(false),
   /** F05: Shift-hover previews. Turning it on requests http(s) site access. */
   linkPreviews: z.boolean().default(false),
   /** F07: where Instant Links gets real candidate URLs. */
@@ -33,6 +42,8 @@ export const settingsSchema = z.object({
     .default({ provider: 'none', baseUrl: '' }),
   /** F08: AI filename suggestions. Turning it on requests the downloads permission. */
   tidyDownloads: z.boolean().default(false),
+  /** Ask GitHub twice a day whether a newer release exists. Nothing is sent but the request itself. */
+  updateChecks: z.boolean().default(true),
 });
 
 export type Settings = z.infer<typeof settingsSchema>;

@@ -4,6 +4,7 @@ import { crossTabCandidates, missingOrigins, runCrossTab } from '@/features/cros
 import { browserSearch, instantSearch, openResult } from '@/features/instant-links';
 import { finishPreview, startPreview } from '@/features/link-preview';
 import { canUndoTidy, tidyTabs, undoTidyTabs } from '@/features/tidy-tabs';
+import { checkForUpdate, currentUpdate } from '@/features/updates';
 import { chromeTabsPort } from '@/features/tidy-tabs/chrome-port';
 import { loadSettings, saveSettings } from '@/storage/settings';
 import { UserFacingError, serializeError } from '@/shared/errors';
@@ -95,7 +96,7 @@ async function handle(
     case 'cross/run': {
       const windowId = await targetWindowId(request.windowId, sender);
       return withOperation(request.opId, (signal) =>
-        runCrossTab({ windowId, tabIds: request.tabIds, question: request.question, signal }),
+        runCrossTab({ windowId, tabIds: request.tabIds, question: request.question, wake: request.wake, signal }),
       );
     }
 
@@ -127,6 +128,17 @@ async function handle(
 
     case 'instant/web-search':
       await browserSearch(request.query);
+      return null;
+
+    case 'update/status':
+      return { current: browser.runtime.getManifest().version, update: await currentUpdate() };
+
+    case 'update/check':
+      await checkForUpdate({ force: true });
+      return { current: browser.runtime.getManifest().version, update: await currentUpdate() };
+
+    case 'update/show':
+      await browser.tabs.create({ url: browser.runtime.getURL('/options.html#updates') });
       return null;
 
     case 'op/cancel':

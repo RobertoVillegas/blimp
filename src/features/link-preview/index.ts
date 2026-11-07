@@ -54,7 +54,7 @@ export async function finishPreview(page: ParsedPage, signal?: AbortSignal): Pro
     // A password box plus almost no text is a sign-in wall; a login box beside an article is not.
     preview = { ...base, unavailable: 'Looks like a sign-in page' };
   } else {
-    const { config, settings } = await activeProvider();
+    const { config, settings } = await activeProvider('previews');
     const { text } = truncateToTokens(page.text, Math.min(settings.maxInputTokens, PREVIEW_INPUT_TOKENS));
     const header = [`Title: ${page.title}`, `URL: ${page.finalUrl}`, page.description && `Description: ${page.description}`]
       .filter(Boolean)

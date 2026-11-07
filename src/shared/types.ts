@@ -36,7 +36,10 @@ export type PresetId =
   | 'custom';
 
 /** Wire protocol a profile speaks. */
-export type AdapterKind = 'openai' | 'openai-compatible' | 'anthropic' | 'gemini' | 'ollama';
+export type AdapterKind = 'openai' | 'openai-compatible' | 'openai-responses' | 'anthropic' | 'gemini' | 'ollama';
+
+/** Wire API a model is served on, for gateways that serve different models on different APIs. */
+export type ModelApi = 'chat' | 'messages' | 'responses';
 
 export interface ProfileSummary {
   id: string;
@@ -44,6 +47,10 @@ export interface ProfileSummary {
   model: string;
   active: boolean;
 }
+
+/** Features that can use their own AI profile instead of the active one. */
+export const AI_FEATURES = ['tidy', 'page', 'tabs', 'previews', 'instant', 'downloads'] as const;
+export type AiFeature = (typeof AI_FEATURES)[number];
 
 export interface AiStatus {
   profileId: string;
@@ -53,12 +60,16 @@ export interface AiStatus {
   /** Hosted providers receive page text when a feature is invoked; local ones don't leave the machine. */
   hosted: boolean;
   problem?: string;
+  /** Status of the profiles some features use instead of the active one. */
+  byFeature?: Partial<Record<AiFeature, AiStatus>>;
 }
 
 export interface TidyGroupResult {
   title: string;
   color: GroupColor;
   tabCount: number;
+  /** Tabs were added to a group the user already had. */
+  existing?: boolean;
 }
 
 export interface TidyResult {
@@ -80,6 +91,8 @@ export interface CrossTabCandidate {
   active: boolean;
   /** Why the tab can't be read; absent when it can. */
   blocked?: string;
+  /** Discarded by the browser; readable only if the user asks to wake it. */
+  asleep?: boolean;
 }
 
 export interface CrossTabSource {

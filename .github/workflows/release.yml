@@ -26,5 +26,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" .output/helium-max-*-chrome.zip \
-            --title "Helium Max $GITHUB_REF_NAME" --generate-notes --prerelease
+          # A fixed-name copy keeps releases/latest/download/helium-max-chrome.zip pointing at the newest build.
+          cp .output/helium-max-*-chrome.zip .output/helium-max-chrome.zip
+          gh release create "$GITHUB_REF_NAME" .output/helium-max-*-chrome.zip .output/helium-max-chrome.zip \
+            --title "Helium Max $GITHUB_REF_NAME" --generate-notes --latest

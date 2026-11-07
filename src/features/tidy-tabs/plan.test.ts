@@ -82,3 +82,31 @@ describe('cleanTitle', () => {
     expect(cleanTitle('Re‮search\n  Notes')).toBe('Research Notes');
   });
 });
+
+describe('validateProposal with existing groups', () => {
+  const refs = [101, 102, 103];
+  const offered = [{ ref: 'G1', id: 7, title: 'PHP', color: 'blue' as const, sampleTitles: ['php.net'] }];
+
+  it('adds even a single tab to an offered group, keeping its name and color', () => {
+    const plan = validateProposal(
+      { groups: [{ existing: 'G1', tabs: [2] }, { name: 'Trip', color: 'blue', tabs: [1, 3] }] },
+      refs,
+      offered,
+    );
+    expect(plan).toEqual([
+      { title: 'PHP', color: 'blue', tabIds: [102], existingGroupId: 7 },
+      // New groups avoid the colors of existing ones.
+      { title: 'Trip', color: 'red', tabIds: [101, 103] },
+    ]);
+  });
+
+  it('merges repeated entries for the same existing group', () => {
+    const plan = validateProposal({ groups: [{ existing: 'G1', tabs: [1] }, { existing: 'G1', tabs: [3] }] }, refs, offered);
+    expect(plan).toEqual([{ title: 'PHP', color: 'blue', tabIds: [101, 103], existingGroupId: 7 }]);
+  });
+
+  it('rejects a group that was not offered', () => {
+    expect(() => validateProposal({ groups: [{ existing: 'G2', tabs: [1] }] }, refs, offered)).toThrow(/Nothing was changed/);
+    expect(() => validateProposal({ groups: [{ existing: 'G1', tabs: [1] }] }, refs, [])).toThrow();
+  });
+});

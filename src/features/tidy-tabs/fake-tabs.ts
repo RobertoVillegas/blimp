@@ -77,6 +77,17 @@ export class FakeTabs implements TabsPort {
     return groupId;
   }
 
+  /** Chromium moves added tabs to the end of the group. */
+  async addToGroup(tabIds: number[], groupId: number) {
+    const moving = this.tabs.filter((tab) => tabIds.includes(tab.id));
+    const rest = this.tabs.filter((tab) => !tabIds.includes(tab.id));
+    const lastIndex = rest.map((tab) => tab.groupId).lastIndexOf(groupId);
+    for (const tab of moving) tab.groupId = groupId;
+    rest.splice(lastIndex + 1, 0, ...moving);
+    this.tabs = rest;
+    this.reindex();
+  }
+
   async updateGroup(groupId: number, update: { title: string; color: GroupColor }) {
     Object.assign(this.groups.get(groupId)!, update);
   }

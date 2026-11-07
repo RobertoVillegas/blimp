@@ -21,7 +21,7 @@ export default defineConfig({
     description:
       'Local-first, bring-your-own-key AI for Helium: command palette, Tidy Tabs, page Q&A and more.',
     minimum_chrome_version: '120',
-    permissions: ['activeTab', 'scripting', 'search', 'storage', 'tabs', 'tabGroups'],
+    permissions: ['activeTab', 'alarms', 'scripting', 'search', 'storage', 'tabs', 'tabGroups'],
     optional_permissions: ['downloads'],
     optional_host_permissions: [
       ...PROVIDER_ORIGINS,

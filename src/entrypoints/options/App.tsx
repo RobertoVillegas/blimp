@@ -1,8 +1,9 @@
 import { useEffect, useId, useState } from 'react';
 import { profileConfig } from '@/ai/active';
 import { complete, listModels } from '@/ai/client';
-import { PRESET_IDS, PRESETS, isHostedEndpoint } from '@/ai/presets';
-import type { PresetId } from '@/shared/types';
+import { API_LABELS, PRESET_IDS, PRESETS, isHostedEndpoint } from '@/ai/presets';
+import type { ModelInfo } from '@/ai/types';
+import type { AiFeature, ModelApi, PresetId } from '@/shared/types';
 import { originPattern } from '@/shared/url';
 import { FeatureSettings } from './FeatureSettings';
 import { clearAllSecrets, clearApiKey, getApiKey, setApiKey } from '@/storage/secrets';
@@ -23,7 +24,7 @@ export function App() {
   const [draft, setDraft] = useState<Profile>();
   const [apiKey, setApiKeyValue] = useState('');
   const [storedKeys, setStoredKeys] = useState<Record<string, boolean>>({});
-  const [models, setModels] = useState<string[]>([]);
+  const [models, setModels] = useState<ModelInfo[]>([]);
   const [addPreset, setAddPreset] = useState<PresetId>('custom');
   const [notice, setNotice] = useState<Notice>();
   const [busy, setBusy] = useState(false);
@@ -143,8 +144,12 @@ export function App() {
 
   async function deleteProfile() {
     const remaining = settings!.profiles.filter((profile) => profile.id !== draft!.id);
+    const featureProfiles = Object.fromEntries(
+      Object.entries(settings!.featureProfiles).filter(([, id]) => id !== draft!.id),
+    ) as Settings['featureProfiles'];
     const next = {
       ...settings!,
+      featureProfiles,
       profiles: remaining,
       activeProfileId: isActive ? remaining[0]!.id : settings!.activeProfileId,
     };
@@ -257,7 +262,12 @@ export function App() {
           <span className="row">
             <input
               value={draft.model}
-              onChange={(event) => edit({ model: event.target.value })}
+              onChange={(event) => {
+                const model = event.target.value;
+                // Picking a listed model also picks the API the gateway serves it on.
+                const api = preset.apis ? models.find((item) => item.id === model)?.api : undefined;
+                edit(api ? { model, api } : { model });
+              }}
               placeholder={preset.modelPlaceholder}
               list={modelListId}
               spellCheck={false}
@@ -268,16 +278,29 @@ export function App() {
           </span>
           <datalist id={modelListId}>
             {models.map((model) => (
-              <option key={model} value={model} />
+              <option key={model.id} value={model.id} label={model.api && preset.apis ? API_LABELS[model.api] : undefined} />
             ))}
           </datalist>
         </label>
+
+        {preset.apis && (
+          <label>
+            API
+            <select value={draft.api ?? 'chat'} onChange={(event) => edit({ api: event.target.value as ModelApi })}>
+              {preset.apis.map((api) => (
+                <option key={api} value={api}>
+                  {API_LABELS[api]}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
         {preset.note && <p className="hint">{preset.note}</p>}
 
         <p className="disclosure">
           {hosted
-            ? `When you run a command, this provider receives what that command needs: tab titles and URLs for Tidy Tabs, page text for Summarize/Ask Page. Nothing is sent while you just browse.`
+            ? `When a command uses this profile, the provider receives only what that command needs, such as tab titles and URLs for Tidy Tabs or page text for Summarize. Nothing is sent while you just browse.`
             : 'This endpoint runs on your machine; page text does not leave it.'}
         </p>
 
@@ -298,6 +321,38 @@ export function App() {
             {notice.text}
           </p>
         )}
+      </section>
+
+      <section aria-labelledby="per-feature-heading">
+        <h2 id="per-feature-heading">Models per feature</h2>
+        <p className="hint">
+          Every command uses the active profile unless you pick another here, for example a fast, cheap model for
+          previews and filenames and a stronger one for answers across tabs.
+        </p>
+        <div className="feature-grid">
+          {FEATURE_LABELS.map(([feature, label]) => (
+            <label key={feature}>
+              {label}
+              <select
+                value={settings.featureProfiles[feature] ?? ''}
+                onChange={(event) => {
+                  const featureProfiles = { ...settings.featureProfiles };
+                  if (event.target.value) featureProfiles[feature] = event.target.value;
+                  else delete featureProfiles[feature];
+                  void persist({ ...settings, featureProfiles });
+                }}
+              >
+                <option value="">Active profile</option>
+                {settings.profiles.map((profile) => (
+                  <option key={profile.id} value={profile.id}>
+                    {profile.name}
+                    {profile.model ? ` · ${profile.model}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+        </div>
       </section>
 
       <FeatureSettings settings={settings} persist={persist} />
@@ -394,6 +449,15 @@ export function App() {
     </main>
   );
 }
+
+const FEATURE_LABELS: [AiFeature, string][] = [
+  ['tidy', 'Tidy Tabs'],
+  ['page', 'Summarize and Ask Page'],
+  ['tabs', 'Summarize and Ask Across Tabs'],
+  ['previews', 'Link previews'],
+  ['instant', 'Instant Links ranking'],
+  ['downloads', 'Tidy Downloads'],
+];
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : String(error);

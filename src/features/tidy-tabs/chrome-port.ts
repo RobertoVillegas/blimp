@@ -43,6 +43,9 @@ export const chromeTabsPort: TabsPort = {
   async updateGroup(groupId, update) {
     await browser.tabGroups.update(groupId, update);
   },
+  async addToGroup(tabIds, groupId) {
+    await browser.tabs.group({ tabIds: tabIds as [number, ...number[]], groupId });
+  },
   async ungroup(tabIds) {
     await browser.tabs.ungroup(tabIds as [number, ...number[]]);
   },

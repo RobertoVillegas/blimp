@@ -28,11 +28,22 @@ export async function applyPlan(
     return tab !== undefined && !tab.pinned && tab.groupId === NO_GROUP;
   };
 
+  const groupStillThere = (groupId: number) => [...current.values()].some((tab) => tab.groupId === groupId);
+
   const applied: PlannedGroup[] = [];
   const createdGroupIds: number[] = [];
+  const addedToExisting: { groupId: number; tabIds: number[] }[] = [];
   try {
     for (const group of plan) {
       const tabIds = group.tabIds.filter(stillEligible);
+      if (group.existingGroupId !== undefined) {
+        // The user's own group: add tabs, never rename or recolor it.
+        if (!tabIds.length || !groupStillThere(group.existingGroupId)) continue;
+        addedToExisting.push({ groupId: group.existingGroupId, tabIds });
+        await port.addToGroup(tabIds, group.existingGroupId);
+        applied.push({ ...group, tabIds });
+        continue;
+      }
       if (tabIds.length < 2) continue;
       const groupId = await port.group(tabIds, snapshot.windowId);
       createdGroupIds.push(groupId);
@@ -40,16 +51,19 @@ export async function applyPlan(
       applied.push({ ...group, tabIds });
     }
   } catch {
-    await restoreSnapshot(port, { snapshot, createdGroupIds });
+    await restoreSnapshot(port, { snapshot, createdGroupIds, addedToExisting });
     throw new UserFacingError('internal', 'The browser refused to create a tab group. Your tabs were restored.');
   }
-  return { record: { snapshot, createdGroupIds }, applied };
+  return { record: { snapshot, createdGroupIds, addedToExisting }, applied };
 }
 
 /** Best-effort undo: ungroup what Tidy Tabs created and put those tabs back in their old positions. */
 export async function restoreSnapshot(port: TabsPort, record: TidyRecord): Promise<UndoResult> {
   const { snapshot, createdGroupIds } = record;
   const created = new Set(createdGroupIds);
+  // Tab → the existing group Tidy Tabs put it in. It only counts while it's still there.
+  const addedTo = new Map((record.addedToExisting ?? []).flatMap(({ groupId, tabIds }) => tabIds.map((id) => [id, groupId] as const)));
+  const ours = (tabId: number, groupId: number) => created.has(groupId) || addedTo.get(tabId) === groupId;
   const conflicts: string[] = [];
 
   const current = new Map((await port.windowTabs(snapshot.windowId)).map((tab) => [tab.id, tab]));
@@ -66,18 +80,16 @@ export async function restoreSnapshot(port: TabsPort, record: TidyRecord): Promi
       else closed++;
       continue;
     }
-    if (now.pinned || (now.groupId !== NO_GROUP && !created.has(now.groupId))) {
+    if (now.pinned || (now.groupId !== NO_GROUP && !ours(tab.id, now.groupId))) {
       regroupedByUser++;
       continue;
     }
     // Tabs Tidy Tabs left alone only shifted; moving them back is unnecessary.
-    if (created.has(now.groupId)) toRestore.push(tab);
+    if (now.groupId !== NO_GROUP) toRestore.push(tab);
   }
 
-  const inCreatedGroups = [...current.values()]
-    .filter((tab) => created.has(tab.groupId))
-    .map((tab) => tab.id);
-  if (inCreatedGroups.length) await port.ungroup(inCreatedGroups);
+  const toUngroup = [...current.values()].filter((tab) => tab.groupId !== NO_GROUP && ours(tab.id, tab.groupId)).map((tab) => tab.id);
+  if (toUngroup.length) await port.ungroup(toUngroup);
 
   await restoreOrder(port, snapshot, new Set(toRestore.map((tab) => tab.id)));
 

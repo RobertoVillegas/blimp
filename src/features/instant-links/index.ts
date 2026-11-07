@@ -28,12 +28,12 @@ export async function instantSearch(query: string, signal?: AbortSignal): Promis
   if (results.length === 0) return { configured: true, providerLabel: info.label, results, best: null, note: 'No results.' };
 
   // Ranking is a bonus: if the model is missing or fails, show the search engine's order.
-  const status = await aiStatus();
+  const status = await aiStatus('instant');
   if (!status.configured || results.length < 2) {
     return { configured: true, providerLabel: info.label, results, best: 0 };
   }
   try {
-    const { config } = await activeProvider();
+    const { config } = await activeProvider('instant');
     const ranked = await completeJson(
       config,
       {

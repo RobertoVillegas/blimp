@@ -1,4 +1,4 @@
-import type { AdapterKind, PresetId } from '@/shared/types';
+import type { AdapterKind, ModelApi, PresetId } from '@/shared/types';
 
 export interface Preset {
   id: PresetId;
@@ -15,6 +15,25 @@ export interface Preset {
   headers?: Record<string, string>;
   /** Header carrying a stable per-conversation id; OpenCode Go rejects requests without one. */
   sessionHeader?: string;
+  /** Gateways that serve models on several APIs; the profile picks one per model. */
+  apis?: ModelApi[];
+}
+
+export const API_LABELS: Record<ModelApi, string> = {
+  chat: 'OpenAI Chat Completions',
+  messages: 'Anthropic Messages',
+  responses: 'OpenAI Responses',
+};
+
+const API_ADAPTERS: Record<ModelApi, AdapterKind> = {
+  chat: 'openai-compatible',
+  messages: 'anthropic',
+  responses: 'openai-responses',
+};
+
+/** The wire protocol a profile uses: the preset's, unless the profile picked another API the preset allows. */
+export function adapterFor(preset: Preset, api: ModelApi | undefined): AdapterKind {
+  return api && preset.apis?.includes(api) ? API_ADAPTERS[api] : preset.adapter;
 }
 
 export const PRESETS: Record<PresetId, Preset> = {
@@ -78,8 +97,9 @@ export const PRESETS: Record<PresetId, Preset> = {
     needsKey: true,
     modelPlaceholder: 'deepseek-v4.1-flash',
     keyUrl: 'https://opencode.ai/console',
-    note: 'Uses your OpenCode Go subscription. Load models lists only the models Go serves over Chat Completions (DeepSeek, GLM, Kimi, MiMo…); GPT, Claude, Grok, Gemini and Qwen models in Go use other APIs and are not supported here yet.',
+    note: 'Uses your OpenCode Go subscription. Pick a model from Load models and the right API is chosen for you: Chat Completions for DeepSeek, GLM and Kimi, Anthropic Messages for Claude and Qwen, OpenAI Responses for GPT and Grok. Gemini models in Go are not supported yet.',
     sessionHeader: 'x-opencode-session',
+    apis: ['chat', 'messages', 'responses'],
   },
   openrouter: {
     id: 'openrouter',
@@ -110,7 +130,8 @@ export const PRESETS: Record<PresetId, Preset> = {
     editableBaseUrl: true,
     needsKey: false,
     modelPlaceholder: 'model-id',
-    note: 'Any server that speaks the OpenAI Chat Completions API. Enter the base URL up to /v1.',
+    note: 'Any server that speaks the OpenAI Chat Completions, OpenAI Responses or Anthropic Messages API. Enter the base URL up to /v1.',
+    apis: ['chat', 'messages', 'responses'],
   },
 };
 

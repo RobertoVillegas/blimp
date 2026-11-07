@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import type { UpdateStatus } from '@/shared/messages';
+import { send } from '@/shared/send';
 import { SEARCH_PROVIDERS, searchWeb } from '@/features/instant-links/adapters';
 import { SEARCH_KEY_ID } from '@/features/instant-links';
 import { originPattern } from '@/shared/url';
@@ -16,18 +18,33 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
   const [searchBase, setSearchBase] = useState(settings.search.baseUrl);
   const [searchKey, setSearchKey] = useState('');
   const [hasSearchKey, setHasSearchKey] = useState(false);
-  const [notices, setNotices] = useState<Record<'previews' | 'search' | 'downloads', Notice>>({
+  const [notices, setNotices] = useState<Record<'previews' | 'search' | 'downloads' | 'updates', Notice>>({
     previews: undefined,
     search: undefined,
     downloads: undefined,
+    updates: undefined,
   });
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus>();
 
   const note = (key: keyof typeof notices, value: Notice) => setNotices((current) => ({ ...current, [key]: value }));
 
   useEffect(() => {
     void browser.permissions.contains({ origins: ALL_SITES }).then(setPreviewAccess);
     void getApiKey(SEARCH_KEY_ID).then((key) => setHasSearchKey(Boolean(key)));
+    void send({ type: 'update/status' }).then(setUpdateStatus);
+    if (location.hash === '#updates') requestAnimationFrame(() => document.getElementById('updates')?.scrollIntoView());
   }, []);
+
+  async function checkNow() {
+    note('updates', { tone: 'info', text: 'Checking GitHub…' });
+    try {
+      const status = await send({ type: 'update/check' });
+      setUpdateStatus(status);
+      note('updates', status.update ? undefined : { tone: 'ok', text: `You have the newest version (${status.current}).` });
+    } catch (error) {
+      note('updates', { tone: 'error', text: error instanceof Error ? error.message : String(error) });
+    }
+  }
 
   async function setLinkPreviews(on: boolean) {
     if (on && !(await browser.permissions.request({ origins: ALL_SITES }))) {
@@ -89,6 +106,23 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
 
   return (
     <>
+      <section aria-labelledby="tidy-heading">
+        <h2 id="tidy-heading">Tidy Tabs</h2>
+        <label className="inline">
+          <input
+            type="checkbox"
+            checked={settings.tidyIntoExistingGroups}
+            onChange={(event) => void persist({ ...settings, tidyIntoExistingGroups: event.target.checked })}
+          />
+          Also add tabs to groups I already have
+        </label>
+        <p className="hint">
+          Off: Tidy Tabs only makes new groups and leaves yours alone. On: a new PHP tab can join your existing "PHP"
+          group instead of starting another one. Your groups keep their names and colors, and Undo takes the added tabs
+          back out.
+        </p>
+      </section>
+
       <section aria-labelledby="previews-heading">
         <h2 id="previews-heading">Link previews</h2>
         <label className="inline">
@@ -169,6 +203,44 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
           the AI takes more than 4 seconds the original name is used. Files already saved are never renamed.
         </p>
         <Status notice={notices.downloads} />
+      </section>
+
+      <section id="updates" aria-labelledby="updates-heading">
+        <h2 id="updates-heading">Updates</h2>
+        <p className="hint">
+          You're on version {updateStatus?.current ?? '…'}. Extensions loaded from a folder can't update themselves, so
+          Helium Max tells you when a new release is out and you replace the folder's contents.
+        </p>
+        {updateStatus?.update && (
+          <div className="update-banner" role="status">
+            <strong>Version {updateStatus.update.version} is available.</strong>
+            <ol>
+              <li>
+                <a href={updateStatus.update.downloadUrl}>Download helium-max-{updateStatus.update.version}-chrome.zip</a>{' '}
+                (<a href={updateStatus.update.pageUrl} target="_blank" rel="noreferrer">what's new</a>).
+              </li>
+              <li>Unzip it and copy everything into the folder you loaded, replacing the old files.</li>
+              <li>
+                Then <button onClick={() => browser.runtime.reload()}>Reload Helium Max</button>. Your profiles and
+                settings stay; keys kept only for the session need to be entered again.
+              </li>
+            </ol>
+          </div>
+        )}
+        <label className="inline">
+          <input
+            type="checkbox"
+            checked={settings.updateChecks}
+            onChange={(event) => void persist({ ...settings, updateChecks: event.target.checked })}
+          />
+          Check GitHub for new versions twice a day
+        </label>
+        <p className="hint">The check asks GitHub's public API for this project's releases. Nothing about you or your browsing is sent.</p>
+        <div className="actions">
+          <button onClick={() => void checkNow()}>Check now</button>
+          <button onClick={() => browser.runtime.reload()}>Reload Helium Max</button>
+        </div>
+        <Status notice={notices.updates} />
       </section>
     </>
   );

@@ -206,3 +206,36 @@ main.grant {
 main.grant h1 {
   font-size: 18px;
 }
+
+.update-banner {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in oklch, Highlight 50%, transparent);
+  background: color-mix(in oklch, Highlight 10%, transparent);
+}
+
+.update-banner ol {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.update-banner li + li {
+  margin-top: 4px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  column-gap: 16px;
+}
+
+.feature-grid label {
+  min-width: 0;
+}
+
+.feature-grid select {
+  width: 100%;
+  min-width: 0;
+  text-overflow: ellipsis;
+}

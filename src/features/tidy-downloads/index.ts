@@ -23,7 +23,7 @@ export function registerTidyDownloads(): void {
   registered = true;
   browser.downloads.onDeterminingFilename.addListener((item, suggest) =>
     handleDeterminingFilename(item, suggest, {
-      isEnabled: async () => (await loadSettings()).tidyDownloads && (await aiStatus()).configured,
+      isEnabled: async () => (await loadSettings()).tidyDownloads && (await aiStatus('downloads')).configured,
       pageTitleFor,
       propose,
     }),
@@ -31,7 +31,7 @@ export function registerTidyDownloads(): void {
 }
 
 async function propose(context: DownloadContext, signal: AbortSignal): Promise<string | null> {
-  const { config } = await activeProvider();
+  const { config } = await activeProvider('downloads');
   const details = [
     `Original filename: ${context.filename}`,
     context.mime && `Type: ${context.mime}`,

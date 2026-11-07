@@ -1,4 +1,4 @@
-import type { AdapterKind } from '@/shared/types';
+import type { AdapterKind, ModelApi } from '@/shared/types';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -34,5 +34,11 @@ export interface ProviderAdapter {
   buildRequest(config: ProviderConfig, request: CompletionRequest): { url: string; init: RequestInit };
   parseResponse(body: unknown): string;
   modelsRequest(config: ProviderConfig): { url: string; init: RequestInit };
-  parseModels(body: unknown): string[];
+  parseModels(body: unknown): ModelInfo[];
+}
+
+export interface ModelInfo {
+  id: string;
+  /** Set when the endpoint says which API serves the model (OpenCode lists this). */
+  api?: ModelApi;
 }

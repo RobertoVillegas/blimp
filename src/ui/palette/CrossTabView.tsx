@@ -33,6 +33,8 @@ export function CrossTabView({
   const [candidates, setCandidates] = useState<CrossTabCandidate[]>();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [question, setQuestion] = useState('');
+  const [wake, setWake] = useState(false);
+  const selectable = (tab: CrossTabCandidate) => !tab.blocked || (wake && Boolean(tab.asleep));
   const [phase, setPhase] = useState<Phase>({ name: 'select' });
   const runningOp = useRef<string | null>(null);
   const runButton = useRef<HTMLButtonElement>(null);
@@ -79,7 +81,7 @@ export function CrossTabView({
     runningOp.current = opId;
     setPhase({ name: 'running', opId, question: asked });
     try {
-      const result = await send({ type: 'cross/run', opId, windowId, tabIds: ids, question: asked });
+      const result = await send({ type: 'cross/run', opId, windowId, tabIds: ids, question: asked, wake });
       setPhase({ name: 'result', result, question: asked });
     } catch (error) {
       setPhase({ name: 'error', message: error instanceof Error ? error.message : String(error) });
@@ -145,9 +147,9 @@ export function CrossTabView({
           )}
           <div className="hm-select-bar">
             <span className="hm-muted">
-              {selectedTabs.length} of {candidates?.filter((tab) => !tab.blocked).length ?? 0} readable tabs selected
+              {selectedTabs.length} of {candidates?.filter(selectable).length ?? 0} readable tabs selected
             </span>
-            <button className="hm-link" onClick={() => setSelected(new Set(candidates?.filter((t) => !t.blocked).map((t) => t.tabId)))}>
+            <button className="hm-link" onClick={() => setSelected(new Set(candidates?.filter(selectable).map((t) => t.tabId)))}>
               All
             </button>
             <button className="hm-link" onClick={() => setSelected(new Set())}>
@@ -161,15 +163,32 @@ export function CrossTabView({
                   <input
                     type="checkbox"
                     checked={selected.has(tab.tabId)}
-                    disabled={Boolean(tab.blocked)}
+                    disabled={!selectable(tab)}
                     onChange={() => toggle(tab.tabId)}
                   />
                   <span className="hm-item-title">{tab.title}</span>
-                  <span className="hm-item-hint">{tab.blocked ?? domainOf(tab.url)}</span>
+                  <span className="hm-item-hint">{selectable(tab) && tab.asleep ? 'Will be woken' : (tab.blocked ?? domainOf(tab.url))}</span>
                 </label>
               </li>
             ))}
           </ul>
+          {candidates?.some((tab) => tab.asleep) && (
+            <label className="hm-wake">
+              <input
+                type="checkbox"
+                checked={wake}
+                onChange={(event) => {
+                  const on = event.target.checked;
+                  setWake(on);
+                  const asleep = candidates.filter((tab) => tab.asleep).map((tab) => tab.tabId);
+                  const next = new Set(selected);
+                  for (const id of asleep) on ? next.add(id) : next.delete(id);
+                  setSelected(next);
+                }}
+              />
+              Wake sleeping tabs so they can be read (loads them in the background)
+            </label>
+          )}
           <div className="hm-run-bar">
             <button
               ref={runButton}

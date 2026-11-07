@@ -48,6 +48,30 @@ test.describe('Summarize and Ask across tabs', () => {
     await expect.poll(() => visible(pages[2]!)).toBe('visible');
   });
 
+  test('skips sleeping tabs unless asked to wake them, without switching to them', async ({ context, sw, server }) => {
+    await configureMockProvider(sw, server.origin);
+    const pages = await openPages(context, server.origin, ['react-hooks', 'weather-paris']);
+    await pages[0]!.bringToFront();
+    await sw.evaluate(async () => {
+      const [paris] = await chrome.tabs.query({ title: 'Paris weather forecast' });
+      await chrome.tabs.discard(paris!.id!);
+    });
+
+    const input = await openPalette(sw, pages[0]!);
+    await input.fill('summarize tabs');
+    await input.press('Enter');
+    const sleeping = pages[0]!.getByRole('checkbox', { name: /Paris weather forecast/ });
+    await expect(sleeping).toBeDisabled();
+    await pages[0]!.getByRole('checkbox', { name: /Wake sleeping tabs/ }).check();
+    await expect(sleeping).toBeChecked();
+    await pages[0]!.getByRole('button', { name: 'Summarize 2 tabs' }).click();
+
+    await expect(pages[0]!.locator('.hm-sources li')).toHaveText([/Hooks reference/, /Paris weather/]);
+    expect(server.requests[0]!.user).toContain('Light rain expected in Paris');
+    // The palette's tab stayed in front.
+    expect(await pages[0]!.evaluate(() => document.visibilityState)).toBe('visible');
+  });
+
   test('asks a question, and uses map/reduce when the tabs exceed the budget', async ({ context, sw, server }) => {
     await configureMockProvider(sw, server.origin, 'mock', { maxInputTokens: 1000 });
     const pages = await openPages(context, server.origin, ['react-hooks', 'react-state', 'weather-paris', 'weather-madrid', 'recipe-pasta']);

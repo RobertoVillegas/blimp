@@ -37,6 +37,7 @@ export const ollama: ProviderAdapter = {
 
   parseModels(body) {
     const models = (body as { models?: { name?: unknown }[] })?.models;
-    return Array.isArray(models) ? models.map((model) => model.name).filter((name): name is string => typeof name === 'string') : [];
+    if (!Array.isArray(models)) return [];
+    return models.map((model) => model.name).filter((name): name is string => typeof name === 'string').map((id) => ({ id }));
   },
 };

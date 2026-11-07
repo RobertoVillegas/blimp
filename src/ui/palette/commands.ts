@@ -1,3 +1,5 @@
+import type { AiFeature } from '@/shared/types';
+
 export type CommandId =
   | 'tidy'
   | 'undo-tidy'
@@ -83,6 +85,16 @@ export const COMMANDS: PaletteCommand[] = [
     icon: '⚙',
   },
 ];
+
+/** Which per-feature AI profile a command uses (Settings › Models per feature). */
+export const FEATURE_OF: Partial<Record<CommandId, AiFeature>> = {
+  tidy: 'tidy',
+  'summarize-page': 'page',
+  'ask-page': 'page',
+  'summarize-tabs': 'tabs',
+  'ask-tabs': 'tabs',
+  'instant-links': 'instant',
+};
 
 export function matches(query: string, ...fields: string[]): boolean {
   const haystack = fields.join(' ').toLowerCase();

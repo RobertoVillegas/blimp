@@ -26,7 +26,7 @@ export async function askPage(
   question: string | null,
   signal?: AbortSignal,
 ): Promise<PageAnswer> {
-  const { config, settings } = await activeProvider();
+  const { config, settings } = await activeProvider('page');
   const tab = await browser.tabs.get(tabId);
 
   let conversation = await loadConversation(tabId);

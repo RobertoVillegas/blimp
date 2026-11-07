@@ -134,11 +134,83 @@ describe('presets', () => {
   });
 });
 
+describe('OpenCode Go models on other APIs', () => {
+  const go = (api: 'chat' | 'messages' | 'responses' | undefined) =>
+    profileConfig({ id: 'go', preset: 'opencode-go', name: 'Go', model: 'm', baseUrl: '', api }, 'key');
+
+  it('Claude/Qwen models use Anthropic Messages with x-api-key and the session header', async () => {
+    const fetchImpl = mockFetch(200, { content: [{ type: 'text', text: 'hi' }] });
+    expect(await complete(go('messages'), { ...request, sessionId: 's1' }, { fetchImpl })).toBe('hi');
+    const { url, headers } = sent(fetchImpl);
+    expect(url).toBe('https://opencode.ai/zen/go/v1/messages');
+    expect(headers['x-api-key']).toBe('key');
+    expect(headers['x-opencode-session']).toBe('s1');
+  });
+
+  it('GPT/Grok models use OpenAI Responses with a reasoning-safe token budget', async () => {
+    const fetchImpl = mockFetch(200, {
+      status: 'completed',
+      output: [
+        { type: 'reasoning', summary: [] },
+        { type: 'message', content: [{ type: 'output_text', text: '{"a":1}' }] },
+      ],
+    });
+    expect(await complete(go('responses'), { ...request, json: true, sessionId: 's2' }, { fetchImpl })).toBe('{"a":1}');
+    const { url, headers, body } = sent(fetchImpl);
+    expect(url).toBe('https://opencode.ai/zen/go/v1/responses');
+    expect(headers.authorization).toBe('Bearer key');
+    expect(headers['x-opencode-session']).toBe('s2');
+    expect(body).toMatchObject({ instructions: 'sys', input: [{ role: 'user', content: 'hi' }], store: false, text: { format: { type: 'json_object' } } });
+    expect(body.max_output_tokens).toBe(2048);
+  });
+
+  it('explains when a reasoning model used up its budget', async () => {
+    const fetchImpl = mockFetch(200, { status: 'incomplete', output: [{ type: 'reasoning' }] });
+    await expect(complete(go('responses'), request, { fetchImpl })).rejects.toMatchObject({ kind: 'invalid-output' });
+  });
+
+  it('ignores an API the preset does not allow', () => {
+    const deepseek = profileConfig({ id: 'd', preset: 'deepseek', name: 'D', model: 'm', baseUrl: '', api: 'responses' }, 'k');
+    expect(deepseek.adapter).toBe('openai-compatible');
+  });
+});
+
+describe('rejected parameters', () => {
+  const openai: ProviderConfig = { adapter: 'openai', label: 'OpenAI', model: 'gpt-x', baseUrl: 'https://api.openai.com/v1', apiKey: 'k' };
+
+  it('retries once without temperature when the model rejects it', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: { message: "Unsupported parameter: 'temperature' is not supported with this model." } }), { status: 400 }),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] })));
+    expect(await complete(openai, { ...request, temperature: 0.2 }, { fetchImpl })).toBe('ok');
+    const retried = JSON.parse(fetchImpl.mock.calls[1]![1]!.body as string);
+    expect(retried.temperature).toBeUndefined();
+  });
+
+  it('retries without JSON mode when the server rejects response_format', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ error: { message: 'response_format is not supported' } }), { status: 400 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: '{}' } }] })));
+    await complete(openai, { ...request, json: true }, { fetchImpl });
+    expect(JSON.parse(fetchImpl.mock.calls[1]![1]!.body as string).response_format).toBeUndefined();
+  });
+
+  it('does not retry other 400s', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () => new Response(JSON.stringify({ error: { message: 'model not found' } }), { status: 400 }));
+    await expect(complete(openai, request, { fetchImpl })).rejects.toMatchObject({ kind: 'model' });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('listModels', () => {
   it('reads OpenAI-style, Gemini and Ollama model lists', async () => {
     const compatible = { adapter: 'openai-compatible' as const, label: 'M', model: '', baseUrl: 'https://api.mistral.ai/v1', apiKey: 'k' };
     const openAiFetch = mockFetch(200, { data: [{ id: 'b-model' }, { id: 'a-model' }, { id: 'a-model' }] });
-    expect(await listModels(compatible, { fetchImpl: openAiFetch })).toEqual(['a-model', 'b-model']);
+    expect(await listModels(compatible, { fetchImpl: openAiFetch })).toEqual([{ id: 'a-model' }, { id: 'b-model' }]);
     expect(openAiFetch.mock.calls[0]![0]).toBe('https://api.mistral.ai/v1/models');
 
     const goFetch = mockFetch(200, {
@@ -146,9 +218,14 @@ describe('listModels', () => {
         { id: 'deepseek-v4.1-flash', api: { 'chat-completions': {} } },
         { id: 'claude-haiku-5-5', api: { messages: {} } },
         { id: 'gpt-6-luna', api: { responses: {} } },
+        { id: 'gemini-4-argon', api: { 'generate-content': {} } },
       ],
     });
-    expect(await listModels(compatible, { fetchImpl: goFetch })).toEqual(['deepseek-v4.1-flash']);
+    expect(await listModels(compatible, { fetchImpl: goFetch })).toEqual([
+      { id: 'claude-haiku-5-5', api: 'messages' },
+      { id: 'deepseek-v4.1-flash', api: 'chat' },
+      { id: 'gpt-6-luna', api: 'responses' },
+    ]);
 
     const geminiFetch = mockFetch(200, {
       models: [
@@ -157,11 +234,11 @@ describe('listModels', () => {
       ],
     });
     const gemini = { adapter: 'gemini' as const, label: 'G', model: '', baseUrl: 'https://g/v1beta', apiKey: 'k' };
-    expect(await listModels(gemini, { fetchImpl: geminiFetch })).toEqual(['gemini-x']);
+    expect(await listModels(gemini, { fetchImpl: geminiFetch })).toEqual([{ id: 'gemini-x' }]);
 
     const ollamaFetch = mockFetch(200, { models: [{ name: 'llama3.2:latest' }] });
     const ollama = { adapter: 'ollama' as const, label: 'O', model: '', baseUrl: 'http://localhost:11434' };
-    expect(await listModels(ollama, { fetchImpl: ollamaFetch })).toEqual(['llama3.2:latest']);
+    expect(await listModels(ollama, { fetchImpl: ollamaFetch })).toEqual([{ id: 'llama3.2:latest' }]);
     expect(ollamaFetch.mock.calls[0]![0]).toBe('http://localhost:11434/api/tags');
   });
 });

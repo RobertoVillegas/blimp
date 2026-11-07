@@ -6,11 +6,13 @@ import { anthropic } from './providers/anthropic';
 import { gemini } from './providers/gemini';
 import { ollama } from './providers/ollama';
 import { openAiCompatible } from './providers/openai-compatible';
-import type { CompletionRequest, ProviderAdapter, ProviderConfig } from './types';
+import { openAiResponses } from './providers/openai-responses';
+import type { CompletionRequest, ModelInfo, ProviderAdapter, ProviderConfig } from './types';
 
 const ADAPTERS: Record<AdapterKind, ProviderAdapter> = {
   openai: openAiCompatible,
   'openai-compatible': openAiCompatible,
+  'openai-responses': openAiResponses,
   anthropic,
   gemini,
   ollama,
@@ -30,7 +32,15 @@ export async function complete(
 ): Promise<string> {
   if (!config.model) throw new UserFacingError('not-configured', 'Choose a model in AI Settings.');
   const adapter = ADAPTERS[config.adapter];
-  const body = await send(config, adapter.buildRequest(config, request), request.signal, timeoutMs, fetchImpl);
+  let body: unknown;
+  try {
+    body = await send(config, adapter.buildRequest(config, request), request.signal, timeoutMs, fetchImpl);
+  } catch (error) {
+    // Reasoning models reject temperature and some servers reject JSON mode; retry once without it.
+    const retry = error instanceof UserFacingError && error.kind === 'model' ? withoutRejectedParam(request, error.message) : null;
+    if (!retry) throw error;
+    body = await send(config, adapter.buildRequest(config, retry), request.signal, timeoutMs, fetchImpl);
+  }
   try {
     return adapter.parseResponse(body);
   } catch {
@@ -38,11 +48,18 @@ export async function complete(
   }
 }
 
-/** Model IDs the endpoint says this key can use. */
-export async function listModels(config: ProviderConfig, { fetchImpl = fetch }: CompleteOptions = {}): Promise<string[]> {
+function withoutRejectedParam(request: CompletionRequest, message: string): CompletionRequest | null {
+  if (request.temperature !== undefined && /temperature/i.test(message)) return { ...request, temperature: undefined };
+  if (request.json && /response_format|json_object|json mode|text\.format/i.test(message)) return { ...request, json: false };
+  return null;
+}
+
+/** Models the endpoint says this key can use, sorted, one entry per ID. */
+export async function listModels(config: ProviderConfig, { fetchImpl = fetch }: CompleteOptions = {}): Promise<ModelInfo[]> {
   const adapter = ADAPTERS[config.adapter];
   const body = await send(config, adapter.modelsRequest(config), undefined, 20_000, fetchImpl);
-  return [...new Set(adapter.parseModels(body))].sort();
+  const byId = new Map(adapter.parseModels(body).map((model) => [model.id, model]));
+  return [...byId.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
 
 async function send(

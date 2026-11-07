@@ -51,3 +51,17 @@ describe('settings', () => {
     expect(settings.temperature).toBe(0.7);
   });
 });
+
+describe('per-feature profiles', () => {
+  beforeEach(() => fakeBrowser.reset());
+
+  it('uses the feature profile when set and falls back to the active one when it is gone', async () => {
+    const { profileFor } = await import('@/ai/active');
+    const settings = await loadSettings();
+    settings.featureProfiles = { previews: 'deepseek', downloads: 'deleted-profile' };
+    expect(profileFor(settings, 'previews').id).toBe('deepseek');
+    expect(profileFor(settings, 'downloads').id).toBe('openai');
+    expect(profileFor(settings, 'tabs').id).toBe('openai');
+    expect(profileFor(settings).id).toBe('openai');
+  });
+});

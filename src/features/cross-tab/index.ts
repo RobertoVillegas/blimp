@@ -4,13 +4,14 @@ import { extractPageContent, type ExtractedPage } from '@/features/ask-page/extr
 import { UserFacingError } from '@/shared/errors';
 import type { CrossTabCandidate, CrossTabResult, CrossTabSkipped } from '@/shared/types';
 import { originPattern } from '@/shared/url';
-import { MAX_TABS, blockedReason } from './classify';
+import { MAX_TABS, blockedReason, isAsleep } from './classify';
 import { packSources, sourcesBlock, type TabDocument } from './pack';
 import { CROSS_SYSTEM_PROMPT, MAP_SYSTEM_PROMPT, questionTask, reduceInput, summaryTask } from './prompt';
 
 const EXTRACT_TIMEOUT_MS = 6_000;
 const MAX_CHARS_PER_TAB = 32_000;
 const PARALLEL_READS = 4;
+const WAKE_TIMEOUT_MS = 15_000;
 
 export async function crossTabCandidates(windowId: number): Promise<CrossTabCandidate[]> {
   const ownPages = browser.runtime.getURL('/');
@@ -24,6 +25,7 @@ export async function crossTabCandidates(windowId: number): Promise<CrossTabCand
       favIconUrl: tab.favIconUrl,
       active: tab.active,
       blocked: blockedReason({ id: tab.id!, url: tab.url ?? '', discarded: tab.discarded, status: tab.status }),
+      asleep: isAsleep({ id: tab.id!, url: tab.url ?? '', discarded: tab.discarded, status: tab.status }),
     }));
 }
 
@@ -50,9 +52,11 @@ export async function runCrossTab(options: {
   windowId: number;
   tabIds: number[];
   question: string | null;
+  /** The user asked to load sleeping tabs (in the background) so they can be read. */
+  wake?: boolean;
   signal?: AbortSignal;
 }): Promise<CrossTabResult> {
-  const { config, settings } = await activeProvider();
+  const { config, settings } = await activeProvider('tabs');
   const skipped: CrossTabSkipped[] = [];
   const tabs: Browser.tabs.Tab[] = [];
 
@@ -60,7 +64,8 @@ export async function runCrossTab(options: {
     const tab = await browser.tabs.get(tabId).catch(() => undefined);
     if (!tab) continue;
     const info = { tabId, title: tab.title || tab.url || 'Untitled', url: tab.url ?? '' };
-    const blocked = blockedReason({ id: tabId, url: info.url, discarded: tab.discarded, status: tab.status });
+    const state = { id: tabId, url: info.url, discarded: tab.discarded, status: tab.status };
+    const blocked = options.wake && isAsleep(state) ? blockedReason({ ...state, discarded: false, status: 'complete' }) : blockedReason(state);
     if (tab.windowId !== options.windowId) skipped.push({ ...info, reason: 'Moved to another window' });
     else if (blocked) skipped.push({ ...info, reason: blocked });
     else if (tabs.length >= MAX_TABS) skipped.push({ ...info, reason: `Over the ${MAX_TABS}-tab limit` });
@@ -70,6 +75,12 @@ export async function runCrossTab(options: {
   const docs: TabDocument[] = [];
   await forEachLimited(tabs, PARALLEL_READS, async (tab) => {
     const info = { tabId: tab.id!, title: tab.title || tab.url || 'Untitled', url: tab.url ?? '' };
+    if (options.wake && isAsleep({ id: tab.id!, url: info.url, discarded: tab.discarded, status: tab.status })) {
+      if (!(await wakeTab(tab.id!))) {
+        skipped.push({ ...info, reason: 'Did not finish loading after waking' });
+        return;
+      }
+    }
     const read = await readTab(tab.id!);
     if (typeof read === 'string') skipped.push({ ...info, reason: read });
     else docs.push({ ...info, title: read.title || info.title, text: read.text });
@@ -123,6 +134,24 @@ export async function runCrossTab(options: {
     skipped,
     calls: batches.length === 1 ? 1 : batches.length + 1,
   };
+}
+
+/** Load a discarded tab in place, without switching to it. Resolves false if it doesn't finish loading in time. */
+async function wakeTab(tabId: number): Promise<boolean> {
+  const loaded = new Promise<boolean>((resolve) => {
+    const timer = setTimeout(() => finish(false), WAKE_TIMEOUT_MS);
+    const listener = (id: number, change: Browser.tabs.OnUpdatedInfo) => {
+      if (id === tabId && change.status === 'complete') finish(true);
+    };
+    function finish(ok: boolean) {
+      clearTimeout(timer);
+      browser.tabs.onUpdated.removeListener(listener);
+      resolve(ok);
+    }
+    browser.tabs.onUpdated.addListener(listener);
+  });
+  await browser.tabs.reload(tabId);
+  return loaded;
 }
 
 /** Extracted page, or the reason it couldn't be read. Never reloads or activates the tab. */

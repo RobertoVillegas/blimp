@@ -108,6 +108,53 @@ test('switching AI profile from the palette changes the model used', async ({ co
   expect((stored.settings as { activeProfileId: string }).activeProfileId).toBe('local-b');
 });
 
+test('a feature can use its own profile while others use the active one', async ({ context, sw, server }) => {
+  await configureMockProvider(sw, server.origin, 'mock', { featureProfiles: { page: 'local-b' } });
+  const [page] = await openPages(context, server.origin, ['recipe-pasta', 'react-hooks', 'react-state']);
+
+  const input = await openPalette(sw, page!);
+  await input.fill('summarize page');
+  await expect(page!.locator('.hm-footer')).toContainText('Second mock · mock-b');
+  await input.press('Enter');
+  await expect(page!.getByText(/MOCK SUMMARY/)).toBeVisible();
+  expect(server.requests.at(-1)!.body.model).toBe('mock-b');
+
+  await page!.keyboard.press('Escape');
+  await page!.keyboard.press('Escape');
+  const again = await openPalette(sw, page!);
+  await again.fill('tidy');
+  await expect(page!.locator('.hm-footer')).toContainText('Local mock · mock');
+  await again.press('Enter');
+  await expect(page!.getByText('Tabs tidied')).toBeVisible();
+  expect(server.requests.at(-1)!.body.model).toBe('mock');
+});
+
+test('Tidy Tabs can add tabs to a group the user already has, and Undo takes them back out', async ({ context, sw, server }) => {
+  await configureMockProvider(sw, server.origin, 'mock', { tidyIntoExistingGroups: true });
+  const pages = await openPages(context, server.origin, ['react-hooks', 'weather-madrid', 'react-state', 'weather-paris']);
+  await sw.evaluate(async () => {
+    const [hooks] = await chrome.tabs.query({ title: 'Hooks reference – React' });
+    const groupId = await chrome.tabs.group({ tabIds: [hooks!.id!] });
+    await chrome.tabGroups.update(groupId, { title: 'React docs', color: 'purple' });
+  });
+  const before = await windowState(sw);
+
+  const input = await openPalette(sw, pages[1]!);
+  await input.fill('tidy');
+  await input.press('Enter');
+  await expect(pages[1]!.getByText('1 tab added to your group')).toBeVisible();
+  expect(server.requests[0]!.user).toContain('[G1] "React docs" contains: Hooks reference – React');
+
+  expect((await windowState(sw)).groups).toEqual([
+    { title: 'React docs', color: 'purple', tabs: ['Hooks reference – React', 'Managing state – React'] },
+    { title: 'Weather', color: 'blue', tabs: ['Madrid weather forecast', 'Paris weather forecast'] },
+  ]);
+
+  await pages[1]!.getByRole('button', { name: 'Undo Tidy Tabs' }).click();
+  await expect(pages[1]!.getByText('Tidy Tabs undone')).toBeVisible();
+  expect(await windowState(sw)).toEqual(before);
+});
+
 test('invalid model output changes nothing', async ({ context, sw, server }) => {
   await configureMockProvider(sw, server.origin, 'mock-bad');
   const pages = await openPages(context, server.origin, ['react-hooks', 'react-state', 'weather-paris']);

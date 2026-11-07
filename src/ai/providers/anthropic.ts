@@ -1,14 +1,15 @@
 import type { ProviderAdapter, ProviderConfig } from '../types';
-import { joinUrl } from './http';
+import { joinUrl, withSession } from './http';
+import { parseOpenAiModels } from './openai-compatible';
 
-function headers(config: ProviderConfig): Record<string, string> {
-  return {
+function headers(config: ProviderConfig, sessionId?: string): Record<string, string> {
+  return withSession({
     'content-type': 'application/json',
     'x-api-key': config.apiKey ?? '',
     'anthropic-version': '2023-06-01',
     // Required for any request that carries a browser Origin, including extension origins.
     'anthropic-dangerous-direct-browser-access': 'true',
-  };
+  }, config, { sessionId });
 }
 
 export const anthropic: ProviderAdapter = {
@@ -25,7 +26,7 @@ export const anthropic: ProviderAdapter = {
       url: joinUrl(config.baseUrl, 'messages'),
       init: {
         method: 'POST',
-        headers: headers(config),
+        headers: headers(config, request.sessionId),
         body: JSON.stringify(body),
       },
     };
@@ -44,8 +45,5 @@ export const anthropic: ProviderAdapter = {
     return { url: joinUrl(config.baseUrl, 'models?limit=100'), init: { method: 'GET', headers: headers(config) } };
   },
 
-  parseModels(body) {
-    const data = (body as { data?: { id?: unknown }[] })?.data;
-    return Array.isArray(data) ? data.map((model) => model.id).filter((id): id is string => typeof id === 'string') : [];
-  },
+  parseModels: parseOpenAiModels,
 };
