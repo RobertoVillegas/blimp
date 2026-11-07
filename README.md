@@ -234,6 +234,8 @@ This is an early build. It loads and runs in Helium; everything below is tested 
 | ✅ | Now playing controls in the palette | v0.3.9 |
 | ✅ | Gmail and Calendar peeks, auto-float videos (experimental) | v0.4.0 |
 
+The full checklist of Arc features, what's done and what's next, is in [`docs/arc-features.md`](docs/arc-features.md).
+
 [Jev](docs/jev.md), TypeSafe's decision model, was looked at and parked for now.
 
 ## Development
