@@ -35,7 +35,15 @@ test('update notice, then copying new files and pressing Reload picks them up an
 
     const palette = await context.newPage();
     await palette.goto(sw.url().replace('background.js', 'palette.html'));
+    await expect(palette.getByRole('status')).toContainText('Helium Max 9.9.9 is available. Updating is recommended.');
+    // Keyboard flow is unchanged: the first option is still a command.
+    await expect(palette.getByRole('option').first()).toContainText('Tidy Tabs');
+    await palette.getByRole('combobox').fill('update');
     await expect(palette.getByRole('option', { name: /Helium Max 9.9.9 is available/ })).toBeVisible();
+    const howTo = context.waitForEvent('page');
+    await palette.getByRole('combobox').fill('');
+    await palette.getByRole('button', { name: 'How to update' }).click();
+    expect((await howTo).url()).toMatch(/options\.html#updates$/);
 
     const settings = await context.newPage();
     await settings.goto(sw.url().replace('background.js', 'options.html#updates'));
@@ -48,7 +56,7 @@ test('update notice, then copying new files and pressing Reload picks them up an
     fs.writeFileSync(manifestPath, JSON.stringify({ ...manifest, version: '9.9.9' }));
 
     const extensionUrl = sw.url().replace('background.js', '');
-    await settings.locator('.update-banner').getByRole('button', { name: 'Reload Helium Max' }).click();
+    await settings.locator('.update-banner').getByRole('button', { name: 'reload it now' }).click();
 
     // Playwright doesn't report the restarted worker (same URL), so read the new state from an extension page.
     const fresh = await context.newPage();
@@ -64,13 +72,13 @@ test('update notice, then copying new files and pressing Reload picks them up an
     }));
     expect(after).toEqual({ profile: 'Keep me', badge: '' });
     await expect(fresh.getByRole('option', { name: 'Tidy Tabs Command', exact: true })).toBeVisible();
-    await expect(fresh.getByRole('option', { name: /is available/ })).toHaveCount(0);
+    await expect(fresh.getByText(/is available/)).toHaveCount(0);
   } finally {
     await context.close();
   }
 });
 
-test('reloads itself, with no clicks, when the updater puts a newer build in its folder', async () => {
+test('reloads itself, with no clicks, when a newer build is copied into its folder', async () => {
   test.setTimeout(120_000);
   const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hm-installed-'));
   fs.cpSync(EXTENSION, folder, { recursive: true });
@@ -89,7 +97,7 @@ test('reloads itself, with no clicks, when the updater puts a newer build in its
     const base = sw.url().replace('background.js', '');
     const before = await sw.evaluate(() => chrome.runtime.getManifest().version);
 
-    // What the Mac updater does: replace the files, manifest last.
+    // The user unzips a new release over the folder.
     const manifestPath = path.join(folder, 'manifest.json');
     const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
     fs.writeFileSync(manifestPath, JSON.stringify({ ...manifest, version: '9.9.9' }));
@@ -110,7 +118,7 @@ test('reloads itself, with no clicks, when the updater puts a newer build in its
     await expect.poll(versionNow, { timeout: 90_000, intervals: [5_000] }).toBe('9.9.9');
     const settings = await context.newPage();
     await settings.goto(`${base}options.html#updates`);
-    await expect(settings.getByText(`Updated automatically from ${before} to 9.9.9`)).toBeVisible();
+    await expect(settings.getByText(`Updated from ${before} to 9.9.9`)).toBeVisible();
   } finally {
     await context.close();
   }

@@ -131,23 +131,15 @@ You don't need Node to try it.
 <img src="docs/images/settings.png" width="520" alt="Settings page with the profile list (OpenCode Go active, DeepSeek, Mistral – DeepSeek, Anthropic) and the OpenCode Go profile form">
 </details>
 
-### Automatic updates (macOS)
+### Updating
 
-A browser can't replace the files of an extension loaded from a folder, so a small updater on your Mac does it. Run this once in Terminal, then drag your Helium Max folder from Finder into the Terminal window to fill in its path, and press Return:
+An extension loaded from a folder can't update itself, so Helium Max tells you when there's a new release: a ↑ on the toolbar icon, a notice at the top of the palette, and steps in Settings › Updates. It checks this project's GitHub releases twice a day; you can turn that off in Settings.
 
-```sh
-curl -fsSL https://raw.githubusercontent.com/RobertoVillegas/helium-max/main/scripts/install-updater.sh | bash -s -- 
-```
+1. Download [helium-max-chrome.zip](https://github.com/RobertoVillegas/helium-max/releases/latest/download/helium-max-chrome.zip) (always the newest).
+2. Unzip it and copy everything into your Helium Max folder, replacing the old files.
+3. Helium Max notices the new version and reloads itself within a minute, or press **Reload Helium Max** in Settings › Updates.
 
-From then on:
-
-- every 4 hours and at login, the updater checks this project's GitHub releases;
-- it downloads a new release, checks it against the release's `SHA256SUMS`, and replaces the files in your folder (the manifest goes last, so the folder is never half-updated);
-- within a minute, Helium Max sees the newer version on disk and reloads itself, unless an AI request is running, in which case it waits.
-
-Settings › Updates shows when it last updated itself, and the log is in `~/Library/Logs/helium-max-updater.log`. Keep **Developer mode** on: with it off, Helium disables folder extensions when they reload. To remove the updater, run the same command with `--uninstall` instead of the folder. It's a single script you can [read first](scripts/install-updater.sh); it only uses tools that ship with macOS and refuses to touch a folder that isn't Helium Max.
-
-Without the updater, Helium Max still tells you when there's a new release (a ↑ on the toolbar icon, a row in the palette, steps in Settings › Updates): download [helium-max-chrome.zip](https://github.com/RobertoVillegas/helium-max/releases/latest/download/helium-max-chrome.zip), copy it over your folder, and press **Reload Helium Max**.
+Profiles and settings stay. Keys you kept only for the session need to be entered again. Keep **Developer mode** on: with it off, Helium disables folder extensions when they reload.
 
 > [!NOTE]
 > Keys are kept only until you quit the browser, unless you choose **On this device across restarts** in Settings. That option stores them unencrypted in the extension's own storage, which webpages can't read but anyone with your browser profile on disk can.
@@ -193,7 +185,6 @@ Change them, or bind Tidy Tabs to its own shortcut, at `chrome://extensions/shor
 | A download starts (if Tidy Downloads is on) | Filename, file type, the address without query strings, and the page title |
 | Just browsing | Nothing |
 | Twice a day (unless turned off) | GitHub's public API is asked for this repository's releases; nothing about you is sent |
-| Every 4 hours, if you installed the Mac updater | GitHub is asked for the latest release and, when there's a new one, its zip and checksums |
 
 The palette footer tells you which provider a command will use before you run it. Helium Max asks for no site access when you install it. The palette gets into a page only after you press the shortcut or the toolbar button. Everything else is asked for when you use it: an API origin when you save a profile, a site when you include one of its tabs, all sites only if you turn on link previews, and the downloads permission only for Tidy Downloads.
 
@@ -213,7 +204,7 @@ This is an early build. It loads and runs in Helium; everything below is tested 
 | ✅ | Summarize and ask across tabs, with sources | M2 |
 | ✅ | Instant Links (search results you can open in one step) | M3 |
 | ✅ | Tidy Downloads (better filenames, opt-in) | M3 |
-| ✅ | Automatic updates on macOS (updater + self-reload), update notice | v0.3 |
+| ✅ | Update notice, reloads itself after you copy a new build in | v0.3 |
 | ✅ | Tidy into existing groups, wake sleeping tabs, a model per feature | v0.3 |
 | ✅ | OpenCode Go models on Anthropic Messages and OpenAI Responses | v0.3 |
 

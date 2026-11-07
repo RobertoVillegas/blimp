@@ -76,9 +76,9 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
       .map((tab): Item => ({ kind: 'tab', tab }));
     // Any typed text can become an Instant Links search.
     const instant: Item[] = query.trim() ? [{ kind: 'instant', query: query.trim() }] : [];
-    // A new release is mentioned last on the empty list, or when searched for.
+    // The notice bar covers the empty list; the row is for people who search for it.
     const updateItem: Item[] =
-      update && (!query || matches(query, 'update upgrade new version release', update.version))
+      update && query && matches(query, 'update upgrade new version release', update.version)
         ? [{ kind: 'update', version: update.version }]
         : [];
     return [...commands, ...profileItems, ...tabItems, ...instant, ...updateItem];
@@ -239,6 +239,16 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
               autoComplete="off"
             />
           </div>
+          {update && !query && (
+            <div className="hm-update-bar" role="status">
+              <span>
+                <strong>Helium Max {update.version} is available.</strong> Updating is recommended.
+              </span>
+              <button className="hm-link" onClick={() => void send({ type: 'update/show' }).then(onClose)}>
+                How to update
+              </button>
+            </div>
+          )}
           <ul className="hm-list" id={listId} role="listbox" aria-label="Results">
             {items.length === 0 && <li className="hm-empty">No commands or tabs match “{query}”.</li>}
             {items.map((item, index) => (

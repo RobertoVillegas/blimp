@@ -10,7 +10,7 @@ export const AUTO_UPDATED_KEY = 'update:auto';
 
 /**
  * Check GitHub twice a day (unless turned off), and check our own folder every minute: when the
- * updater (or the user) has put a newer build there, reload into it.
+ * user has copied a newer build into it, reload into it without another click.
  */
 export function registerUpdateChecks(isBusy: () => boolean): void {
   void browser.alarms.create(ALARM, { periodInMinutes: INTERVAL_HOURS * 60, delayInMinutes: 1 });

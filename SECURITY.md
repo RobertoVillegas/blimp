@@ -36,4 +36,4 @@ Include the version (Settings › Updates shows it), the browser and version, an
 
 The extension ships without remote code. Extension pages use a `script-src 'self'` content security policy, and the release zip is built by GitHub Actions from the tagged commit, which also publishes its `SHA256SUMS`.
 
-The optional Mac updater (`scripts/install-updater.sh`) runs as your user, not as root. It only writes inside the folder you gave it, and only if that folder's manifest is named "Helium Max". It refuses a download whose checksum doesn't match the release's `SHA256SUMS`, or whose manifest isn't Helium Max at the release's version. The checksums come from the same GitHub release as the zip, so they protect against corrupted or swapped downloads, not against someone who controls this repository's releases. If that's in your threat model, don't install the updater; update by hand after reading the diff.
+Updates are never installed for you. Helium Max checks GitHub for a newer release and tells you; you download it and copy it over your folder. It reloads itself only when it finds a newer version already in its own folder.
