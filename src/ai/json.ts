@@ -6,8 +6,8 @@ export function extractJson(text: string): unknown {
   try {
     return JSON.parse(candidate);
   } catch {
-    const start = candidate.indexOf('{');
-    const end = candidate.lastIndexOf('}');
+    const start = candidate.indexOf("{");
+    const end = candidate.lastIndexOf("}");
     if (start === -1 || end <= start) return undefined;
     try {
       return JSON.parse(candidate.slice(start, end + 1));

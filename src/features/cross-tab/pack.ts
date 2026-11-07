@@ -1,4 +1,4 @@
-import { truncateToTokens } from '@/ai/budget';
+import { truncateToTokens } from "@/ai/budget";
 
 export interface TabDocument {
   tabId: number;
@@ -27,7 +27,11 @@ const HEADER_TOKENS = 40;
  * Number sources in reading order and pack them into at most `maxBatches` requests of
  * `batchTokens` each. One batch means a single answer call; more means map/reduce.
  */
-export function packSources(docs: TabDocument[], batchTokens: number, maxBatches = MAX_BATCHES): Packing {
+export function packSources(
+  docs: TabDocument[],
+  batchTokens: number,
+  maxBatches = MAX_BATCHES,
+): Packing {
   const perTab = Math.min(MAX_TAB_TOKENS, batchTokens - HEADER_TOKENS);
   const batches: PackedSource[][] = [];
   const overflow: TabDocument[] = [];
@@ -57,7 +61,7 @@ export function sourcesBlock(sources: PackedSource[]): string {
   return sources
     .map(
       (source) =>
-        `<source n="${source.n}">\nTitle: ${source.title}\nURL: ${source.url}${source.truncated ? '\n(truncated)' : ''}\n\n${source.text}\n</source>`,
+        `<source n="${source.n}">\nTitle: ${source.title}\nURL: ${source.url}${source.truncated ? "\n(truncated)" : ""}\n\n${source.text}\n</source>`,
     )
-    .join('\n\n');
+    .join("\n\n");
 }

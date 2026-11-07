@@ -1,17 +1,25 @@
-import { useEffect, useRef, useState } from 'react';
-import { send } from '@/shared/send';
-import type { AiStatus } from '@/shared/types';
-import { Footer } from './Footer';
-import { RichText } from './RichText';
+import { useEffect, useRef, useState } from "react";
+import { send } from "@/shared/send";
+import type { AiStatus } from "@/shared/types";
+import { Footer } from "./Footer";
+import { RichText } from "./RichText";
 
-type Turn = { role: 'user' | 'assistant'; content: string };
+type Turn = { role: "user" | "assistant"; content: string };
 
 /** Ask anything from the command bar (Arc's ChatGPT-in-the-command-bar), with follow-ups. */
-export function AskAiView({ question, status, onBack }: { question: string; status?: AiStatus; onBack: () => void }) {
+export function AskAiView({
+  question,
+  status,
+  onBack,
+}: {
+  question: string;
+  status?: AiStatus;
+  onBack: () => void;
+}) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
-  const [next, setNext] = useState('');
+  const [next, setNext] = useState("");
   const opRef = useRef<string | null>(null);
   const started = useRef(false);
 
@@ -22,8 +30,8 @@ export function AskAiView({ question, status, onBack }: { question: string; stat
     setPending(true);
     setError(undefined);
     try {
-      const answer = await send({ type: 'ai/ask', opId, messages: history });
-      setTurns([...history, { role: 'assistant', content: answer }]);
+      const answer = await send({ type: "ai/ask", opId, messages: history });
+      setTurns([...history, { role: "assistant", content: answer }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -35,10 +43,10 @@ export function AskAiView({ question, status, onBack }: { question: string; stat
   useEffect(() => {
     if (!started.current) {
       started.current = true;
-      void ask([{ role: 'user', content: question }]);
+      void ask([{ role: "user", content: question }]);
     }
     return () => {
-      if (opRef.current) void send({ type: 'op/cancel', opId: opRef.current });
+      if (opRef.current) void send({ type: "op/cancel", opId: opRef.current });
     };
     // Runs once, for the question the palette passed in.
   }, []);
@@ -52,14 +60,18 @@ export function AskAiView({ question, status, onBack }: { question: string; stat
   return (
     <div className="hm-page">
       <header className="hm-page-header">
-        <button className="hm-link" onClick={onBack} aria-label="Back to commands">
+        <button
+          className="hm-link"
+          onClick={onBack}
+          aria-label="Back to commands"
+        >
           ←
         </button>
         <span className="hm-page-title">Ask AI</span>
       </header>
       <div className="hm-conversation" aria-live="polite">
         {turns.map((turn, index) =>
-          turn.role === 'user' ? (
+          turn.role === "user" ? (
             <p key={index} className="hm-question">
               {turn.content}
             </p>
@@ -81,8 +93,8 @@ export function AskAiView({ question, status, onBack }: { question: string; stat
         onSubmit={(event) => {
           event.preventDefault();
           if (!next.trim() || pending) return;
-          void ask([...turns, { role: 'user', content: next.trim() }]);
-          setNext('');
+          void ask([...turns, { role: "user", content: next.trim() }]);
+          setNext("");
         }}
       >
         <input

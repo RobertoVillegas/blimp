@@ -4,9 +4,16 @@
  * make the extension probe your network.
  */
 export function isPrivateHost(hostname: string): boolean {
-  const host = hostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '');
-  if (host === 'localhost' || host.endsWith('.localhost')) return true;
-  if (/\.(local|internal|lan|home|arpa|ts\.net)$/.test(host) || !host.includes('.') && !host.includes(':')) return true;
+  const host = hostname
+    .toLowerCase()
+    .replace(/^\[|\]$/g, "")
+    .replace(/\.$/, "");
+  if (host === "localhost" || host.endsWith(".localhost")) return true;
+  if (
+    /\.(local|internal|lan|home|arpa|ts\.net)$/.test(host) ||
+    (!host.includes(".") && !host.includes(":"))
+  )
+    return true;
 
   const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
   if (v4) {
@@ -22,8 +29,14 @@ export function isPrivateHost(hostname: string): boolean {
       a >= 224
     );
   }
-  if (host.includes(':')) {
-    return host === '::' || host === '::1' || /^f[cd]/.test(host) || /^fe[89ab]/.test(host) || host.startsWith('::ffff:');
+  if (host.includes(":")) {
+    return (
+      host === "::" ||
+      host === "::1" ||
+      /^f[cd]/.test(host) ||
+      /^fe[89ab]/.test(host) ||
+      host.startsWith("::ffff:")
+    );
   }
   return false;
 }
@@ -31,9 +44,10 @@ export function isPrivateHost(hostname: string): boolean {
 /** Cache key: no fragment, no tracking parameters, lowercase host. */
 export function normalizePreviewUrl(value: string): string {
   const url = new URL(value);
-  url.hash = '';
+  url.hash = "";
   for (const key of [...url.searchParams.keys()]) {
-    if (/^(utm_|fbclid$|gclid$|mc_|ref_src$)/.test(key)) url.searchParams.delete(key);
+    if (/^(utm_|fbclid$|gclid$|mc_|ref_src$)/.test(key))
+      url.searchParams.delete(key);
   }
   url.hostname = url.hostname.toLowerCase();
   return url.toString();

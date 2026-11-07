@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const MAX_TAB_TITLE = 30;
 
@@ -12,14 +12,23 @@ For each tab, write a name of 1–3 words that says what this specific page is.
 Return only JSON: {"titles":[{"tab":number,"title":string}]}, one entry per tab, using the bracketed numbers.`;
 
 export const titlesSchema = z.object({
-  titles: z.array(z.object({ tab: z.number().int(), title: z.string().max(200) })).max(100),
+  titles: z
+    .array(z.object({ tab: z.number().int(), title: z.string().max(200) }))
+    .max(100),
 });
 
-export function titlesUserPrompt(tabs: { title: string; url: string }[]): string {
-  return `<tabs>\n${tabs.map((tab, i) => `[${i + 1}] ${tab.title.replace(/\s+/g, ' ').slice(0, 150)} — ${tab.url.slice(0, 120)}`).join('\n')}\n</tabs>`;
+export function titlesUserPrompt(
+  tabs: { title: string; url: string }[],
+): string {
+  return `<tabs>\n${tabs.map((tab, i) => `[${i + 1}] ${tab.title.replace(/\s+/g, " ").slice(0, 150)} — ${tab.url.slice(0, 120)}`).join("\n")}\n</tabs>`;
 }
 
 export function cleanTabTitle(value: string): string {
-  const text = value.replace(/[\p{Cc}\p{Cf}"“”]/gu, '').replace(/\s+/g, ' ').trim();
-  return text.length > MAX_TAB_TITLE ? text.slice(0, MAX_TAB_TITLE).trimEnd() : text;
+  const text = value
+    .replace(/[\p{Cc}\p{Cf}"“”]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return text.length > MAX_TAB_TITLE
+    ? text.slice(0, MAX_TAB_TITLE).trimEnd()
+    : text;
 }

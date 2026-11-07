@@ -8,7 +8,12 @@
   --hm-accent: #0066cc;
   --hm-warning: #a63a00;
   --hm-shadow: 0 24px 64px rgb(0 0 0 / 0.22), 0 0 0 1px var(--hm-border);
-  font: 14px/1.45 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font:
+    14px/1.45 -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    system-ui,
+    sans-serif;
   color: var(--hm-fg);
   -webkit-font-smoothing: antialiased;
 }
@@ -94,11 +99,11 @@
   cursor: default;
 }
 
-.hm-item[aria-selected='true'] {
+.hm-item[aria-selected="true"] {
   background: var(--hm-selected);
 }
 
-.hm-item[aria-disabled='true'] {
+.hm-item[aria-disabled="true"] {
   opacity: 0.5;
 }
 
@@ -201,15 +206,33 @@
   margin-right: 8px;
 }
 
-.hm-color-grey { background: #5f6368; }
-.hm-color-blue { background: #1a73e8; }
-.hm-color-red { background: #d93025; }
-.hm-color-yellow { background: #f9ab00; }
-.hm-color-green { background: #188038; }
-.hm-color-pink { background: #d01884; }
-.hm-color-purple { background: #a142f4; }
-.hm-color-cyan { background: #007b83; }
-.hm-color-orange { background: #fa903e; }
+.hm-color-grey {
+  background: #5f6368;
+}
+.hm-color-blue {
+  background: #1a73e8;
+}
+.hm-color-red {
+  background: #d93025;
+}
+.hm-color-yellow {
+  background: #f9ab00;
+}
+.hm-color-green {
+  background: #188038;
+}
+.hm-color-pink {
+  background: #d01884;
+}
+.hm-color-purple {
+  background: #a142f4;
+}
+.hm-color-cyan {
+  background: #007b83;
+}
+.hm-color-orange {
+  background: #fa903e;
+}
 
 .hm-button {
   font: inherit;
@@ -247,11 +270,15 @@
 }
 
 @keyframes hm-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hm-spinner { animation-duration: 2.4s; }
+  .hm-spinner {
+    animation-duration: 2.4s;
+  }
 }
 
 .hm-page {
@@ -740,7 +767,7 @@
   cursor: pointer;
 }
 
-.hm-chip[aria-selected='true'] {
+.hm-chip[aria-selected="true"] {
   background: var(--hm-selected);
   border-color: transparent;
   color: var(--hm-accent);

@@ -268,7 +268,7 @@ The full checklist of Arc features, what's done and what's next, is in [`docs/ar
 
 ## Development
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for how the code is organized, and [SECURITY.md](SECURITY.md) for the threat model and how to report a vulnerability.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how the code is organized, [SECURITY.md](SECURITY.md) for the threat model and how to report a vulnerability, and [PRIVACY.md](PRIVACY.md) for exactly what Blimp reads and sends. The Chrome Web Store listing, permission justifications and images are in [`store/`](store/LISTING.md); `pnpm store:images` regenerates the images.
 
 ```sh
 pnpm install

@@ -1,9 +1,9 @@
-import { extractFromDocument } from '@/features/link-preview/extract-document';
-import { send } from '@/shared/send';
-import type { LinkPreview } from '@/shared/types';
-import { domainOf, isHttpUrl } from '@/shared/url';
-import { showInTopLayer } from '@/ui/top-layer';
-import { CARD_CSS } from '@/ui/preview-card-css';
+import { extractFromDocument } from "@/features/link-preview/extract-document";
+import { send } from "@/shared/send";
+import type { LinkPreview } from "@/shared/types";
+import { domainOf, isHttpUrl } from "@/shared/url";
+import { showInTopLayer } from "@/ui/top-layer";
+import { CARD_CSS } from "@/ui/preview-card-css";
 
 const DEBOUNCE_MS = 400;
 /** Without Shift the pointer has to rest a little longer, so passing over a list doesn't trigger. */
@@ -14,14 +14,17 @@ const LIST_HOVER_MS = 900;
  * Only the links that are the point of the page: story titles, results, posts.
  */
 const LIST_LINKS: Record<string, string> = {
-  'news.ycombinator.com': '.titleline > a',
-  'www.google.com': 'a:has(> h3)',
-  'www.reddit.com': 'a[slot="full-post-link"], a[slot="title"], a[data-testid="outbound-link"]',
-  'old.reddit.com': 'a.title',
-  'x.com': '[data-testid="tweetText"] a[href^="http"], [data-testid="card.wrapper"] a',
-  'twitter.com': '[data-testid="tweetText"] a[href^="http"], [data-testid="card.wrapper"] a',
-  'github.com': '.markdown-body a[href^="http"]',
-  'lobste.rs': 'a.u-url',
+  "news.ycombinator.com": ".titleline > a",
+  "www.google.com": "a:has(> h3)",
+  "www.reddit.com":
+    'a[slot="full-post-link"], a[slot="title"], a[data-testid="outbound-link"]',
+  "old.reddit.com": "a.title",
+  "x.com":
+    '[data-testid="tweetText"] a[href^="http"], [data-testid="card.wrapper"] a',
+  "twitter.com":
+    '[data-testid="tweetText"] a[href^="http"], [data-testid="card.wrapper"] a',
+  "github.com": '.markdown-body a[href^="http"]',
+  "lobste.rs": "a.u-url",
 };
 const LEAVE_GRACE_MS = 250;
 const MAX_TEXT_CHARS = 16_000;
@@ -29,9 +32,9 @@ const MAX_TEXT_CHARS = 16_000;
 // Registered at runtime only while Shift-hover previews are on (see syncLinkPreviewScript).
 // Plain DOM, no React: this runs on every page the user grants.
 export default defineContentScript({
-  registration: 'runtime',
-  matches: ['http://*/*', 'https://*/*'],
-  cssInjectionMode: 'manual',
+  registration: "runtime",
+  matches: ["http://*/*", "https://*/*"],
+  cssInjectionMode: "manual",
 
   main(ctx) {
     let shiftDown = false;
@@ -46,39 +49,72 @@ export default defineContentScript({
       if (!anchor || anchor.isContentEditable) return null;
       const url = anchor.href;
       if (!isHttpUrl(url)) return null;
-      if (url.split('#')[0] === location.href.split('#')[0]) return null;
+      if (url.split("#")[0] === location.href.split("#")[0]) return null;
       // Holding Shift while typing must never fetch anything.
       const focused = document.activeElement as HTMLElement | null;
-      if (focused?.isContentEditable || focused?.matches('input, textarea, select')) return null;
+      if (
+        focused?.isContentEditable ||
+        focused?.matches("input, textarea, select")
+      )
+        return null;
       return url;
     };
 
     let listSelector: string | undefined;
     const applySetting = (on: boolean) => {
-      const hosts = import.meta.env.MODE.startsWith('e2e') ? { ...LIST_LINKS, '127.0.0.1': 'a.list-link' } : LIST_LINKS;
+      const hosts = import.meta.env.MODE.startsWith("e2e")
+        ? { ...LIST_LINKS, "127.0.0.1": "a.list-link" }
+        : LIST_LINKS;
       listSelector = on ? hosts[location.hostname] : undefined;
     };
-    void browser.storage.local.get('settings').then((stored) => applySetting(Boolean((stored.settings as { previewListLinks?: boolean } | undefined)?.previewListLinks)));
+    void browser.storage.local
+      .get("settings")
+      .then((stored) =>
+        applySetting(
+          Boolean(
+            (stored.settings as { previewListLinks?: boolean } | undefined)
+              ?.previewListLinks,
+          ),
+        ),
+      );
     browser.storage.onChanged.addListener((changes, area) => {
-      if (area === 'local' && changes.settings) applySetting(Boolean((changes.settings.newValue as { previewListLinks?: boolean } | undefined)?.previewListLinks));
+      if (area === "local" && changes.settings)
+        applySetting(
+          Boolean(
+            (
+              changes.settings.newValue as
+                { previewListLinks?: boolean } | undefined
+            )?.previewListLinks,
+          ),
+        );
     });
-    const isListLink = (anchor: HTMLAnchorElement | null) => Boolean(anchor && listSelector && anchor.matches(listSelector));
+    const isListLink = (anchor: HTMLAnchorElement | null) =>
+      Boolean(anchor && listSelector && anchor.matches(listSelector));
 
     const schedule = () => {
       clearTimeout(pending);
       if (!eligible(hovered)) return;
       const anchor = hovered;
       if (shiftDown) {
-        pending = setTimeout(() => anchor === hovered && shiftDown && void show(anchor!), DEBOUNCE_MS);
+        pending = setTimeout(
+          () => anchor === hovered && shiftDown && void show(anchor!),
+          DEBOUNCE_MS,
+        );
       } else if (isListLink(anchor)) {
-        pending = setTimeout(() => anchor === hovered && void show(anchor!), LIST_HOVER_MS);
+        pending = setTimeout(
+          () => anchor === hovered && void show(anchor!),
+          LIST_HOVER_MS,
+        );
       }
     };
 
     const dismiss = () => {
       clearTimeout(pending);
       clearTimeout(leaving);
-      if (current) void send({ type: 'op/cancel', opId: current.opId }).catch(() => undefined);
+      if (current)
+        void send({ type: "op/cancel", opId: current.opId }).catch(
+          () => undefined,
+        );
       current = null;
       card?.remove();
       card = null;
@@ -90,32 +126,48 @@ export default defineContentScript({
       dismiss();
       const opId = crypto.randomUUID();
       current = { url, opId };
-      card = new Card(url, anchor.textContent?.trim() || domainOf(url), dismiss, (inside) => {
-        if (inside) clearTimeout(leaving);
-        else leaveSoon();
-      });
+      card = new Card(
+        url,
+        anchor.textContent?.trim() || domainOf(url),
+        dismiss,
+        (inside) => {
+          if (inside) clearTimeout(leaving);
+          else leaveSoon();
+        },
+      );
       card.place(pointer.x, pointer.y);
 
       const stillCurrent = () => current?.opId === opId;
       try {
-        const start = await send({ type: 'preview/start', opId, url });
+        const start = await send({ type: "preview/start", opId, url });
         if (!stillCurrent()) return;
         let preview: LinkPreview;
-        if (start.kind === 'done') {
+        if (start.kind === "done") {
           preview = start.preview;
         } else {
-          const doc = new DOMParser().parseFromString(start.html, 'text/html');
+          const doc = new DOMParser().parseFromString(start.html, "text/html");
           const page = extractFromDocument(doc, MAX_TEXT_CHARS, start.finalUrl);
-          preview = await send({ type: 'preview/finish', opId, page: { ...page, url, finalUrl: start.finalUrl } });
+          preview = await send({
+            type: "preview/finish",
+            opId,
+            page: { ...page, url, finalUrl: start.finalUrl },
+          });
         }
         if (!stillCurrent()) return;
         card?.render(preview);
         if (preview.imageUrl) {
-          const image = await send({ type: 'preview/image', opId, url: preview.imageUrl });
+          const image = await send({
+            type: "preview/image",
+            opId,
+            url: preview.imageUrl,
+          });
           if (image && stillCurrent()) card?.setImage(image);
         }
       } catch (error) {
-        if (stillCurrent()) card?.renderError(error instanceof Error ? error.message : 'Preview unavailable');
+        if (stillCurrent())
+          card?.renderError(
+            error instanceof Error ? error.message : "Preview unavailable",
+          );
       }
     };
 
@@ -127,61 +179,91 @@ export default defineContentScript({
     };
 
     // Only real user input counts; pages can't synthesize Shift-hover to spend the user's tokens.
-    ctx.addEventListener(window, 'keydown', (event) => {
-      if (!event.isTrusted) return;
-      if (event.key === 'Escape' && card) {
-        dismiss();
-        return;
-      }
-      if (event.key === 'Shift' && !event.repeat) {
-        shiftDown = true;
-        schedule();
-      }
-    }, { capture: true });
+    ctx.addEventListener(
+      window,
+      "keydown",
+      (event) => {
+        if (!event.isTrusted) return;
+        if (event.key === "Escape" && card) {
+          dismiss();
+          return;
+        }
+        if (event.key === "Shift" && !event.repeat) {
+          shiftDown = true;
+          schedule();
+        }
+      },
+      { capture: true },
+    );
 
-    ctx.addEventListener(window, 'keyup', (event) => {
-      if (!event.isTrusted || event.key !== 'Shift') return;
-      shiftDown = false;
-      clearTimeout(pending);
-      if (card && !card.hovered) dismiss();
-    }, { capture: true });
+    ctx.addEventListener(
+      window,
+      "keyup",
+      (event) => {
+        if (!event.isTrusted || event.key !== "Shift") return;
+        shiftDown = false;
+        clearTimeout(pending);
+        if (card && !card.hovered) dismiss();
+      },
+      { capture: true },
+    );
 
-    ctx.addEventListener(document, 'pointerover', (event) => {
-      if (!event.isTrusted) return;
-      const anchor = (event.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
-      if (anchor === hovered) return;
-      hovered = anchor;
-      shiftDown = event.shiftKey;
-      if (anchor) schedule();
-      else if (card) leaveSoon();
-    }, { capture: true, passive: true });
+    ctx.addEventListener(
+      document,
+      "pointerover",
+      (event) => {
+        if (!event.isTrusted) return;
+        const anchor = (event.target as Element | null)?.closest?.(
+          "a[href]",
+        ) as HTMLAnchorElement | null;
+        if (anchor === hovered) return;
+        hovered = anchor;
+        shiftDown = event.shiftKey;
+        if (anchor) schedule();
+        else if (card) leaveSoon();
+      },
+      { capture: true, passive: true },
+    );
 
-    ctx.addEventListener(document, 'pointermove', (event) => {
-      if (!event.isTrusted) return;
-      pointer = { x: event.clientX, y: event.clientY };
-      if (event.shiftKey && !shiftDown) {
-        shiftDown = true;
-        schedule();
-      }
-    }, { capture: true, passive: true });
+    ctx.addEventListener(
+      document,
+      "pointermove",
+      (event) => {
+        if (!event.isTrusted) return;
+        pointer = { x: event.clientX, y: event.clientY };
+        if (event.shiftKey && !shiftDown) {
+          shiftDown = true;
+          schedule();
+        }
+      },
+      { capture: true, passive: true },
+    );
 
-    ctx.addEventListener(window, 'blur', () => {
+    ctx.addEventListener(window, "blur", () => {
       shiftDown = false;
       dismiss();
     });
-    ctx.addEventListener(window, 'scroll', () => card && dismiss(), { capture: true, passive: true });
-    ctx.addEventListener(document, 'pointerdown', (event) => {
-      if (card && !card.contains(event)) dismiss();
-    }, { capture: true });
+    ctx.addEventListener(window, "scroll", () => card && dismiss(), {
+      capture: true,
+      passive: true,
+    });
+    ctx.addEventListener(
+      document,
+      "pointerdown",
+      (event) => {
+        if (card && !card.contains(event)) dismiss();
+      },
+      { capture: true },
+    );
     ctx.onInvalidated(dismiss);
   },
 });
 
 class Card {
   hovered = false;
-  private host = document.createElement('helium-max-preview');
+  private host = document.createElement("helium-max-preview");
   private root: ShadowRoot;
-  private box = document.createElement('div');
+  private box = document.createElement("div");
 
   constructor(
     private url: string,
@@ -190,25 +272,28 @@ class Card {
     onHover: (inside: boolean) => void,
   ) {
     // Closed so the page can't read the summary; e2e builds keep it open for testing.
-    this.root = this.host.attachShadow({ mode: import.meta.env.MODE.startsWith('e2e') ? 'open' : 'closed' });
-    const style = document.createElement('style');
+    this.root = this.host.attachShadow({
+      mode: import.meta.env.MODE.startsWith("e2e") ? "open" : "closed",
+    });
+    const style = document.createElement("style");
     style.textContent = CARD_CSS;
-    this.box.className = 'card';
-    this.box.setAttribute('role', 'dialog');
-    this.box.setAttribute('aria-label', 'Link preview');
-    this.box.addEventListener('pointerenter', () => {
+    this.box.className = "card";
+    this.box.setAttribute("role", "dialog");
+    this.box.setAttribute("aria-label", "Link preview");
+    this.box.addEventListener("pointerenter", () => {
       this.hovered = true;
       onHover(true);
     });
-    this.box.addEventListener('pointerleave', () => {
+    this.box.addEventListener("pointerleave", () => {
       this.hovered = false;
       onHover(false);
     });
     this.root.append(style, this.box);
-    this.host.style.cssText = 'all: initial; position: fixed; inset: 0 auto auto 0; z-index: 2147483647;';
+    this.host.style.cssText =
+      "all: initial; position: fixed; inset: 0 auto auto 0; z-index: 2147483647;";
     document.documentElement.append(this.host);
-    showInTopLayer(this.host, 'point');
-    this.fill(label, null, 'Reading the page…', 'loading');
+    showInTopLayer(this.host, "point");
+    this.fill(label, null, "Reading the page…", "loading");
   }
 
   private anchor = { x: 0, y: 0 };
@@ -232,22 +317,44 @@ class Card {
 
   render(preview: LinkPreview) {
     if (preview.headline || preview.facts?.length) {
-      this.fill(preview.title || preview.domain, preview.domain, preview.headline ?? '', 'headline');
+      this.fill(
+        preview.title || preview.domain,
+        preview.domain,
+        preview.headline ?? "",
+        "headline",
+      );
       this.addFacts(preview.facts ?? []);
-    } else if (preview.summary) this.fill(preview.title || preview.domain, preview.domain, preview.summary, 'summary');
-    else this.fill(preview.title || preview.domain, preview.domain, `Preview unavailable: ${preview.unavailable ?? 'unknown reason'}.`, 'muted');
+    } else if (preview.summary)
+      this.fill(
+        preview.title || preview.domain,
+        preview.domain,
+        preview.summary,
+        "summary",
+      );
+    else
+      this.fill(
+        preview.title || preview.domain,
+        preview.domain,
+        `Preview unavailable: ${preview.unavailable ?? "unknown reason"}.`,
+        "muted",
+      );
   }
 
   /** `src` is a data URL fetched by the worker, so the page never requests the image itself. */
   setImage(src: string) {
-    const img = Object.assign(document.createElement('img'), { className: 'image', src, alt: '', decoding: 'async' });
-    img.addEventListener('load', () => this.reposition(), { once: true });
-    img.addEventListener('error', () => img.remove(), { once: true });
+    const img = Object.assign(document.createElement("img"), {
+      className: "image",
+      src,
+      alt: "",
+      decoding: "async",
+    });
+    img.addEventListener("load", () => this.reposition(), { once: true });
+    img.addEventListener("error", () => img.remove(), { once: true });
     this.box.prepend(img);
   }
 
   renderError(message: string) {
-    this.fill(domainOf(this.url), domainOf(this.url), message, 'muted');
+    this.fill(domainOf(this.url), domainOf(this.url), message, "muted");
   }
 
   contains(event: Event) {
@@ -261,29 +368,52 @@ class Card {
   /** Arc-style rows: "Price  $499 for the base model". Text only, never HTML. */
   private addFacts(facts: { label: string; info: string }[]) {
     if (!facts.length) return;
-    const list = Object.assign(document.createElement('dl'), { className: 'facts' });
+    const list = Object.assign(document.createElement("dl"), {
+      className: "facts",
+    });
     for (const fact of facts) {
       list.append(
-        Object.assign(document.createElement('dt'), { textContent: fact.label }),
-        Object.assign(document.createElement('dd'), { textContent: fact.info }),
+        Object.assign(document.createElement("dt"), {
+          textContent: fact.label,
+        }),
+        Object.assign(document.createElement("dd"), { textContent: fact.info }),
       );
     }
-    this.box.querySelector('.actions')?.before(list);
+    this.box.querySelector(".actions")?.before(list);
     this.reposition();
   }
 
-  private fill(title: string, domain: string | null, body: string, tone: 'loading' | 'summary' | 'headline' | 'muted') {
-    const domainEl = Object.assign(document.createElement('div'), { className: 'domain', textContent: domain ?? domainOf(this.url) });
-    const titleEl = Object.assign(document.createElement('div'), { className: 'title', textContent: title });
-    const bodyEl = Object.assign(document.createElement('p'), { className: `body ${tone}`, textContent: body });
-    const open = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Open link' });
-    open.addEventListener('click', () => {
-      window.open(this.url, '_blank', 'noopener');
+  private fill(
+    title: string,
+    domain: string | null,
+    body: string,
+    tone: "loading" | "summary" | "headline" | "muted",
+  ) {
+    const domainEl = Object.assign(document.createElement("div"), {
+      className: "domain",
+      textContent: domain ?? domainOf(this.url),
+    });
+    const titleEl = Object.assign(document.createElement("div"), {
+      className: "title",
+      textContent: title,
+    });
+    const bodyEl = Object.assign(document.createElement("p"), {
+      className: `body ${tone}`,
+      textContent: body,
+    });
+    const open = Object.assign(document.createElement("button"), {
+      type: "button",
+      textContent: "Open link",
+    });
+    open.addEventListener("click", () => {
+      window.open(this.url, "_blank", "noopener");
       this.onClose();
     });
-    const actions = Object.assign(document.createElement('div'), { className: 'actions' });
+    const actions = Object.assign(document.createElement("div"), {
+      className: "actions",
+    });
     actions.append(open);
-    if (tone === 'loading') bodyEl.setAttribute('aria-busy', 'true');
+    if (tone === "loading") bodyEl.setAttribute("aria-busy", "true");
     this.box.replaceChildren(domainEl, titleEl, bodyEl, actions);
     this.reposition();
   }

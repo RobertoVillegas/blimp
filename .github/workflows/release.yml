@@ -10,6 +10,8 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      HAS_CWS_CREDENTIALS: ${{ secrets.CWS_REFRESH_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -34,3 +36,13 @@ jobs:
           (cd .output && sha256sum blimp-*-chrome.zip blimp-chrome.zip helium-max-chrome.zip > SHA256SUMS)
           gh release create "$GITHUB_REF_NAME" .output/blimp-*-chrome.zip .output/blimp-chrome.zip .output/helium-max-chrome.zip .output/SHA256SUMS \
             --title "Blimp $GITHUB_REF_NAME" --generate-notes --latest
+      - name: Upload to the Chrome Web Store
+        # Skipped until the CWS_* repository secrets exist (see store/LISTING.md).
+        if: env.HAS_CWS_CREDENTIALS == 'true'
+        env:
+          EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          PUBLISHER_ID: ${{ secrets.CWS_PUBLISHER_ID }}
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: npx --yes chrome-webstore-upload-cli@4 --source .output/blimp-chrome.zip

@@ -1,14 +1,25 @@
-import { UserFacingError } from '@/shared/errors';
-import type { UndoResult } from '@/shared/types';
-import type { PlannedGroup, Snapshot, TabsPort, TidyRecord } from './types';
-import { NO_GROUP } from './types';
+import { UserFacingError } from "@/shared/errors";
+import type { UndoResult } from "@/shared/types";
+import type { PlannedGroup, Snapshot, TabsPort, TidyRecord } from "./types";
+import { NO_GROUP } from "./types";
 
-export async function takeSnapshot(port: TabsPort, windowId: number): Promise<Snapshot> {
-  const [tabs, groups] = await Promise.all([port.windowTabs(windowId), port.windowGroups(windowId)]);
+export async function takeSnapshot(
+  port: TabsPort,
+  windowId: number,
+): Promise<Snapshot> {
+  const [tabs, groups] = await Promise.all([
+    port.windowTabs(windowId),
+    port.windowGroups(windowId),
+  ]);
   return {
     windowId,
     takenAt: Date.now(),
-    tabs: tabs.map(({ id, index, groupId, pinned }) => ({ id, index, groupId, pinned })),
+    tabs: tabs.map(({ id, index, groupId, pinned }) => ({
+      id,
+      index,
+      groupId,
+      pinned,
+    })),
     groups,
   };
 }
@@ -22,13 +33,16 @@ export async function applyPlan(
   snapshot: Snapshot,
   plan: PlannedGroup[],
 ): Promise<{ record: TidyRecord; applied: PlannedGroup[] }> {
-  const current = new Map((await port.windowTabs(snapshot.windowId)).map((tab) => [tab.id, tab]));
+  const current = new Map(
+    (await port.windowTabs(snapshot.windowId)).map((tab) => [tab.id, tab]),
+  );
   const stillEligible = (id: number) => {
     const tab = current.get(id);
     return tab !== undefined && !tab.pinned && tab.groupId === NO_GROUP;
   };
 
-  const groupStillThere = (groupId: number) => [...current.values()].some((tab) => tab.groupId === groupId);
+  const groupStillThere = (groupId: number) =>
+    [...current.values()].some((tab) => tab.groupId === groupId);
 
   const applied: PlannedGroup[] = [];
   const createdGroupIds: number[] = [];
@@ -47,27 +61,45 @@ export async function applyPlan(
       if (tabIds.length < 2) continue;
       const groupId = await port.group(tabIds, snapshot.windowId);
       createdGroupIds.push(groupId);
-      await port.updateGroup(groupId, { title: group.title, color: group.color });
+      await port.updateGroup(groupId, {
+        title: group.title,
+        color: group.color,
+      });
       applied.push({ ...group, tabIds });
     }
   } catch {
     await restoreSnapshot(port, { snapshot, createdGroupIds, addedToExisting });
-    throw new UserFacingError('internal', 'The browser refused to create a tab group. Your tabs were restored.');
+    throw new UserFacingError(
+      "internal",
+      "The browser refused to create a tab group. Your tabs were restored.",
+    );
   }
   return { record: { snapshot, createdGroupIds, addedToExisting }, applied };
 }
 
 /** Best-effort undo: ungroup what Tidy Tabs created and put those tabs back in their old positions. */
-export async function restoreSnapshot(port: TabsPort, record: TidyRecord): Promise<UndoResult> {
+export async function restoreSnapshot(
+  port: TabsPort,
+  record: TidyRecord,
+): Promise<UndoResult> {
   const { snapshot, createdGroupIds } = record;
   const created = new Set(createdGroupIds);
   // Tab → the existing group Tidy Tabs put it in. It only counts while it's still there.
-  const addedTo = new Map((record.addedToExisting ?? []).flatMap(({ groupId, tabIds }) => tabIds.map((id) => [id, groupId] as const)));
-  const ours = (tabId: number, groupId: number) => created.has(groupId) || addedTo.get(tabId) === groupId;
+  const addedTo = new Map(
+    (record.addedToExisting ?? []).flatMap(({ groupId, tabIds }) =>
+      tabIds.map((id) => [id, groupId] as const),
+    ),
+  );
+  const ours = (tabId: number, groupId: number) =>
+    created.has(groupId) || addedTo.get(tabId) === groupId;
   const conflicts: string[] = [];
 
-  const current = new Map((await port.windowTabs(snapshot.windowId)).map((tab) => [tab.id, tab]));
-  const tidied = snapshot.tabs.filter((tab) => tab.groupId === NO_GROUP && !tab.pinned);
+  const current = new Map(
+    (await port.windowTabs(snapshot.windowId)).map((tab) => [tab.id, tab]),
+  );
+  const tidied = snapshot.tabs.filter(
+    (tab) => tab.groupId === NO_GROUP && !tab.pinned,
+  );
 
   let closed = 0;
   let elsewhere = 0;
@@ -80,7 +112,10 @@ export async function restoreSnapshot(port: TabsPort, record: TidyRecord): Promi
       else closed++;
       continue;
     }
-    if (now.pinned || (now.groupId !== NO_GROUP && !ours(tab.id, now.groupId))) {
+    if (
+      now.pinned ||
+      (now.groupId !== NO_GROUP && !ours(tab.id, now.groupId))
+    ) {
       regroupedByUser++;
       continue;
     }
@@ -88,15 +123,25 @@ export async function restoreSnapshot(port: TabsPort, record: TidyRecord): Promi
     if (now.groupId !== NO_GROUP) toRestore.push(tab);
   }
 
-  const toUngroup = [...current.values()].filter((tab) => tab.groupId !== NO_GROUP && ours(tab.id, tab.groupId)).map((tab) => tab.id);
+  const toUngroup = [...current.values()]
+    .filter((tab) => tab.groupId !== NO_GROUP && ours(tab.id, tab.groupId))
+    .map((tab) => tab.id);
   if (toUngroup.length) await port.ungroup(toUngroup);
 
   await restoreOrder(port, snapshot, new Set(toRestore.map((tab) => tab.id)));
 
-  if (closed) conflicts.push(`${plural(closed, 'tab was', 'tabs were')} closed since tidying.`);
-  if (elsewhere) conflicts.push(`${plural(elsewhere, 'tab was', 'tabs were')} moved to another window and left there.`);
+  if (closed)
+    conflicts.push(
+      `${plural(closed, "tab was", "tabs were")} closed since tidying.`,
+    );
+  if (elsewhere)
+    conflicts.push(
+      `${plural(elsewhere, "tab was", "tabs were")} moved to another window and left there.`,
+    );
   if (regroupedByUser) {
-    conflicts.push(`${plural(regroupedByUser, 'tab was', 'tabs were')} pinned or regrouped since tidying and left as is.`);
+    conflicts.push(
+      `${plural(regroupedByUser, "tab was", "tabs were")} pinned or regrouped since tidying and left as is.`,
+    );
   }
   return { restoredCount: toRestore.length, conflicts };
 }
@@ -105,12 +150,22 @@ export async function restoreSnapshot(port: TabsPort, record: TidyRecord): Promi
  * Put each restored tab right after the tab that preceded it in the snapshot (skipping tabs that
  * are gone), or before the next untouched one, so order survives tabs being opened or closed.
  */
-async function restoreOrder(port: TabsPort, snapshot: Snapshot, restoring: Set<number>): Promise<void> {
+async function restoreOrder(
+  port: TabsPort,
+  snapshot: Snapshot,
+  restoring: Set<number>,
+): Promise<void> {
   const now = await port.windowTabs(snapshot.windowId);
   const present = new Set(now.map((tab) => tab.id));
-  const desired = now.filter((tab) => !restoring.has(tab.id)).map((tab) => tab.id);
-  const firstUnpinned = now.filter((tab) => tab.pinned && !restoring.has(tab.id)).length;
-  const original = [...snapshot.tabs].sort((a, b) => a.index - b.index).filter((tab) => present.has(tab.id));
+  const desired = now
+    .filter((tab) => !restoring.has(tab.id))
+    .map((tab) => tab.id);
+  const firstUnpinned = now.filter(
+    (tab) => tab.pinned && !restoring.has(tab.id),
+  ).length;
+  const original = [...snapshot.tabs]
+    .sort((a, b) => a.index - b.index)
+    .filter((tab) => present.has(tab.id));
 
   original.forEach((tab, position) => {
     if (!restoring.has(tab.id)) return;
@@ -119,7 +174,9 @@ async function restoreOrder(port: TabsPort, snapshot: Snapshot, restoring: Set<n
     if (previous) {
       at = desired.indexOf(previous.id) + 1;
     } else {
-      const next = original.slice(position + 1).find((later) => !restoring.has(later.id));
+      const next = original
+        .slice(position + 1)
+        .find((later) => !restoring.has(later.id));
       at = next ? desired.indexOf(next.id) : firstUnpinned;
     }
     desired.splice(Math.max(at, firstUnpinned), 0, tab.id);
@@ -131,14 +188,17 @@ async function restoreOrder(port: TabsPort, snapshot: Snapshot, restoring: Set<n
     const self = (await port.getTab(tabId))?.index;
     if (self === undefined) continue;
     const leftId = desired[position - 1];
-    const left = leftId === undefined ? undefined : (await port.getTab(leftId))?.index;
+    const left =
+      leftId === undefined ? undefined : (await port.getTab(leftId))?.index;
     const target = left === undefined ? 0 : self > left ? left + 1 : left;
     if (self !== target) await port.move(tabId, target);
   }
 
   // Landing next to an existing group can pull a tab into it; undo that.
   const after = await port.windowTabs(snapshot.windowId);
-  const captured = after.filter((tab) => restoring.has(tab.id) && tab.groupId !== NO_GROUP);
+  const captured = after.filter(
+    (tab) => restoring.has(tab.id) && tab.groupId !== NO_GROUP,
+  );
   if (captured.length) await port.ungroup(captured.map((tab) => tab.id));
 }
 

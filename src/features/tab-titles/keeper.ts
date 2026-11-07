@@ -4,9 +4,18 @@
  * over a leading unread count like Gmail's "(3)". `null` restores the site's own title and stops.
  */
 export function keepTitle(desired: string | null): void {
-  type Keeper = { desired: string | null; original: string; observer?: MutationObserver; applying: boolean };
+  type Keeper = {
+    desired: string | null;
+    original: string;
+    observer?: MutationObserver;
+    applying: boolean;
+  };
   const scope = globalThis as unknown as { __heliumMaxTitle?: Keeper };
-  const keeper: Keeper = scope.__heliumMaxTitle ?? { desired: null, original: document.title, applying: false };
+  const keeper: Keeper = scope.__heliumMaxTitle ?? {
+    desired: null,
+    original: document.title,
+    applying: false,
+  };
   scope.__heliumMaxTitle = keeper;
 
   const render = () => {
@@ -39,7 +48,11 @@ export function keepTitle(desired: string | null): void {
         apply();
       }
     });
-    keeper.observer.observe(document.head ?? document.documentElement, { subtree: true, childList: true, characterData: true });
+    keeper.observer.observe(document.head ?? document.documentElement, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
   }
   apply();
 }

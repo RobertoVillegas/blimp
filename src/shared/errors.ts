@@ -1,16 +1,16 @@
 export type ErrorKind =
-  | 'not-configured'
-  | 'permission'
-  | 'auth'
-  | 'quota'
-  | 'model'
-  | 'network'
-  | 'timeout'
-  | 'cancelled'
-  | 'invalid-output'
-  | 'page-unavailable'
-  | 'nothing-to-do'
-  | 'internal';
+  | "not-configured"
+  | "permission"
+  | "auth"
+  | "quota"
+  | "model"
+  | "network"
+  | "timeout"
+  | "cancelled"
+  | "invalid-output"
+  | "page-unavailable"
+  | "nothing-to-do"
+  | "internal";
 
 /** Errors that are safe to show to the user verbatim. Never put secrets in `message`. */
 export class UserFacingError extends Error {
@@ -19,7 +19,7 @@ export class UserFacingError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = 'UserFacingError';
+    this.name = "UserFacingError";
   }
 }
 
@@ -29,9 +29,10 @@ export interface SerializedError {
 }
 
 export function serializeError(error: unknown): SerializedError {
-  if (error instanceof UserFacingError) return { kind: error.kind, message: error.message };
-  if (error instanceof DOMException && error.name === 'AbortError') {
-    return { kind: 'cancelled', message: 'Cancelled.' };
+  if (error instanceof UserFacingError)
+    return { kind: error.kind, message: error.message };
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return { kind: "cancelled", message: "Cancelled." };
   }
-  return { kind: 'internal', message: 'Something went wrong inside Blimp.' };
+  return { kind: "internal", message: "Something went wrong inside Blimp." };
 }

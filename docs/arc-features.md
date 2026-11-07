@@ -51,7 +51,8 @@ Every Arc feature we know of, from Arc's own docs and from the feature modules i
 - [x] **Helium:** tab groups (our stand-in for Arc's folders)
 - [x] **Helium:** split view
 - [x] **Helium:** profiles
-- [~] Favorites grid: Helium's pinned tabs cover it. A separate cross-window favorites grid isn't possible in Helium's sidebar from an extension
+- [x] **Helium:** favorites / pinned grid: Helium's pinned tabs cover it
+- ✗ A second, Blimp-made tab sidebar: decided against (Nov 2026). Helium's sidebar already lists tabs and pinned tabs, and an extension's side panel would be a second column next to it. Blimp's extras (media, peeks, Live Folders, archive) live in the ⌘K palette instead
 - [~] Spaces: tab groups and profiles cover most of it
 - ✗ Changing Helium's sidebar itself: extensions can't, and Helium doesn't accept AI-written patches
 - [x] Auto-archive: close tabs untouched for 12 h / 24 h / 7 d / 30 d, never pinned, grouped, active or playing ones, with ⌘K › Archived Tabs to reopen them for 30 days (v0.8.0)
