@@ -4,15 +4,18 @@ import { crossTabCandidates, missingOrigins, runCrossTab } from '@/features/cros
 import { browserSearch, instantSearch, openResult } from '@/features/instant-links';
 import { finishPreview, startPreview } from '@/features/link-preview';
 import { canUndoTidy, tidyTabs, undoTidyTabs } from '@/features/tidy-tabs';
-import { checkForUpdate, currentUpdate } from '@/features/updates';
+import { AUTO_UPDATED_KEY, checkForUpdate, currentUpdate, reloadIfNewerOnDisk } from '@/features/updates';
 import { chromeTabsPort } from '@/features/tidy-tabs/chrome-port';
 import { loadSettings, saveSettings } from '@/storage/settings';
 import { UserFacingError, serializeError } from '@/shared/errors';
-import { requestSchema, type Reply, type Request, type ResponseMap } from '@/shared/messages';
+import { requestSchema, type Reply, type Request, type ResponseMap, type UpdateStatus } from '@/shared/messages';
 import type { TabSummary } from '@/shared/types';
 import { originPattern } from '@/shared/url';
 
 const operations = new Map<string, AbortController>();
+
+/** True while an AI request is in flight; an automatic reload waits for it. */
+export const hasRunningOperations = () => operations.size > 0;
 
 export function registerRouter(): void {
   browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -130,10 +133,17 @@ async function handle(
       await browserSearch(request.query);
       return null;
 
-    case 'update/status':
-      return { current: browser.runtime.getManifest().version, update: await currentUpdate() };
+    case 'update/status': {
+      const stored = await browser.storage.local.get(AUTO_UPDATED_KEY);
+      return {
+        current: browser.runtime.getManifest().version,
+        update: await currentUpdate(),
+        autoUpdated: stored[AUTO_UPDATED_KEY] as UpdateStatus['autoUpdated'],
+      };
+    }
 
     case 'update/check':
+      if (await reloadIfNewerOnDisk(hasRunningOperations)) return { current: browser.runtime.getManifest().version, update: null };
       await checkForUpdate({ force: true });
       return { current: browser.runtime.getManifest().version, update: await currentUpdate() };
 

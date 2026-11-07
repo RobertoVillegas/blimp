@@ -69,3 +69,49 @@ test('update notice, then copying new files and pressing Reload picks them up an
     await context.close();
   }
 });
+
+test('reloads itself, with no clicks, when the updater puts a newer build in its folder', async () => {
+  test.setTimeout(120_000);
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'hm-installed-'));
+  fs.cpSync(EXTENSION, folder, { recursive: true });
+  const context = await chromium.launchPersistentContext('', {
+    channel: 'chromium',
+    args: [`--disable-extensions-except=${folder}`, `--load-extension=${folder}`],
+  });
+  try {
+    const sw = context.serviceWorkers()[0] ?? (await context.waitForEvent('serviceworker'));
+    const extensionsPage = await context.newPage();
+    await extensionsPage.goto('chrome://extensions');
+    await extensionsPage.evaluate(() =>
+      (globalThis as unknown as { chrome: { developerPrivate: { updateProfileConfiguration(c: object): Promise<void> } } }).chrome.developerPrivate.updateProfileConfiguration({ inDeveloperMode: true }),
+    );
+    await extensionsPage.close();
+    const base = sw.url().replace('background.js', '');
+    const before = await sw.evaluate(() => chrome.runtime.getManifest().version);
+
+    // What the Mac updater does: replace the files, manifest last.
+    const manifestPath = path.join(folder, 'manifest.json');
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    fs.writeFileSync(manifestPath, JSON.stringify({ ...manifest, version: '9.9.9' }));
+
+    // No clicks: the once-a-minute check notices and reloads. Reloading closes extension pages,
+    // so each look uses a fresh tab.
+    const versionNow = async () => {
+      const page = await context.newPage();
+      try {
+        await page.goto(`${base}options.html#updates`);
+        return await page.evaluate(() => chrome.runtime.getManifest().version);
+      } catch {
+        return '';
+      } finally {
+        await page.close().catch(() => undefined);
+      }
+    };
+    await expect.poll(versionNow, { timeout: 90_000, intervals: [5_000] }).toBe('9.9.9');
+    const settings = await context.newPage();
+    await settings.goto(`${base}options.html#updates`);
+    await expect(settings.getByText(`Updated automatically from ${before} to 9.9.9`)).toBeVisible();
+  } finally {
+    await context.close();
+  }
+});

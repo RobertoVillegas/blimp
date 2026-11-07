@@ -1,17 +1,48 @@
 import { loadSettings } from '@/storage/settings';
-import { fetchUpdate, type AvailableUpdate } from './check';
+import { compareVersions, fetchUpdate, type AvailableUpdate } from './check';
 
 export const UPDATE_KEY = 'update:available';
 const CHECKED_KEY = 'update:checkedAt';
 const ALARM = 'update-check';
+const DISK_ALARM = 'disk-check';
 const INTERVAL_HOURS = 12;
+export const AUTO_UPDATED_KEY = 'update:auto';
 
-/** Check now and then twice a day, unless the user turned update checks off. */
-export function registerUpdateChecks(): void {
+/**
+ * Check GitHub twice a day (unless turned off), and check our own folder every minute: when the
+ * updater (or the user) has put a newer build there, reload into it.
+ */
+export function registerUpdateChecks(isBusy: () => boolean): void {
   void browser.alarms.create(ALARM, { periodInMinutes: INTERVAL_HOURS * 60, delayInMinutes: 1 });
+  void browser.alarms.create(DISK_ALARM, { periodInMinutes: 1 });
   browser.alarms.onAlarm.addListener((alarm) => {
     if (alarm.name === ALARM) void checkForUpdate();
+    if (alarm.name === DISK_ALARM) void reloadIfNewerOnDisk(isBusy);
   });
+  void reloadIfNewerOnDisk(isBusy);
+}
+
+/** Version of the build currently in the extension's folder, read fresh from disk. */
+export async function versionOnDisk(): Promise<string | null> {
+  try {
+    // manifest.json isn't one of WXT's typed public paths, so build the URL from the extension root.
+    const response = await fetch(new URL('manifest.json', browser.runtime.getURL('/')), { cache: 'no-store' });
+    const manifest = (await response.json()) as { version?: unknown };
+    return typeof manifest.version === 'string' ? manifest.version : null;
+  } catch {
+    // Mid-write or unreadable: try again on the next check.
+    return null;
+  }
+}
+
+/** Reload into a newer build on disk, unless an AI operation is running (then retry next minute). */
+export async function reloadIfNewerOnDisk(isBusy: () => boolean): Promise<boolean> {
+  const running = browser.runtime.getManifest().version;
+  const disk = await versionOnDisk();
+  if (!disk || compareVersions(disk, running) <= 0 || isBusy()) return false;
+  await browser.storage.local.set({ [AUTO_UPDATED_KEY]: { from: running, to: disk, at: Date.now() } });
+  browser.runtime.reload();
+  return true;
 }
 
 export async function checkForUpdate({ force = false } = {}): Promise<AvailableUpdate | null> {

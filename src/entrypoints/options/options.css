@@ -239,3 +239,26 @@ main.grant h1 {
   min-width: 0;
   text-overflow: ellipsis;
 }
+
+section h3 {
+  font-size: 14px;
+  margin: 18px 0 6px;
+}
+
+.command {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgb(128 128 128 / 0.12);
+}
+
+.command code {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  font-size: 12px;
+}

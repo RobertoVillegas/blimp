@@ -28,5 +28,7 @@ jobs:
         run: |
           # A fixed-name copy keeps releases/latest/download/helium-max-chrome.zip pointing at the newest build.
           cp .output/helium-max-*-chrome.zip .output/helium-max-chrome.zip
-          gh release create "$GITHUB_REF_NAME" .output/helium-max-*-chrome.zip .output/helium-max-chrome.zip \
+          # The Mac updater (scripts/install-updater.sh) refuses a zip that doesn't match this.
+          (cd .output && sha256sum helium-max-*-chrome.zip helium-max-chrome.zip > SHA256SUMS)
+          gh release create "$GITHUB_REF_NAME" .output/helium-max-*-chrome.zip .output/helium-max-chrome.zip .output/SHA256SUMS \
             --title "Helium Max $GITHUB_REF_NAME" --generate-notes --latest

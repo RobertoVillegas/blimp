@@ -207,13 +207,32 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
 
       <section id="updates" aria-labelledby="updates-heading">
         <h2 id="updates-heading">Updates</h2>
-        <p className="hint">
-          You're on version {updateStatus?.current ?? '…'}. Extensions loaded from a folder can't update themselves, so
-          Helium Max tells you when a new release is out and you replace the folder's contents.
+        <p className="hint">You're on version {updateStatus?.current ?? '…'}.</p>
+        {updateStatus?.autoUpdated && (
+          <p className="notice ok">
+            Updated automatically from {updateStatus.autoUpdated.from} to {updateStatus.autoUpdated.to} on{' '}
+            {new Date(updateStatus.autoUpdated.at).toLocaleString()}.
+          </p>
+        )}
+
+        <h3>Automatic updates (macOS)</h3>
+        <p>
+          A browser can't replace the files of an extension loaded from a folder, so a small updater on your Mac does
+          it: every 4 hours it checks this project's GitHub releases, verifies the download's checksum, and replaces
+          the files. Helium Max notices within a minute and reloads itself. Run this once in Terminal, with your
+          Helium Max folder at the end (type the command, then drag the folder from Finder into the Terminal window):
         </p>
+        <CopyCommand command={`curl -fsSL ${INSTALLER_URL} | bash -s -- `} />
+        <p className="hint">
+          To remove it, run the same command with <code>--uninstall</code> instead of the folder. The updater's log is in{' '}
+          <code>~/Library/Logs/helium-max-updater.log</code>. Keep Developer mode on in Helium, or it disables folder
+          extensions when they reload.
+        </p>
+
         {updateStatus?.update && (
           <div className="update-banner" role="status">
-            <strong>Version {updateStatus.update.version} is available.</strong>
+            <strong>Version {updateStatus.update.version} is available.</strong> With automatic updates set up it installs
+            itself within a few hours. To update now:
             <ol>
               <li>
                 <a href={updateStatus.update.downloadUrl}>Download helium-max-{updateStatus.update.version}-chrome.zip</a>{' '}
@@ -233,7 +252,7 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
             checked={settings.updateChecks}
             onChange={(event) => void persist({ ...settings, updateChecks: event.target.checked })}
           />
-          Check GitHub for new versions twice a day
+          Tell me here when a new version is out (checks GitHub twice a day)
         </label>
         <p className="hint">The check asks GitHub's public API for this project's releases. Nothing about you or your browsing is sent.</p>
         <div className="actions">
@@ -243,6 +262,27 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
         <Status notice={notices.updates} />
       </section>
     </>
+  );
+}
+
+const INSTALLER_URL = 'https://raw.githubusercontent.com/RobertoVillegas/helium-max/main/scripts/install-updater.sh';
+
+function CopyCommand({ command }: { command: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="command">
+      <code>{command}</code>
+      <button
+        onClick={() =>
+          void navigator.clipboard.writeText(command).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          })
+        }
+      >
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+    </div>
   );
 }
 

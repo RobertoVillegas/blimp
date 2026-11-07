@@ -41,4 +41,6 @@ These come from the [product spec](docs/PRD.md) and aren't negotiable in a PR:
 
 ## Releases
 
-Bump `version` in `package.json`, merge to `main`, then push a matching tag (`v0.4.0`). The Release workflow checks the tag matches, builds the zip and publishes the GitHub release. Installed copies notice the new release within 12 hours.
+Bump `version` in `package.json`, merge to `main`, then push a matching tag (`v0.4.0`). The Release workflow checks the tag matches, builds the zip, writes `SHA256SUMS` and publishes the GitHub release (never as a pre-release: `/releases/latest` and the Mac updater ignore those). Macs with the updater install it within 4 hours; others see a notice within 12.
+
+If you change `scripts/install-updater.sh`, test it on a Mac against a throwaway folder with an older build, and include the tampered-download case.

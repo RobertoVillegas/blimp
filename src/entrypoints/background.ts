@@ -1,5 +1,5 @@
 import { openPalette } from '@/background/palette';
-import { registerRouter } from '@/background/router';
+import { hasRunningOperations, registerRouter } from '@/background/router';
 import { syncLinkPreviewScript } from '@/features/link-preview';
 import { registerTidyDownloads } from '@/features/tidy-downloads';
 import { currentUpdate, registerUpdateChecks, showBadge } from '@/features/updates';
@@ -9,7 +9,7 @@ import { restrictSessionStorage } from '@/storage/secrets';
 export default defineBackground(() => {
   void restrictSessionStorage();
   registerRouter();
-  registerUpdateChecks();
+  registerUpdateChecks(hasRunningOperations);
   void currentUpdate().then(showBadge);
   // Must be added synchronously at startup so Chrome routes downloads to it after a restart.
   registerTidyDownloads();
