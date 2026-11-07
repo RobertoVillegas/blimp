@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { PaletteIntent, UpdateStatus } from '@/shared/messages';
 import { send } from '@/shared/send';
-import type { AiStatus, PageAnswer, ProfileSummary, TabSummary, TidyResult, UndoResult } from '@/shared/types';
+import type { AiStatus, NowPlaying, PageAnswer, ProfileSummary, TabSummary, TidyResult, UndoResult } from '@/shared/types';
 import { domainOf } from '@/shared/url';
 import { COMMANDS, FEATURE_OF, matches, titleRank, type CommandId, type PaletteCommand } from './commands';
 import { CrossTabView } from './CrossTabView';
@@ -9,6 +9,7 @@ import { Footer, statusFor } from './Footer';
 import { InstantLinksView } from './InstantLinksView';
 import { RenameTabView, TabTitlesView } from './TabTitlesView';
 import { togglePictureInPicture } from '@/features/pip/page';
+import { NowPlayingCard } from './NowPlayingCard';
 import { RichText } from './RichText';
 
 export interface PaletteProps {
@@ -48,6 +49,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
   const [status, setStatus] = useState<AiStatus>();
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
   const [update, setUpdate] = useState<UpdateStatus['update']>(null);
+  const [playing, setPlaying] = useState<NowPlaying[]>([]);
   const [canUndo, setCanUndo] = useState(false);
   const [selected, setSelected] = useState(0);
   const [view, setView] = useState<View>({ name: 'list' });
@@ -56,13 +58,18 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
   const listId = useId();
   const startedIntent = useRef(false);
 
+  const refreshMedia = useCallback(() => {
+    void send({ type: 'media/list', tabId }).then(setPlaying).catch(() => setPlaying([]));
+  }, [tabId]);
+
   const refresh = useCallback(() => {
     void send({ type: 'tabs/list', windowId }).then(setTabs).catch(() => setTabs([]));
     void send({ type: 'ai/status' }).then(setStatus).catch(() => undefined);
     void send({ type: 'profiles/list' }).then(setProfiles).catch(() => setProfiles([]));
     void send({ type: 'update/status' }).then((status) => setUpdate(status.update)).catch(() => setUpdate(null));
+    refreshMedia();
     void send({ type: 'tidy/can-undo' }).then(setCanUndo).catch(() => setCanUndo(false));
-  }, [windowId]);
+  }, [windowId, refreshMedia]);
 
   useEffect(refresh, [refresh]);
 
@@ -181,6 +188,19 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
             .then(onClose)
             .catch((error: unknown) => fail(error));
           return;
+        case 'media-toggle': {
+          const target = playing.find((item) => item.playing) ?? playing[0];
+          if (!target) {
+            fail(new Error('Nothing is playing in this window or any other.'));
+            return;
+          }
+          if (!target.controllable) {
+            fail(new Error(`Helium Max needs access to ${target.accessOrigin?.replace(/^https?:\/\//, '').replace(/\/\*$/, '') ?? 'that site'} to control it. Use Allow control in the palette's Now playing card.`));
+            return;
+          }
+          void send({ type: 'media/action', tabId: target.tabId, action: 'toggle' }).then(onClose);
+          return;
+        }
         case 'open-sidebar':
           // Extension pages (the palette in its own window) may open it from this click; the
           // in-page palette can't, because the click doesn't count once it leaves the page.
@@ -197,7 +217,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
           return onClose();
       }
     },
-    [askPage, isDisabled, onClose, runTidy, runUndo, status, tabs, tabId],
+    [askPage, isDisabled, onClose, runTidy, runUndo, status, tabs, tabId, playing],
   );
 
   useEffect(() => {
@@ -240,6 +260,8 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
       return;
     }
     if (view.name !== 'list') return;
+    // Buttons (like the media controls) handle their own Enter and Space.
+    if ((event.target as HTMLElement).tagName === 'BUTTON') return;
     if (event.key === 'ArrowDown') {
       event.preventDefault();
       setSelected((index) => Math.min(index + 1, items.length - 1));
@@ -285,6 +307,7 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
               </button>
             </div>
           )}
+          {playing.length > 0 && !query && <NowPlayingCard items={playing} onChange={refreshMedia} onClose={onClose} />}
           <ul className="hm-list" id={listId} role="listbox" aria-label="Results">
             {items.length === 0 && <li className="hm-empty">No commands or tabs match “{query}”.</li>}
             {items.map((item, index) => (

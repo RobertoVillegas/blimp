@@ -13,6 +13,7 @@ export type CommandId =
   | 'instant-links'
   | 'open-sidebar'
   | 'pip'
+  | 'media-toggle'
   | 'settings';
 
 export interface PaletteCommand {
@@ -110,6 +111,13 @@ export const COMMANDS: PaletteCommand[] = [
     description: 'Float the video on this page in its own window you can move anywhere. Run it again to close it.',
     keywords: 'pip video float floating window mini player popout',
     icon: '⧉',
+  },
+  {
+    id: 'media-toggle',
+    title: 'Play or Pause Media',
+    description: 'Pause what is playing in any tab, or resume it.',
+    keywords: 'music video audio pause play resume stop now playing',
+    icon: '⏯',
   },
   {
     id: 'open-sidebar',

@@ -11,6 +11,7 @@ import type {
   TabSummary,
   TidyResult,
   TitleProposal,
+  NowPlaying,
   UndoResult,
 } from './types';
 
@@ -76,6 +77,12 @@ export const requestSchema = z.discriminatedUnion('type', [
   }),
   z.object({ type: z.literal('titles/restore'), tabIds: z.array(z.number().int()).min(1).max(100) }),
   z.object({ type: z.literal('titles/current'), tabId: z.number().int().optional() }),
+  z.object({ type: z.literal('media/list'), tabId: z.number().int().optional() }),
+  z.object({
+    type: z.literal('media/action'),
+    tabId: z.number().int(),
+    action: z.enum(['toggle', 'next', 'previous', 'mute']),
+  }),
   z.object({ type: z.literal('op/cancel'), opId: z.string() }),
   z.object({ type: z.literal('settings/open') }),
   z.object({ type: z.literal('shortcut/get'), name: z.string().max(50) }),
@@ -112,6 +119,8 @@ export interface ResponseMap {
   'titles/apply': string[];
   'titles/restore': number;
   'titles/current': { tabId: number; title: string; renamed: boolean } | null;
+  'media/list': NowPlaying[];
+  'media/action': NowPlaying | null;
   'op/cancel': null;
   'settings/open': null;
   'shortcut/get': string;

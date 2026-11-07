@@ -36,6 +36,10 @@ Not affiliated with Helium or The Browser Company.
 
 Press ⌘K on any page to search commands and your open tabs. Type part of a tab's title and press Enter to jump to it. Searching never calls the AI. If Helium keeps ⌘K for itself, use ⇧⌘K or the toolbar button. On pages extensions can't touch, like `helium://` pages and the Web Store, the palette opens as a popup instead.
 
+### Now playing
+
+When something plays in any tab, the palette shows it at the top, like Arc's mini player: title and artist, play/pause, previous/next on YouTube, YouTube Music, Spotify and SoundCloud, mute, go to tab, and picture in picture for the video on the page you're on. **Play or Pause Media** does it from the keyboard. Mute and go-to-tab work everywhere; playback controls need access to the site, and the card asks the first time.
+
 ### Picture in Picture
 
 On a page with a video, open the palette and run **Picture in Picture**: the video floats in its own window that you can drag anywhere and park in a corner. Run it again to bring it back. It picks the video that's playing, or the biggest one on the page. Videos inside embedded players (iframes) aren't reachable yet.
@@ -220,6 +224,7 @@ This is an early build. It loads and runs in Helium; everything below is tested 
 | ✅ | OpenCode Go models on Anthropic Messages and OpenAI Responses | v0.3 |
 | ✅ | Tidy Tab Titles, Rename Tab | v0.3.5 |
 | ✅ | Picture in Picture from the palette | v0.3.8 |
+| ✅ | Now playing controls in the palette | v0.3.9 |
 
 [Jev](docs/jev.md), TypeSafe's decision model, was looked at and parked for now.
 

@@ -3,6 +3,7 @@ import { askPage, forgetPage } from '@/features/ask-page';
 import { crossTabCandidates, missingOrigins, runCrossTab } from '@/features/cross-tab';
 import { browserSearch, instantSearch, openResult } from '@/features/instant-links';
 import { finishPreview, previewImage, startPreview } from '@/features/link-preview';
+import { mediaAction, nowPlaying } from '@/features/media';
 import { applyTitles, proposeTitles, restoreTitles, titleKey } from '@/features/tab-titles';
 import { canUndoTidy, tidyTabs, undoTidyTabs } from '@/features/tidy-tabs';
 import { AUTO_UPDATED_KEY, checkForUpdate, currentUpdate, reloadIfNewerOnDisk } from '@/features/updates';
@@ -176,6 +177,12 @@ async function handle(
       const saved = key ? ((await browser.storage.local.get('tabTitles')).tabTitles as Record<string, string> | undefined)?.[key] : undefined;
       return { tabId, title: saved ?? tab.title ?? '', renamed: Boolean(saved) };
     }
+
+    case 'media/list':
+      return nowPlaying(request.tabId ?? sender.tab?.id);
+
+    case 'media/action':
+      return mediaAction(request.tabId, request.action, sender.tab?.id);
 
     case 'op/cancel':
       operations.get(request.opId)?.abort();

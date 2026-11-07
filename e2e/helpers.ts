@@ -26,6 +26,8 @@ export const test = base.extend<Fixtures>({
     const context = await chromium.launchPersistentContext('', {
       channel: 'chromium',
       args: [`--disable-extensions-except=${EXTENSION}`, `--load-extension=${EXTENSION}`],
+      // With Playwright's default --mute-audio, Chromium never reports a tab as audible.
+      ignoreDefaultArgs: ['--mute-audio'],
     });
     await use(context);
     await context.close();

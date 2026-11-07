@@ -157,6 +157,25 @@ export interface TitleProposal {
   proposed: string;
 }
 
+export interface NowPlaying {
+  tabId: number;
+  title: string;
+  artist: string;
+  artworkUrl: string;
+  favIconUrl?: string;
+  playing: boolean;
+  muted: boolean;
+  hasVideo: boolean;
+  /** Previous/next work on this site's player. */
+  canSkip: boolean;
+  /** Helium Max can read and control playback (it has access to the site). */
+  controllable: boolean;
+  /** Site access that would make it controllable. */
+  accessOrigin?: string;
+  /** It's the tab the palette was opened on (picture in picture works from here). */
+  current: boolean;
+}
+
 export interface PageAnswer {
   text: string;
   title: string;

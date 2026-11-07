@@ -127,6 +127,25 @@ video.srcObject = canvas.captureStream(20);
 video.play();
 </script></body></html>`);
     }
+    // An audible page with media-session metadata, like a music site.
+    if (req.method === 'GET' && url.pathname === '/song') {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      return void res.end(`<!doctype html><html><head><title>Music player</title></head><body><h1>Music</h1>
+<audio loop></audio>
+<script>
+// Browsers only start audio after the user interacts, so tests click the page first.
+addEventListener('click', () => {
+  const ctx = new AudioContext();
+  const osc = ctx.createOscillator();
+  const dest = ctx.createMediaStreamDestination();
+  osc.connect(dest); osc.connect(ctx.destination); osc.start();
+  const audio = document.querySelector('audio');
+  audio.srcObject = dest.stream;
+  audio.play();
+}, { once: true });
+navigator.mediaSession.metadata = new MediaMetadata({ title: 'Test Song', artist: 'The Fixtures' });
+</script></body></html>`);
+    }
     if (req.method === 'GET' && url.pathname === '/login') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       return void res.end(LOGIN_HTML);
