@@ -30,6 +30,7 @@ Every Arc feature we know of, from Arc's own docs and from the feature modules i
 - [x] ⌘K palette with commands and open tabs (v0.1)
 - [x] Search tabs by title or URL and jump to them (v0.1)
 - [x] Picking the command whose name matches what you typed (v0.3.5)
+- [x] Arc's ranking: empty palette shows your most recently used tabs first, commands by how much you use them, and what you picked for a query comes first next time; all on device, with a Forget button (v0.10.0)
 - [x] Copy URL, Copy as Markdown Link, Copy as Quote (selected text with a link back) (v0.5.0)
 - [x] **Helium:** address bar, search engines, history
 
@@ -56,7 +57,7 @@ Every Arc feature we know of, from Arc's own docs and from the feature modules i
 - [x] Auto-archive: close tabs untouched for 12 h / 24 h / 7 d / 30 d, never pinned, grouped, active or playing ones, with ⌘K › Archived Tabs to reopen them for 30 days (v0.8.0)
 - [ ] Air Traffic Control: rules that send links from other apps to a specific window or tab group
 - [x] Live Folders: GitHub PRs and issues (review requests, mine, assigned, or any search) and RSS/Atom feeds, refreshed every 30 minutes with new items marked, in ⌘K › Live Folders (v0.9.0)
-- [ ] Recent pages preview: the last pages you visited on a site (Notion, Figma, Docs…)
+- [x] Recent pages preview: ⌘K › Recent Pages lists the last pages you visited on the current site or a pinned tab's site, from history (opt-in) (v0.10.0)
 
 ## Favorites previews and peeks
 

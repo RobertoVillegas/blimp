@@ -5,6 +5,8 @@ import { browserSearch, instantSearch, openResult, openResults } from '@/feature
 import { finishPreview, previewImage, startPreview } from '@/features/link-preview';
 import { clearArchive, listArchive, restoreArchived, runAutoArchive } from '@/features/archive';
 import { askAi } from '@/features/ask-ai';
+import { clearRank, loadRank, recordUse } from '@/features/ranking';
+import { openRecent, recentPages, recentSites } from '@/features/recent';
 import { listLiveFolders, markSeen, openLiveItems, refreshLiveFolders } from '@/features/live';
 import { closeLittleWindows, isLittleWindow, moveToMainWindow, openLittle } from '@/features/little';
 import { browseAnswer, browseFetch } from '@/features/browse';
@@ -271,6 +273,27 @@ async function handle(
       await markSeen(request.folderId, request.itemIds);
       return null;
 
+    case 'recent/sites':
+      return recentSites(request.tabId ?? sender.tab?.id);
+
+    case 'recent/list':
+      return recentPages(request.host, request.tabId ?? sender.tab?.id);
+
+    case 'recent/open':
+      await openRecent(request.url, request.tabId ?? sender.tab?.id);
+      return null;
+
+    case 'rank/get':
+      return loadRank();
+
+    case 'rank/record':
+      await recordUse(request);
+      return null;
+
+    case 'rank/clear':
+      await clearRank();
+      return null;
+
     case 'op/cancel':
       operations.get(request.opId)?.abort();
       return null;
@@ -327,5 +350,6 @@ async function listTabs(windowId: number): Promise<TabSummary[]> {
       active: tab.active,
       pinned: tab.pinned,
       groupId: tab.groupId,
+      lastAccessed: tab.lastAccessed,
     }));
 }

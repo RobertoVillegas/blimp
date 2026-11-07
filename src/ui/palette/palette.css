@@ -721,3 +721,27 @@
 .hm-focus-none:focus {
   outline: none;
 }
+
+.hm-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 14px 0;
+}
+
+.hm-chip {
+  padding: 3px 10px;
+  border: 1px solid var(--hm-border);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.hm-chip[aria-selected='true'] {
+  background: var(--hm-selected);
+  border-color: transparent;
+  color: var(--hm-accent);
+}

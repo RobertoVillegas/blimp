@@ -4,6 +4,7 @@ import { complete, listModels } from '@/ai/client';
 import { API_LABELS, PRESET_IDS, PRESETS, isHostedEndpoint } from '@/ai/presets';
 import type { ModelInfo } from '@/ai/types';
 import type { AiFeature, ModelApi, PresetId } from '@/shared/types';
+import { send } from '@/shared/send';
 import { originPattern } from '@/shared/url';
 import { FeatureSettings } from './FeatureSettings';
 import { clearAllSecrets, clearApiKey, getApiKey, setApiKey } from '@/storage/secrets';
@@ -444,9 +445,18 @@ export function App() {
           <li>Conversations and the undo snapshot live in memory for this browser session and are not saved to disk.</li>
           <li>Blimp asks for site access only for the providers you configure.</li>
         </ul>
-        <button className="danger" onClick={() => void clearEverything()}>
-          Clear credentials and cache
-        </button>
+        <div className="actions">
+          <button className="danger" onClick={() => void clearEverything()}>
+            Clear credentials and cache
+          </button>
+          <button
+            onClick={() =>
+              void send({ type: 'rank/clear' }).then(() => setNotice({ tone: 'ok', text: 'The palette forgot what you use and pick.' }))
+            }
+          >
+            Forget what the palette learned
+          </button>
+        </div>
       </section>
     </main>
   );

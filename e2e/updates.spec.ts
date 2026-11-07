@@ -36,8 +36,8 @@ test('update notice, then copying new files and pressing Reload picks them up an
     const palette = await context.newPage();
     await palette.goto(sw.url().replace('background.js', 'palette.html'));
     await expect(palette.getByRole('status')).toContainText('Blimp 9.9.9 is available. Updating is recommended.');
-    // Keyboard flow is unchanged: the first option is still a command.
-    await expect(palette.getByRole('option').first()).toContainText('Tidy Tabs');
+    // Keyboard flow is unchanged: the notice is a bar, not an option.
+    await expect(palette.getByRole('option', { name: /is available/ })).toHaveCount(0);
     await palette.getByRole('combobox').fill('update');
     await expect(palette.getByRole('option', { name: /Blimp 9.9.9 is available/ })).toBeVisible();
     const howTo = context.waitForEvent('page');

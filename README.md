@@ -34,7 +34,7 @@ Blimp was called Helium Max until v0.6. Not affiliated with Helium or The Browse
 
 ### ⌘K palette
 
-Press ⌘K on any page to search commands and your open tabs, or copy the page's URL, a Markdown link, or the selected text as a quote with a link back. Type part of a tab's title and press Enter to jump to it. Searching never calls the AI. If Helium keeps ⌘K for itself, use ⇧⌘K or the toolbar button. On pages extensions can't touch, like `helium://` pages and the Web Store, the palette opens as a popup instead.
+Press ⌘K on any page to search commands and your open tabs, or copy the page's URL, a Markdown link, or the selected text as a quote with a link back. Like Arc's, it learns: with nothing typed it shows the tabs you used most recently, then the commands you use most; and whatever you picked for something you typed comes first the next time. That stays on your device (Settings › Privacy › Forget what the palette learned). **Recent Pages** (opt-in) lists the last pages you visited on the current site or on a pinned tab's site, like Arc's previews for Notion, Figma or Docs. Type part of a tab's title and press Enter to jump to it. Searching never calls the AI. If Helium keeps ⌘K for itself, use ⇧⌘K or the toolbar button. On pages extensions can't touch, like `helium://` pages and the Web Store, the palette opens as a popup instead.
 
 ### Now playing
 
@@ -260,6 +260,7 @@ This is an early build. It loads and runs in Helium; everything below is tested 
 | ✅ | Little Blimp (Little Arc) | v0.7.0 |
 | ✅ | Auto-archive and Capture | v0.8.0 |
 | ✅ | Live Folders | v0.9.0 |
+| ✅ | Arc-style ⌘K ranking, Recent Pages | v0.10.0 |
 
 The full checklist of Arc features, what's done and what's next, is in [`docs/arc-features.md`](docs/arc-features.md).
 

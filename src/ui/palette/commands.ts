@@ -15,6 +15,7 @@ export type CommandId =
   | 'open-sidebar'
   | 'archive'
   | 'live'
+  | 'recent'
   | 'capture'
   | 'little-new'
   | 'little-to-main'
@@ -165,6 +166,13 @@ export const COMMANDS: PaletteCommand[] = [
     description: 'Pause what is playing in any tab, or resume it.',
     keywords: 'music video audio pause play resume stop now playing',
     icon: '⏯',
+  },
+  {
+    id: 'recent',
+    title: 'Recent Pages',
+    description: 'The pages you visited last on this site, or on a pinned tab\'s site (Notion, Figma, Docs…).',
+    keywords: 'recent history pages visited notion figma linear docs pinned',
+    icon: '↺',
   },
   {
     id: 'live',

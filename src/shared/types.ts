@@ -22,6 +22,8 @@ export interface TabSummary {
   active: boolean;
   pinned: boolean;
   groupId: number;
+  /** When the tab was last active, as the browser records it. */
+  lastAccessed?: number;
 }
 
 export type PresetId =
@@ -212,6 +214,12 @@ export interface BrowseSource {
   snippet: string;
   /** Text extracted from the page; empty when only the snippet is known. */
   text: string;
+}
+
+export interface RecentPage {
+  url: string;
+  title: string;
+  visitedAt: number;
 }
 
 export interface LiveItem {

@@ -4,6 +4,7 @@ import { send } from '@/shared/send';
 import type { AiStatus, NowPlaying, PageAnswer, ProfileSummary, TabSummary, TidyResult, UndoResult } from '@/shared/types';
 import { domainOf } from '@/shared/url';
 import { COMMANDS, FEATURE_OF, matches, titleRank, type CommandId, type PaletteCommand } from './commands';
+import { byUsage, emptyRank, promotePicks, type RankData } from '@/features/ranking/score';
 import { CrossTabView } from './CrossTabView';
 import { Footer, statusFor } from './Footer';
 import { InstantLinksView } from './InstantLinksView';
@@ -18,6 +19,7 @@ import { AskAiView } from './AskAiView';
 import { BrowseView } from './BrowseView';
 import { ArchiveView } from './ArchiveView';
 import { LiveFoldersView } from './LiveFoldersView';
+import { RecentPagesView } from './RecentPagesView';
 import { RichText } from './RichText';
 
 export interface PaletteProps {
@@ -40,7 +42,8 @@ type Item =
   | { kind: 'instant'; query: string }
   | { kind: 'ask'; query: string }
   | { kind: 'browse'; query: string }
-  | { kind: 'update'; version: string };
+  | { kind: 'update'; version: string }
+  | { kind: 'live-new'; count: number };
 
 type View =
   | { name: 'list' }
@@ -59,6 +62,7 @@ type View =
   | { name: 'browse'; query: string }
   | { name: 'archive' }
   | { name: 'live' }
+  | { name: 'recent' }
   | { name: 'rename' }
   | { name: 'error'; message: string; retry?: () => void };
 
@@ -72,6 +76,8 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection, onC
   const [update, setUpdate] = useState<UpdateStatus['update']>(null);
   const [playing, setPlaying] = useState<NowPlaying[]>([]);
   const [inLittle, setInLittle] = useState(false);
+  const [rank, setRank] = useState<RankData>(emptyRank);
+  const [liveNew, setLiveNew] = useState(0);
   const [canUndo, setCanUndo] = useState(false);
   const [selected, setSelected] = useState(0);
   const [view, setView] = useState<View>({ name: 'list' });
@@ -92,12 +98,18 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection, onC
     refreshMedia();
     void send({ type: 'little/status', tabId }).then((status) => setInLittle(status.inLittle)).catch(() => setInLittle(false));
     void send({ type: 'tidy/can-undo' }).then(setCanUndo).catch(() => setCanUndo(false));
+    void send({ type: 'rank/get' }).then(setRank).catch(() => undefined);
+    void send({ type: 'live/list' })
+      .then((folders) => setLiveNew(folders.reduce((sum, folder) => sum + folder.unread, 0)))
+      .catch(() => setLiveNew(0));
   }, [windowId, refreshMedia]);
 
   useEffect(refresh, [refresh]);
 
   const items = useMemo<Item[]>(() => {
-    const commands = COMMANDS.filter((command) => command.id !== 'little-to-main' || inLittle)
+    const now = Date.now();
+    const available = COMMANDS.filter((command) => command.id !== 'little-to-main' || inLittle);
+    const commands = (query ? available : byUsage(available, rank, now))
       .filter((command) => matches(query, command.title, command.keywords, command.description))
       // In a Little Blimp window, keeping the page is the likeliest command.
       .sort((a, b) => (inLittle ? Number(b.id === 'little-to-main') - Number(a.id === 'little-to-main') : 0))
@@ -110,9 +122,9 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection, onC
           .filter((profile) => matches(query, 'profile switch use model ai', profile.name, profile.model))
           .map((profile): Item => ({ kind: 'profile', profile }))
       : [];
-    const tabItems = tabs
-      .filter((tab) => (query ? matches(query, tab.title, tab.url) : !tab.active))
-      .slice(0, query ? 30 : 6)
+    // Like Arc: with nothing typed, the tabs you used most recently come first.
+    const tabItems = (query ? tabs.filter((tab) => matches(query, tab.title, tab.url)) : [...tabs].filter((tab) => !tab.active).sort((a, b) => (b.lastAccessed ?? 0) - (a.lastAccessed ?? 0)))
+      .slice(0, query ? 30 : 5)
       .map((tab): Item => ({ kind: 'tab', tab }));
     // Any typed text can become an Instant Links search.
     const instant: Item[] = query.trim()
@@ -127,8 +139,13 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection, onC
       update && query && matches(query, 'update upgrade new version release', update.version)
         ? [{ kind: 'update', version: update.version }]
         : [];
-    return [...commands, ...profileItems, ...tabItems, ...instant, ...updateItem];
-  }, [profiles, query, tabs, update, inLittle]);
+    if (!query) {
+      const live: Item[] = liveNew ? [{ kind: 'live-new', count: liveNew }] : [];
+      return [...tabItems, ...live, ...commands];
+    }
+    // What the user picked before for this query goes first.
+    return promotePicks([...commands, ...profileItems, ...tabItems, ...instant, ...updateItem], rankKey, rank, query, now);
+  }, [profiles, query, tabs, update, inLittle, rank, liveNew]);
 
   useEffect(() => setSelected(0), [query]);
 
@@ -270,6 +287,8 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection, onC
           return setView({ name: 'archive' });
         case 'live':
           return setView({ name: 'live' });
+        case 'recent':
+          return setView({ name: 'recent' });
         case 'capture':
           if (!onCapture) {
             fail(new Error('Open the palette on the page you want to capture (⌘K there).'));
@@ -317,6 +336,9 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection, onC
 
   const activate = (item: Item | undefined) => {
     if (!item) return;
+    const key = rankKey(item);
+    if (key) void send({ type: 'rank/record', key, command: item.kind === 'command' ? item.command.id : undefined, query: query || undefined }).catch(() => undefined);
+    if (item.kind === 'live-new') return setView({ name: 'live' });
     if (item.kind === 'command') return runCommand(item.command);
     if (item.kind === 'instant') return setView({ name: 'instant', query: item.query });
     if (item.kind === 'ask') return askAi(item.query);
@@ -568,6 +590,8 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection, onC
         <CrossTabView mode={view.mode} windowId={windowId} tabId={tabId} status={statusFor(status, 'tabs')} onBack={backToList} onClose={onClose} />
       )}
 
+      {view.name === 'recent' && <RecentPagesView tabId={tabId} onBack={backToList} onClose={onClose} />}
+
       {view.name === 'live' && <LiveFoldersView tabId={tabId} onBack={backToList} onClose={onClose} />}
 
       {view.name === 'archive' && <ArchiveView tabId={tabId} onBack={backToList} onClose={onClose} />}
@@ -636,6 +660,14 @@ function tabsLabel(count: number): string {
   return `${count} ${count === 1 ? 'tab' : 'tabs'}`;
 }
 
+/** Stable key for learning picks; null for rows that only exist for this query. */
+function rankKey(item: Item): string | null {
+  if (item.kind === 'command') return `cmd:${item.command.id}`;
+  if (item.kind === 'tab') return `tab:${item.tab.url.split('#')[0]}`;
+  if (item.kind === 'profile') return `profile:${item.profile.id}`;
+  return null;
+}
+
 function itemKey(item: Item): string {
   if (item.kind === 'command') return item.command.id;
   if (item.kind === 'profile') return `profile-${item.profile.id}`;
@@ -643,6 +675,7 @@ function itemKey(item: Item): string {
   if (item.kind === 'ask') return 'ask';
   if (item.kind === 'browse') return 'browse';
   if (item.kind === 'update') return 'update';
+  if (item.kind === 'live-new') return 'live-new';
   return `tab-${item.tab.id}`;
 }
 
@@ -677,7 +710,17 @@ function ItemRow({
       onMouseMove={onHover}
       onClick={onClick}
     >
-      {item.kind === 'browse' ? (
+      {item.kind === 'live-new' ? (
+        <>
+          <span className="hm-icon" aria-hidden="true">
+            ◉
+          </span>
+          <span className="hm-item-title">Live Folders</span>
+          <span className="hm-item-hint">
+            <span className="hm-badge">{item.count} new</span>
+          </span>
+        </>
+      ) : item.kind === 'browse' ? (
         <>
           <span className="hm-icon" aria-hidden="true">
             ✧

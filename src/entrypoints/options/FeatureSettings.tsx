@@ -34,6 +34,7 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus>();
   const [calendarUrl, setCalendarUrl] = useState('');
   const [githubToken, setGithubToken] = useState('');
+  const [historyOn, setHistoryOn] = useState(false);
   const [hasGithubToken, setHasGithubToken] = useState(false);
   const [newKind, setNewKind] = useState<'review' | 'mine' | 'assigned' | 'search' | 'feed'>('review');
   const [newValue, setNewValue] = useState('');
@@ -48,6 +49,7 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
     void send({ type: 'update/status' }).then(setUpdateStatus);
     void getApiKey(CALENDAR_SECRET_ID).then((url) => setHasCalendar(Boolean(url)));
     void getApiKey(GITHUB_TOKEN_ID).then((token) => setHasGithubToken(Boolean(token)));
+    void browser.permissions.contains({ permissions: ['history'] }).then(setHistoryOn);
     if (location.hash === '#updates') requestAnimationFrame(() => document.getElementById('updates')?.scrollIntoView());
   }, []);
 
@@ -298,6 +300,19 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
           Glance at your inbox and calendar from the palette (Unread Email, Upcoming Events), the way Arc showed them when you
           hovered a favorite. Nothing from them is sent to an AI.
         </p>
+        <label className="inline">
+          <input
+            type="checkbox"
+            checked={historyOn}
+            onChange={async (event) => {
+              const on = event.target.checked;
+              const done = on ? await browser.permissions.request({ permissions: ['history'] }) : await browser.permissions.remove({ permissions: ['history'] });
+              if (done) setHistoryOn(on);
+            }}
+          />
+          Recent Pages: show the pages I visited last on a site
+        </label>
+        <p className="hint">Reads your browsing history on this device when you run Recent Pages. Nothing leaves the browser.</p>
         <label className="inline">
           <input type="checkbox" checked={settings.peeks.gmail} onChange={(event) => void setGmailPeek(event.target.checked)} />
           Gmail: show my unread email

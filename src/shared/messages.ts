@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { RankData } from '@/features/ranking/score';
 import type { SerializedError } from './errors';
 import type {
   AiStatus,
@@ -17,6 +18,7 @@ import type {
   BrowseSource,
   ArchivedTab,
   LiveFolderView,
+  RecentPage,
   UndoResult,
 } from './types';
 
@@ -124,6 +126,12 @@ export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('live/refresh'), folderId: z.string().max(64).optional() }),
   z.object({ type: z.literal('live/open'), folderId: z.string().max(64), itemIds: z.array(z.string().max(500)).min(1).max(10), tabId: z.number().int().optional() }),
   z.object({ type: z.literal('live/seen'), folderId: z.string().max(64), itemIds: z.array(z.string().max(500)).max(100) }),
+  z.object({ type: z.literal('recent/sites'), tabId: z.number().int().optional() }),
+  z.object({ type: z.literal('recent/list'), host: z.string().max(300), tabId: z.number().int().optional() }),
+  z.object({ type: z.literal('recent/open'), url: z.string().max(4000), tabId: z.number().int().optional() }),
+  z.object({ type: z.literal('rank/get') }),
+  z.object({ type: z.literal('rank/record'), key: z.string().max(4100), command: z.string().max(60).optional(), query: z.string().max(200).optional() }),
+  z.object({ type: z.literal('rank/clear') }),
   z.object({ type: z.literal('op/cancel'), opId: z.string() }),
   z.object({ type: z.literal('settings/open') }),
   z.object({ type: z.literal('shortcut/get'), name: z.string().max(50) }),
@@ -182,6 +190,12 @@ export interface ResponseMap {
   'live/refresh': LiveFolderView[];
   'live/open': null;
   'live/seen': null;
+  'recent/sites': string[];
+  'recent/list': RecentPage[];
+  'recent/open': null;
+  'rank/get': RankData;
+  'rank/record': null;
+  'rank/clear': null;
   'op/cancel': null;
   'settings/open': null;
   'shortcut/get': string;

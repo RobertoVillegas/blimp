@@ -22,7 +22,7 @@ export default defineConfig({
       "Arc's best features for Helium: ⌘K palette, Tidy Tabs, page Q&A, link previews, peeks and more. Bring your own AI key.",
     minimum_chrome_version: '120',
     permissions: ['activeTab', 'alarms', 'contextMenus', 'scripting', 'search', 'storage', 'tabs', 'tabGroups'],
-    optional_permissions: ['downloads'],
+    optional_permissions: ['downloads', 'history'],
     optional_host_permissions: [
       ...PROVIDER_ORIGINS,
       'http://localhost/*',
@@ -69,7 +69,7 @@ export default defineConfig({
       // stands in for activeTab, which only a real shortcut or toolbar click grants.
       manifest.host_permissions = wxt.config.mode === 'e2e-capture' ? ['<all_urls>'] : e2e ? ['http://127.0.0.1/*'] : [];
       // e2e can't click permission prompts, so Tidy Downloads' optional permission is granted up front.
-      if (e2e) manifest.permissions = [...(manifest.permissions ?? []), 'downloads'];
+      if (e2e) manifest.permissions = [...(manifest.permissions ?? []), 'downloads', 'history'];
     },
   },
 });
