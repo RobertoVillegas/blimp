@@ -169,7 +169,7 @@ export interface BrowseFetchPage {
 
 export interface UpdateStatus {
   current: string;
-  /** Set after Helium Max reloaded itself into a newer build copied into its folder. */
+  /** Set after Blimp reloaded itself into a newer build copied into its folder. */
   autoUpdated?: { from: string; to: string; at: number };
   update: { version: string; pageUrl: string; downloadUrl: string } | null;
 }

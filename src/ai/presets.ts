@@ -110,7 +110,7 @@ export const PRESETS: Record<PresetId, Preset> = {
     needsKey: true,
     modelPlaceholder: 'deepseek/deepseek-chat',
     keyUrl: 'https://openrouter.ai/keys',
-    headers: { 'x-title': 'Helium Max' },
+    headers: { 'x-title': 'Blimp' },
   },
   ollama: {
     id: 'ollama',

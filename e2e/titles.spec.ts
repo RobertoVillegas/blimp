@@ -66,7 +66,7 @@ test('Rename Tab names one tab and asks for site access when it would not surviv
   await expect.poll(() => tabTitle(sw, '/recipe-pasta')).toBe('Pasta');
   expect(server.requests).toHaveLength(0);
 
-  // A site Helium Max has no access to (localhost ≠ 127.0.0.1): it asks before it can keep the name.
+  // A site Blimp has no access to (localhost ≠ 127.0.0.1): it asks before it can keep the name.
   const other = await context.newPage();
   await other.goto(server.origin.replace('127.0.0.1', 'localhost') + '/page/news-b');
   const otherId = await sw.evaluate(async () => (await chrome.tabs.query({ title: 'Local news B' }))[0]!.id!);

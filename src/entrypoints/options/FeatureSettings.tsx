@@ -98,7 +98,7 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
       return;
     }
     if (!(await browser.permissions.request({ origins: [pattern] }))) {
-      note('peeks', { tone: 'error', text: `Helium Max needs access to ${pattern} to read the calendar.` });
+      note('peeks', { tone: 'error', text: `Blimp needs access to ${pattern} to read the calendar.` });
       return;
     }
     await setApiKey(CALENDAR_SECRET_ID, url, settings.keyStorage);
@@ -132,7 +132,7 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
         return;
       }
       if (!(await browser.permissions.request({ origins: [pattern] }))) {
-        note('search', { tone: 'error', text: `Helium Max needs access to ${pattern} to search.` });
+        note('search', { tone: 'error', text: `Blimp needs access to ${pattern} to search.` });
         return;
       }
     }
@@ -186,7 +186,7 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
           Preview a link when I hold Shift over it
         </label>
         <p className="hint">
-          Helium Max downloads the linked page without your cookies, so signed-in pages show as unavailable, and sends
+          Blimp downloads the linked page without your cookies, so signed-in pages show as unavailable, and sends
           its text to the active AI profile. Hovering without Shift sends nothing. This needs access to all websites, so
           the Shift detector can run on the pages you visit.
         </p>
@@ -337,7 +337,7 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
         <h2 id="updates-heading">Updates</h2>
         <p className="hint">
           You're on version {updateStatus?.current ?? '…'}. Extensions loaded from a folder can't update themselves, so
-          Helium Max tells you when a new release is out.
+          Blimp tells you when a new release is out.
         </p>
         {updateStatus?.autoUpdated && (
           <p className="notice ok">
@@ -350,12 +350,12 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
             <strong>Version {updateStatus.update.version} is available. We recommend updating.</strong>
             <ol>
               <li>
-                <a href={updateStatus.update.downloadUrl}>Download helium-max-{updateStatus.update.version}-chrome.zip</a>{' '}
+                <a href={updateStatus.update.downloadUrl}>Download blimp-{updateStatus.update.version}-chrome.zip</a>{' '}
                 (<a href={updateStatus.update.pageUrl} target="_blank" rel="noreferrer">what's new</a>).
               </li>
               <li>Unzip it and copy everything into the folder you loaded, replacing the old files.</li>
               <li>
-                Helium Max reloads itself within a minute, or{' '}
+                Blimp reloads itself within a minute, or{' '}
                 <button onClick={() => browser.runtime.reload()}>reload it now</button>. Profiles and settings stay;
                 keys kept only for the session need to be entered again.
               </li>
@@ -373,7 +373,7 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
         <p className="hint">The check asks GitHub's public API for this project's releases. Nothing about you or your browsing is sent.</p>
         <div className="actions">
           <button onClick={() => void checkNow()}>Check now</button>
-          <button onClick={() => browser.runtime.reload()}>Reload Helium Max</button>
+          <button onClick={() => browser.runtime.reload()}>Reload Blimp</button>
         </div>
         <Status notice={notices.updates} />
       </section>

@@ -1,8 +1,8 @@
 {
-  "name": "helium-max",
-  "description": "Local-first, bring-your-own-key AI browser extension for Helium (Manifest V3).",
+  "name": "blimp",
+  "description": "Arc's best features for the Helium browser, as one bring-your-own-key extension.",
   "private": true,
-  "version": "0.5.1",
+  "version": "0.6.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",

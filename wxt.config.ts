@@ -17,9 +17,9 @@ export default defineConfig({
   srcDir: 'src',
   modules: ['@wxt-dev/module-react'],
   manifest: {
-    name: 'Helium Max',
+    name: 'Blimp',
     description:
-      'Local-first, bring-your-own-key AI for Helium: command palette, Tidy Tabs, page Q&A and more.',
+      "Arc's best features for Helium: ⌘K palette, Tidy Tabs, page Q&A, link previews, peeks and more. Bring your own AI key.",
     minimum_chrome_version: '120',
     permissions: ['activeTab', 'alarms', 'contextMenus', 'scripting', 'search', 'storage', 'tabs', 'tabGroups'],
     optional_permissions: ['downloads'],
@@ -30,11 +30,11 @@ export default defineConfig({
       'https://*/*',
       'http://*/*',
     ],
-    action: { default_title: 'Helium Max (⌘K)' },
+    action: { default_title: 'Blimp (⌘K)' },
     commands: {
       'open-palette': {
         suggested_key: { default: 'Ctrl+K', mac: 'Command+K' },
-        description: 'Open the Helium Max command palette',
+        description: 'Open the Blimp command palette',
       },
       'open-palette-fallback': {
         suggested_key: { default: 'Ctrl+Shift+K', mac: 'Command+Shift+K' },
@@ -43,7 +43,7 @@ export default defineConfig({
       // Chromium opens the side panel only straight from a user action like this shortcut.
       'open-sidebar': {
         suggested_key: { default: 'Ctrl+Shift+S', mac: 'Command+Shift+S' },
-        description: 'Open the Helium Max sidebar',
+        description: 'Open the Blimp sidebar',
       },
       'tidy-tabs': {
         description: 'Tidy Tabs: group ungrouped tabs in this window',

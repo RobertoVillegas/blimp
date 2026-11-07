@@ -1,6 +1,7 @@
-export const REPO = 'RobertoVillegas/helium-max';
+export const REPO = 'RobertoVillegas/blimp';
 const RELEASES_API = `https://api.github.com/repos/${REPO}/releases?per_page=10`;
-const RELEASE_PAGE_PREFIX = `https://github.com/${REPO}/releases/`;
+/** The project was called Blimp before; its old URLs redirect, so both are trusted. */
+const RELEASE_PAGE_PREFIXES = [`https://github.com/${REPO}/releases/`, 'https://github.com/RobertoVillegas/helium-max/releases/'];
 
 export interface AvailableUpdate {
   version: string;
@@ -39,9 +40,10 @@ export function pickUpdate(releases: RawRelease[], current: string): AvailableUp
     if (!/^\d+(\.\d+)*$/.test(version) || compareVersions(version, current) <= 0) continue;
     if (best && compareVersions(version, best.version) <= 0) continue;
     const pageUrl = typeof release.html_url === 'string' ? release.html_url : '';
-    const asset = release.assets?.find((item) => typeof item.name === 'string' && /^helium-max-[\d.]+-chrome\.zip$/.test(item.name));
+    const asset = release.assets?.find((item) => typeof item.name === 'string' && /^(blimp|helium-max)-[\d.]+-chrome\.zip$/.test(item.name));
     const downloadUrl = typeof asset?.browser_download_url === 'string' ? asset.browser_download_url : pageUrl;
-    if (!pageUrl.startsWith(RELEASE_PAGE_PREFIX) || !downloadUrl.startsWith(RELEASE_PAGE_PREFIX)) continue;
+    const trusted = (url: string) => RELEASE_PAGE_PREFIXES.some((prefix) => url.startsWith(prefix));
+    if (!trusted(pageUrl) || !trusted(downloadUrl)) continue;
     best = { version, pageUrl, downloadUrl };
   }
   return best;

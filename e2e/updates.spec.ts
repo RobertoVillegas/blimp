@@ -25,8 +25,8 @@ test('update notice, then copying new files and pressing Reload picks them up an
     const current = await sw.evaluate(() => chrome.runtime.getManifest().version);
     const update = {
       version: '9.9.9',
-      pageUrl: 'https://github.com/RobertoVillegas/helium-max/releases/tag/v9.9.9',
-      downloadUrl: 'https://github.com/RobertoVillegas/helium-max/releases/download/v9.9.9/helium-max-9.9.9-chrome.zip',
+      pageUrl: 'https://github.com/RobertoVillegas/blimp/releases/tag/v9.9.9',
+      downloadUrl: 'https://github.com/RobertoVillegas/blimp/releases/download/v9.9.9/blimp-9.9.9-chrome.zip',
     };
     await sw.evaluate(async (stored) => {
       await chrome.storage.local.set({ 'update:available': stored, 'update:checkedAt': Date.now() });
@@ -35,11 +35,11 @@ test('update notice, then copying new files and pressing Reload picks them up an
 
     const palette = await context.newPage();
     await palette.goto(sw.url().replace('background.js', 'palette.html'));
-    await expect(palette.getByRole('status')).toContainText('Helium Max 9.9.9 is available. Updating is recommended.');
+    await expect(palette.getByRole('status')).toContainText('Blimp 9.9.9 is available. Updating is recommended.');
     // Keyboard flow is unchanged: the first option is still a command.
     await expect(palette.getByRole('option').first()).toContainText('Tidy Tabs');
     await palette.getByRole('combobox').fill('update');
-    await expect(palette.getByRole('option', { name: /Helium Max 9.9.9 is available/ })).toBeVisible();
+    await expect(palette.getByRole('option', { name: /Blimp 9.9.9 is available/ })).toBeVisible();
     const howTo = context.waitForEvent('page');
     await palette.getByRole('combobox').fill('');
     await palette.getByRole('button', { name: 'How to update' }).click();
@@ -48,7 +48,7 @@ test('update notice, then copying new files and pressing Reload picks them up an
     const settings = await context.newPage();
     await settings.goto(sw.url().replace('background.js', 'options.html#updates'));
     await expect(settings.getByText(`You're on version ${current}.`)).toBeVisible();
-    await expect(settings.getByRole('link', { name: 'Download helium-max-9.9.9-chrome.zip' })).toHaveAttribute('href', update.downloadUrl);
+    await expect(settings.getByRole('link', { name: 'Download blimp-9.9.9-chrome.zip' })).toHaveAttribute('href', update.downloadUrl);
 
     // "Unzip over the folder": the new build has a new version.
     const manifestPath = path.join(folder, 'manifest.json');

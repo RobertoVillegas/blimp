@@ -2,7 +2,7 @@
 
 Every Arc feature we know of, from Arc's own docs and from the feature modules in the Arc 1.172 app, and where it stands here. Keep this list current when something ships.
 
-- [x] Done in Helium Max (version)
+- [x] Done in Blimp (version)
 - [x] **Helium:** Helium already does it natively
 - [~] Partly done, or done differently
 - [ ] Not yet

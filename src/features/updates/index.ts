@@ -69,5 +69,5 @@ export async function currentUpdate(): Promise<AvailableUpdate | null> {
 export async function showBadge(update: AvailableUpdate | null): Promise<void> {
   await browser.action.setBadgeText({ text: update ? '↑' : '' });
   if (update) await browser.action.setBadgeBackgroundColor({ color: '#2f6fde' });
-  await browser.action.setTitle({ title: update ? `Helium Max (⌘K) · ${update.version} available` : 'Helium Max (⌘K)' });
+  await browser.action.setTitle({ title: update ? `Blimp (⌘K) · ${update.version} available` : 'Blimp (⌘K)' });
 }

@@ -30,7 +30,7 @@ export interface BrowsePage {
   snippet: string;
   /** Page HTML for the palette to extract text from; absent when it can't be read. */
   html?: string;
-  /** Site access that would let Helium Max read the page. */
+  /** Site access that would let Blimp read the page. */
   needsOrigin?: string;
 }
 

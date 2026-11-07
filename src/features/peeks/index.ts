@@ -19,7 +19,7 @@ export async function gmailPeek(): Promise<GmailPeek & { inboxUrl: string }> {
   if (!settings.peeks.gmail) throw new UserFacingError('not-configured', 'Turn on Gmail in Settings › Peeks first.');
   const base = await gmailBase();
   if (!base && !(await browser.permissions.contains({ origins: [GMAIL_ORIGIN] }))) {
-    throw new UserFacingError('permission', 'Helium Max needs access to mail.google.com. Turn Gmail on again in Settings › Peeks.');
+    throw new UserFacingError('permission', 'Blimp needs access to mail.google.com. Turn Gmail on again in Settings › Peeks.');
   }
   const [gmailTab] = await browser.tabs.query({ url: 'https://mail.google.com/mail/*' });
   const account = accountFromUrl(gmailTab?.url);
@@ -46,7 +46,7 @@ export async function openPeekLink(url: string): Promise<void> {
   const e2e = import.meta.env.MODE === 'e2e' && parsed.hostname === '127.0.0.1';
   const host = parsed.hostname;
   const allowed = parsed.protocol === 'https:' && (host === 'mail.google.com' || host === 'calendar.google.com' || MEETING_HOSTS.test(host));
-  if (!allowed && !e2e) throw new UserFacingError('invalid-output', 'Helium Max only opens Gmail, Calendar and meeting links from a peek.');
+  if (!allowed && !e2e) throw new UserFacingError('invalid-output', 'Blimp only opens Gmail, Calendar and meeting links from a peek.');
 
   const reuse = host === 'mail.google.com' ? 'https://mail.google.com/*' : host === 'calendar.google.com' ? 'https://calendar.google.com/*' : null;
   const [existing] = reuse ? await browser.tabs.query({ url: reuse }) : [];

@@ -16,9 +16,9 @@ function Grant() {
 
   return (
     <main className="grant">
-      <h1>Allow Helium Max to read these sites?</h1>
+      <h1>Allow Blimp to read these sites?</h1>
       <p className="hint">
-        Needed to read the tabs you selected. Helium Max reads a page only when you run a command on it.
+        Needed to read the tabs you selected. Blimp reads a page only when you run a command on it.
       </p>
       <ul>
         {origins.map((origin) => (

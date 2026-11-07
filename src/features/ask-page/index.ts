@@ -84,7 +84,7 @@ async function readPage(tabId: number, url: string | undefined, maxChars: number
   if (!isHttpUrl(url)) {
     throw new UserFacingError(
       'page-unavailable',
-      'Helium Max can only read regular web pages (http/https). Browser pages, PDFs in the built-in viewer and extension pages are off limits.',
+      'Blimp can only read regular web pages (http/https). Browser pages, PDFs in the built-in viewer and extension pages are off limits.',
     );
   }
   let page: ExtractedPage | undefined;

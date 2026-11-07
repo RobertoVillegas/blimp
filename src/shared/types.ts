@@ -165,7 +165,7 @@ export interface TitleProposal {
   favIconUrl?: string;
   /** The site's own title. */
   original: string;
-  /** The name Helium Max shows now, if any. */
+  /** The name Blimp shows now, if any. */
   current?: string;
   proposed: string;
 }
@@ -181,7 +181,7 @@ export interface NowPlaying {
   hasVideo: boolean;
   /** Previous/next work on this site's player. */
   canSkip: boolean;
-  /** Helium Max can read and control playback (it has access to the site). */
+  /** Blimp can read and control playback (it has access to the site). */
   controllable: boolean;
   /** Site access that would make it controllable. */
   accessOrigin?: string;

@@ -22,7 +22,7 @@ test('the sidebar: shortcut and toolbar menu are registered, the palette explain
   const input = await openPalette(sw, paris!);
   await input.fill('open sidebar');
   await input.press('Enter');
-  await expect(paris!.getByText(`Press ${shortcut}, or right-click the Helium Max icon`)).toBeVisible();
+  await expect(paris!.getByText(`Press ${shortcut}, or right-click the Blimp icon`)).toBeVisible();
 
   const panel = await context.newPage();
   await panel.goto(sw.url().replace('background.js', 'sidepanel.html'));

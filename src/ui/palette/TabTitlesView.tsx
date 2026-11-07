@@ -108,7 +108,7 @@ export function TabTitlesView({ windowId, status, onBack }: { windowId?: number;
           {phase.missing.length > 0 ? (
             <AccessRequest
               origins={phase.missing}
-              reason="The new names show now. To keep them after these pages reload, Helium Max needs access to:"
+              reason="The new names show now. To keep them after these pages reload, Blimp needs access to:"
               onGranted={granted}
             />
           ) : (
@@ -185,7 +185,7 @@ export function RenameTabView({ tabId, onBack, onClose }: { tabId?: number; onBa
         {missing ? (
           <AccessRequest
             origins={missing}
-            reason="Renamed. To keep the name after this page reloads, Helium Max needs access to:"
+            reason="Renamed. To keep the name after this page reloads, Blimp needs access to:"
             onGranted={onClose}
           />
         ) : (

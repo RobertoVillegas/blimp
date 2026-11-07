@@ -32,7 +32,7 @@ export function registerRouter(): void {
     handle(parsed.data, sender)
       .then((data) => sendResponse({ ok: true, data } satisfies Reply<Request['type']>))
       .catch((error: unknown) => {
-        if (!(error instanceof UserFacingError)) console.error('[helium-max]', parsed.data.type, error);
+        if (!(error instanceof UserFacingError)) console.error('[blimp]', parsed.data.type, error);
         sendResponse({ ok: false, error: serializeError(error) } satisfies Reply<Request['type']>);
       });
     return true;

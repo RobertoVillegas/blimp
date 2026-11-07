@@ -3,7 +3,7 @@ import { send } from '@/shared/send';
 
 /**
  * Asks for site access the in-page palette can't request itself: extension pages prompt directly,
- * the overlay opens Helium Max's grant window and waits for the answer.
+ * the overlay opens Blimp's grant window and waits for the answer.
  */
 export function AccessRequest({ origins, reason, onGranted }: { origins: string[]; reason: string; onGranted: () => void }) {
   const [waiting, setWaiting] = useState(false);
@@ -41,7 +41,7 @@ export function AccessRequest({ origins, reason, onGranted }: { origins: string[
       </ul>
       {waiting ? (
         <p className="hm-muted" role="status">
-          Waiting for you to allow access in the Helium Max window…
+          Waiting for you to allow access in the Blimp window…
         </p>
       ) : (
         <button className="hm-button hm-primary" onClick={() => void allow()}>

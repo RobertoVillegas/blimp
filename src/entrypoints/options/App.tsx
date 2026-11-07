@@ -78,7 +78,7 @@ export function App() {
       return false;
     }
     const granted = await browser.permissions.request({ origins: [pattern] });
-    if (!granted) setNotice({ tone: 'error', text: `Helium Max needs access to ${pattern} to call this provider.` });
+    if (!granted) setNotice({ tone: 'error', text: `Blimp needs access to ${pattern} to call this provider.` });
     return granted;
   }
 
@@ -172,9 +172,9 @@ export function App() {
 
   return (
     <main>
-      <h1>Helium Max</h1>
+      <h1>Blimp</h1>
       <p className="lead">
-        Bring your own AI provider. Helium Max has no server, account or telemetry: requests go straight from your
+        Bring your own AI provider. Blimp has no server, account or telemetry: requests go straight from your
         browser to the provider of the active profile.
       </p>
 
@@ -440,7 +440,7 @@ export function App() {
           <li>Page text is read only when you run a page or tabs command, and only from the pages you chose.</li>
           <li>Link previews and Tidy Downloads are off until you turn them on above.</li>
           <li>Conversations and the undo snapshot live in memory for this browser session and are not saved to disk.</li>
-          <li>Helium Max asks for site access only for the providers you configure.</li>
+          <li>Blimp asks for site access only for the providers you configure.</li>
         </ul>
         <button className="danger" onClick={() => void clearEverything()}>
           Clear credentials and cache

@@ -26,9 +26,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # A fixed-name copy keeps releases/latest/download/helium-max-chrome.zip pointing at the newest build.
-          cp .output/helium-max-*-chrome.zip .output/helium-max-chrome.zip
+          # Fixed-name copies keep releases/latest/download/blimp-chrome.zip (and the old
+          # helium-max-chrome.zip link) pointing at the newest build.
+          cp .output/blimp-*-chrome.zip .output/blimp-chrome.zip
+          cp .output/blimp-chrome.zip .output/helium-max-chrome.zip
           # Lets anyone check a download with `shasum -a 256 -c SHA256SUMS`.
-          (cd .output && sha256sum helium-max-*-chrome.zip helium-max-chrome.zip > SHA256SUMS)
-          gh release create "$GITHUB_REF_NAME" .output/helium-max-*-chrome.zip .output/helium-max-chrome.zip .output/SHA256SUMS \
-            --title "Helium Max $GITHUB_REF_NAME" --generate-notes --latest
+          (cd .output && sha256sum blimp-*-chrome.zip blimp-chrome.zip helium-max-chrome.zip > SHA256SUMS)
+          gh release create "$GITHUB_REF_NAME" .output/blimp-*-chrome.zip .output/blimp-chrome.zip .output/helium-max-chrome.zip .output/SHA256SUMS \
+            --title "Blimp $GITHUB_REF_NAME" --generate-notes --latest

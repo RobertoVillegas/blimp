@@ -1,4 +1,4 @@
-# Exploring Jev (TypeSafe) for Helium Max
+# Exploring Jev (TypeSafe) for Blimp
 
 Notes from 2026-11-07. **Parked:** no code uses Jev and nothing here was tested with a real key.
 
@@ -24,7 +24,7 @@ All questions in a request are answered in parallel against the same state.
 
 ## Where it fits
 
-Jev is good where Helium Max currently asks an LLM for JSON and then validates it. The answer space is fixed in advance, so malformed output can't happen, and the probabilities give an honest "not sure" threshold.
+Jev is good where Blimp currently asks an LLM for JSON and then validates it. The answer space is fixed in advance, so malformed output can't happen, and the probabilities give an honest "not sure" threshold.
 
 1. **Tidy Tabs, hybrid (rejected for now, see above).** The LLM still proposes 3–8 group names, which is the only generative step. Jev then gets one `choice` question per tab, with the group names plus `none` as options. Tabs below a confidence threshold stay ungrouped, which matches the PRD's "don't force a Misc group". This removes invalid tab IDs and duplicate assignments by construction and makes reassignment nearly free.
 2. **Grounding checks for Ask Page and cross-tab answers.** A `noul` question asks "does the page text contain the answer to this question?" before or after the LLM answers. When it's low, the UI says "the page doesn't seem to say" instead of trusting the LLM's prose (PRD F04/F06: say when evidence is absent).

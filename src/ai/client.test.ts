@@ -123,7 +123,7 @@ describe('presets', () => {
   it('OpenRouter identifies the app', async () => {
     const fetchImpl = ok();
     await complete(profile('openrouter'), request, { fetchImpl });
-    expect(sent(fetchImpl).headers['x-title']).toBe('Helium Max');
+    expect(sent(fetchImpl).headers['x-title']).toBe('Blimp');
   });
 
   it('keyed presets refuse to run without a key', async () => {

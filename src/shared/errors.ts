@@ -33,5 +33,5 @@ export function serializeError(error: unknown): SerializedError {
   if (error instanceof DOMException && error.name === 'AbortError') {
     return { kind: 'cancelled', message: 'Cancelled.' };
   }
-  return { kind: 'internal', message: 'Something went wrong inside Helium Max.' };
+  return { kind: 'internal', message: 'Something went wrong inside Blimp.' };
 }

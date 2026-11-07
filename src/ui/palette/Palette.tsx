@@ -249,7 +249,7 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection }: P
             return;
           }
           if (!target.controllable) {
-            fail(new Error(`Helium Max needs access to ${target.accessOrigin?.replace(/^https?:\/\//, '').replace(/\/\*$/, '') ?? 'that site'} to control it. Use Allow control in the palette's Now playing card.`));
+            fail(new Error(`Blimp needs access to ${target.accessOrigin?.replace(/^https?:\/\//, '').replace(/\/\*$/, '') ?? 'that site'} to control it. Use Allow control in the palette's Now playing card.`));
             return;
           }
           void send({ type: 'media/action', tabId: target.tabId, action: 'toggle' }).then(onClose);
@@ -352,7 +352,7 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection }: P
   const optionId = (index: number) => `${listId}-option-${index}`;
 
   return (
-    <div className="hm-palette" role="dialog" aria-modal="true" aria-label="Helium Max" onKeyDown={onKeyDown}>
+    <div className="hm-palette" role="dialog" aria-modal="true" aria-label="Blimp" onKeyDown={onKeyDown}>
       {view.name === 'list' && (
         <>
           <div className="hm-search">
@@ -374,7 +374,7 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection }: P
           {update && !query && (
             <div className="hm-update-bar" role="status">
               <span>
-                <strong>Helium Max {update.version} is available.</strong> Updating is recommended.
+                <strong>Blimp {update.version} is available.</strong> Updating is recommended.
               </span>
               <button className="hm-link" onClick={() => void send({ type: 'update/show' }).then(onClose)}>
                 How to update
@@ -555,11 +555,11 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection }: P
           <p>
             {view.shortcut ? (
               <>
-                Press <kbd className="hm-kbd">{view.shortcut}</kbd>, or right-click the Helium Max icon in the toolbar and choose
+                Press <kbd className="hm-kbd">{view.shortcut}</kbd>, or right-click the Blimp icon in the toolbar and choose
                 Open sidebar.
               </>
             ) : (
-              'Right-click the Helium Max icon in the toolbar and choose Open sidebar, or give it a shortcut at chrome://extensions/shortcuts.'
+              'Right-click the Blimp icon in the toolbar and choose Open sidebar, or give it a shortcut at chrome://extensions/shortcuts.'
             )}
           </p>
           <p className="hm-muted">The browser only lets the side panel open straight from a key press or a click on its own controls.</p>
@@ -568,7 +568,7 @@ export function Palette({ windowId, tabId, intent, onClose, page, selection }: P
 
       {view.name === 'titles-restored' && (
         <ResultPanel title="Tab titles restored" onBack={backToList}>
-          <p>{view.count ? `${tabsLabel(view.count)} got their site's title back.` : 'No tab in this window had a name from Helium Max.'}</p>
+          <p>{view.count ? `${tabsLabel(view.count)} got their site's title back.` : 'No tab in this window had a name from Blimp.'}</p>
         </ResultPanel>
       )}
 
@@ -662,7 +662,7 @@ function ItemRow({
           <span className="hm-icon" aria-hidden="true">
             ↑
           </span>
-          <span className="hm-item-title">Helium Max {item.version} is available</span>
+          <span className="hm-item-title">Blimp {item.version} is available</span>
           <span className="hm-item-hint">How to update</span>
         </>
       ) : item.kind === 'instant' ? (

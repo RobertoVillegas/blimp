@@ -2,15 +2,15 @@
   <img src="docs/images/icon.png" width="96" height="96" alt="">
 </p>
 
-<h1 align="center">Helium Max</h1>
+<h1 align="center">Blimp</h1>
 
 <p align="center">
-  The Arc Max features I missed, rebuilt as one extension for <a href="https://helium.computer/">Helium</a>.<br>
+  The Arc features I missed, rebuilt as one extension for <a href="https://helium.computer/">Helium</a>.<br>
   ⌘K palette · Tidy Tabs · ask a page or a whole window of tabs · Shift-hover previews · your own AI key
 </p>
 
 <p align="center">
-  <a href="https://github.com/RobertoVillegas/helium-max/releases/latest"><strong>Download the latest build</strong></a>
+  <a href="https://github.com/RobertoVillegas/blimp/releases/latest"><strong>Download the latest build</strong></a>
   ·
   <a href="docs/PRD.md">Product spec</a>
   ·
@@ -20,15 +20,15 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/palette-dark.png">
-    <img src="docs/images/palette.png" width="720" alt="The Helium Max command palette open over an article, listing Tidy Tabs, Summarize Page, Ask Page and open tabs">
+    <img src="docs/images/palette.png" width="720" alt="The Blimp command palette open over an article, listing Tidy Tabs, Summarize Page, Ask Page and open tabs">
   </picture>
 </p>
 
-When I moved from Arc to Helium, the part I kept reaching for was Arc Max: tidy my tabs, tell me what this page says, let me do it from the keyboard. Helium Max puts those back as one Manifest V3 extension.
+When I moved from Arc to Helium, the part I kept reaching for was Arc Max: tidy my tabs, tell me what this page says, let me do it from the keyboard. Blimp puts those back as one Manifest V3 extension.
 
-There's no Helium Max server and no account. Requests go from your browser straight to the AI provider you configure, with your key, and only when you run a command.
+There's no Blimp server and no account. Requests go from your browser straight to the AI provider you configure, with your key, and only when you run a command.
 
-Not affiliated with Helium or The Browser Company.
+Blimp was called Helium Max until v0.6. Not affiliated with Helium or The Browser Company.
 
 ## What it does
 
@@ -54,7 +54,7 @@ To float videos automatically when you switch tabs, as Arc did, turn on **Float 
 
 <img src="docs/images/tidy-tabs.png" width="520" align="right" alt="Tidy Tabs result: PHP docs & CVEs, Madrid trip and React groups, one tab left ungrouped, and an Undo button">
 
-Run **Tidy Tabs** and the model reads your tab titles and URLs. It invents group names that fit what you have open, like "PHP docs & CVEs" or "Madrid trip", and Helium Max turns them into real tab groups.
+Run **Tidy Tabs** and the model reads your tab titles and URLs. It invents group names that fit what you have open, like "PHP docs & CVEs" or "Madrid trip", and Blimp turns them into real tab groups.
 
 - It only runs when you ask. Never on a timer, never when a tab opens.
 - Pinned tabs and groups you made yourself are left alone. If you'd like new tabs to join your existing groups instead (a new PHP tab into your "PHP" group), turn on **Also add tabs to groups I already have** in Settings. Your groups keep their names and colors, and Undo takes the added tabs back out.
@@ -77,7 +77,7 @@ It only reads text you can see in the article. It skips menus, footers, hidden e
 
 ### Ask AI and Browse for Me
 
-Type anything in the palette and press **Tab** to **Ask AI**, like Arc's ChatGPT in the command bar, with follow-ups. **Browse for Me** searches with your search provider, reads the top results and answers with numbered sources you can click; sites Helium Max can't read yet count only by their search snippet, and it offers to allow them.
+Type anything in the palette and press **Tab** to **Ask AI**, like Arc's ChatGPT in the command bar, with follow-ups. **Browse for Me** searches with your search provider, reads the top results and answers with numbered sources you can click; sites Blimp can't read yet count only by their search snippet, and it offers to allow them.
 
 ### Ask across tabs
 
@@ -123,7 +123,7 @@ Off by default. When it's on, each download gets a clearer name before it's save
 
 **Tidy Tab Titles** gives your pinned tabs short names, the way Arc did: "Inbox (3) - you@gmail.com - Gmail" becomes "(3) Mail" and "Hooks reference – React" becomes "React Hooks". You see every proposed name first, can edit or skip any of them, and nothing changes until you press Rename. **Rename Tab** names any tab yourself. **Restore Tab Titles** puts the sites' titles back.
 
-Names stick when the site rewrites its title (unread counts keep updating in front of the name) and after reloads and restarts, as long as Helium Max has access to that site; it asks the first time. Under the hood the extension sets the page's title, since browsers don't let extensions edit the tab strip directly.
+Names stick when the site rewrites its title (unread counts keep updating in front of the name) and after reloads and restarts, as long as Blimp has access to that site; it asks the first time. Under the hood the extension sets the page's title, since browsers don't let extensions edit the tab strip directly.
 
 ### AI profiles
 
@@ -139,7 +139,7 @@ Type `profile` in the palette to switch which one is active. Under **Models per 
 
 You don't need Node to try it.
 
-1. Download `helium-max-<version>-chrome.zip` from the [latest release](https://github.com/RobertoVillegas/helium-max/releases/latest) and unzip it somewhere you'll keep it. Helium loads the extension from that folder, so don't delete it.
+1. Download `blimp-<version>-chrome.zip` from the [latest release](https://github.com/RobertoVillegas/blimp/releases/latest) and unzip it somewhere you'll keep it. Helium loads the extension from that folder, so don't delete it.
 2. In Helium, open `helium://extensions` (`chrome://extensions` also works) and turn on **Developer mode**.
 3. Click **Load unpacked** and pick the unzipped folder, the one with `manifest.json` in it.
 4. Settings opens by itself. Pick a profile, paste your key, then:
@@ -157,11 +157,11 @@ You don't need Node to try it.
 
 ### Updating
 
-An extension loaded from a folder can't update itself, so Helium Max tells you when there's a new release: a ↑ on the toolbar icon, a notice at the top of the palette, and steps in Settings › Updates. It checks this project's GitHub releases twice a day; you can turn that off in Settings.
+An extension loaded from a folder can't update itself, so Blimp tells you when there's a new release: a ↑ on the toolbar icon, a notice at the top of the palette, and steps in Settings › Updates. It checks this project's GitHub releases twice a day; you can turn that off in Settings.
 
-1. Download [helium-max-chrome.zip](https://github.com/RobertoVillegas/helium-max/releases/latest/download/helium-max-chrome.zip) (always the newest).
-2. Unzip it and copy everything into your Helium Max folder, replacing the old files.
-3. Helium Max notices the new version and reloads itself within a minute, or press **Reload Helium Max** in Settings › Updates.
+1. Download [blimp-chrome.zip](https://github.com/RobertoVillegas/blimp/releases/latest/download/blimp-chrome.zip) (always the newest).
+2. Unzip it and copy everything into your Blimp folder, replacing the old files.
+3. Blimp notices the new version and reloads itself within a minute, or press **Reload Blimp** in Settings › Updates.
 
 Profiles and settings stay. Keys you kept only for the session need to be entered again. Keep **Developer mode** on: with it off, Helium disables folder extensions when they reload.
 
@@ -182,7 +182,7 @@ Profiles and settings stay. Keys you kept only for the session need to be entere
 | Ollama | `localhost:11434` | Runs on your machine. Start it with `OLLAMA_ORIGINS="chrome-extension://*" ollama serve`. |
 | Custom | anything | Any server that speaks OpenAI Chat Completions, OpenAI Responses or Anthropic Messages; pick which under **API**. |
 
-If a model rejects a setting (newer OpenAI and other reasoning models refuse `temperature`, some servers refuse JSON mode), Helium Max retries once without it.
+If a model rejects a setting (newer OpenAI and other reasoning models refuse `temperature`, some servers refuse JSON mode), Blimp retries once without it.
 
 ## Keyboard
 
@@ -214,7 +214,7 @@ Change them, or bind Tidy Tabs to its own shortcut, at `chrome://extensions/shor
 | Just browsing | Nothing |
 | Twice a day (unless turned off) | GitHub's public API is asked for this repository's releases; nothing about you is sent |
 
-The palette footer tells you which provider a command will use before you run it. Helium Max asks for no site access when you install it. The palette gets into a page only after you press the shortcut or the toolbar button. Everything else is asked for when you use it: an API origin when you save a profile, a site when you include one of its tabs, all sites only if you turn on link previews, and the downloads permission only for Tidy Downloads.
+The palette footer tells you which provider a command will use before you run it. Blimp asks for no site access when you install it. The palette gets into a page only after you press the shortcut or the toolbar button. Everything else is asked for when you use it: an API origin when you save a profile, a site when you include one of its tabs, all sites only if you turn on link previews, and the downloads permission only for Tidy Downloads.
 
 Previews never fetch local addresses (`localhost`, `192.168.x.x`, `*.local`, Tailscale's `100.64.0.0/10` and so on), so a webpage can't use the extension to poke at your network.
 
@@ -255,7 +255,7 @@ pnpm dev           # watch mode in a throwaway Chromium profile
 pnpm check         # typecheck, unit tests, production build
 pnpm test:e2e      # loads the extension in Playwright Chromium against a mock provider
 pnpm screenshots   # regenerates the images in this README
-pnpm zip           # .output/helium-max-<version>-chrome.zip
+pnpm zip           # .output/blimp-<version>-chrome.zip
 ```
 
 Pushing a `v*` tag that matches `package.json` builds the zip and attaches it to a GitHub release.

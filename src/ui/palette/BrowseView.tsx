@@ -68,7 +68,7 @@ export function BrowseView({ initialQuery, tabId, status, onBack, onClose }: { i
         />
       </div>
 
-      {phase.name === 'ask' && <p className="hm-panel hm-muted">Helium Max searches, reads the top results and answers with sources.</p>}
+      {phase.name === 'ask' && <p className="hm-panel hm-muted">Blimp searches, reads the top results and answers with sources.</p>}
 
       {phase.name === 'working' && (
         <div className="hm-panel" role="status" aria-live="polite">

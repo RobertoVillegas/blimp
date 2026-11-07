@@ -205,7 +205,7 @@ export function CrossTabView({
 
       {phase.name === 'grant' && (
         <div className="hm-panel">
-          <h2>Helium Max needs access to read {phase.missing.length === 1 ? 'this site' : 'these sites'}</h2>
+          <h2>Blimp needs access to read {phase.missing.length === 1 ? 'this site' : 'these sites'}</h2>
           <ul className="hm-plain-list">
             {phase.missing.map((origin) => (
               <li key={origin}>
@@ -215,7 +215,7 @@ export function CrossTabView({
           </ul>
           {phase.waiting ? (
             <p className="hm-muted" role="status">
-              Waiting for you to allow access in the Helium Max window…
+              Waiting for you to allow access in the Blimp window…
             </p>
           ) : (
             <p className="hm-muted">Access is remembered for these sites. You can remove it in the extension's details.</p>

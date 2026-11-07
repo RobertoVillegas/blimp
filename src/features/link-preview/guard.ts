@@ -1,5 +1,5 @@
 /**
- * Hosts Helium Max must not fetch for previews: loopback, private and link-local ranges,
+ * Hosts Blimp must not fetch for previews: loopback, private and link-local ranges,
  * CGNAT (which includes Tailscale), and local-only names. Webpages can't use previews to
  * make the extension probe your network.
  */
