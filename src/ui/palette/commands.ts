@@ -12,6 +12,7 @@ export type CommandId =
   | 'ask-tabs'
   | 'instant-links'
   | 'open-sidebar'
+  | 'pip'
   | 'settings';
 
 export interface PaletteCommand {
@@ -102,6 +103,13 @@ export const COMMANDS: PaletteCommand[] = [
     description: 'Find and open the best result for a request, from real search results.',
     keywords: 'search navigate open find go web',
     icon: '↗',
+  },
+  {
+    id: 'pip',
+    title: 'Picture in Picture',
+    description: 'Float the video on this page in its own window you can move anywhere. Run it again to close it.',
+    keywords: 'pip video float floating window mini player popout',
+    icon: '⧉',
   },
   {
     id: 'open-sidebar',

@@ -36,6 +36,10 @@ Not affiliated with Helium or The Browser Company.
 
 Press ⌘K on any page to search commands and your open tabs. Type part of a tab's title and press Enter to jump to it. Searching never calls the AI. If Helium keeps ⌘K for itself, use ⇧⌘K or the toolbar button. On pages extensions can't touch, like `helium://` pages and the Web Store, the palette opens as a popup instead.
 
+### Picture in Picture
+
+On a page with a video, open the palette and run **Picture in Picture**: the video floats in its own window that you can drag anywhere and park in a corner. Run it again to bring it back. It picks the video that's playing, or the biggest one on the page. Videos inside embedded players (iframes) aren't reachable yet.
+
 ### Tidy Tabs
 
 <img src="docs/images/tidy-tabs.png" width="520" align="right" alt="Tidy Tabs result: PHP docs & CVEs, Madrid trip and React groups, one tab left ungrouped, and an Undo button">
@@ -215,6 +219,7 @@ This is an early build. It loads and runs in Helium; everything below is tested 
 | ✅ | Tidy into existing groups, wake sleeping tabs, a model per feature | v0.3 |
 | ✅ | OpenCode Go models on Anthropic Messages and OpenAI Responses | v0.3 |
 | ✅ | Tidy Tab Titles, Rename Tab | v0.3.5 |
+| ✅ | Picture in Picture from the palette | v0.3.8 |
 
 [Jev](docs/jev.md), TypeSafe's decision model, was looked at and parked for now.
 

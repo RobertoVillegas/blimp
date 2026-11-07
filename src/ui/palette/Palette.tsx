@@ -8,6 +8,7 @@ import { CrossTabView } from './CrossTabView';
 import { Footer, statusFor } from './Footer';
 import { InstantLinksView } from './InstantLinksView';
 import { RenameTabView, TabTitlesView } from './TabTitlesView';
+import { togglePictureInPicture } from '@/features/pip/page';
 import { RichText } from './RichText';
 
 export interface PaletteProps {
@@ -168,6 +169,16 @@ export function Palette({ windowId, tabId, intent, onClose }: PaletteProps) {
           setView({ name: 'running', label: 'Restoring titles…' });
           void send({ type: 'titles/restore', tabIds: tabs.map((tab) => tab.id).concat(tabId ?? []) })
             .then((count) => setView({ name: 'titles-restored', count }))
+            .catch((error: unknown) => fail(error));
+          return;
+        case 'pip':
+          // Must start synchronously inside this key press or click.
+          if (windowId !== undefined) {
+            fail(new Error('Open the palette on the page with the video (⌘K there) to use picture in picture.'));
+            return;
+          }
+          togglePictureInPicture()
+            .then(onClose)
             .catch((error: unknown) => fail(error));
           return;
         case 'open-sidebar':

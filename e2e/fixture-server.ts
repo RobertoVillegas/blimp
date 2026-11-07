@@ -112,6 +112,21 @@ window.addLateCover = () => {
       return void res.end(`<!doctype html><html><head><title>Inbox (3) - someone@example.com - Example Mail</title></head>
 <body><h1>Inbox</h1><script>window.setUnread = (n) => { document.title = 'Inbox (' + n + ') - someone@example.com - Example Mail'; };</script></body></html>`);
     }
+    // A playing video drawn from a canvas, so tests need no media files.
+    if (req.method === 'GET' && url.pathname === '/video') {
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      return void res.end(`<!doctype html><html><head><title>Video page</title></head><body>
+<h1>Video page</h1><canvas width="320" height="180" hidden></canvas><video width="640" height="360" muted playsinline></video>
+<script>
+const canvas = document.querySelector('canvas');
+const ctx = canvas.getContext('2d');
+let frame = 0;
+setInterval(() => { ctx.fillStyle = 'hsl(' + (frame++ * 7 % 360) + ' 70% 50%)'; ctx.fillRect(0, 0, 320, 180); }, 50);
+const video = document.querySelector('video');
+video.srcObject = canvas.captureStream(20);
+video.play();
+</script></body></html>`);
+    }
     if (req.method === 'GET' && url.pathname === '/login') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       return void res.end(LOGIN_HTML);
