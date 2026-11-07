@@ -16,12 +16,13 @@ test('the sidebar: shortcut and toolbar menu are registered, the palette explain
   });
 
   const shortcut = await sw.evaluate(async () => (await chrome.commands.getAll()).find((c) => c.name === 'open-sidebar')?.shortcut);
-  expect(shortcut).toBe('⇧⌘S');
+  // ⇧⌘S on macOS, Ctrl+Shift+S elsewhere.
+  expect(shortcut).toMatch(/^(⇧⌘S|Ctrl\+Shift\+S)$/);
 
   const input = await openPalette(sw, paris!);
   await input.fill('open sidebar');
   await input.press('Enter');
-  await expect(paris!.getByText('Press ⇧⌘S, or right-click the Helium Max icon')).toBeVisible();
+  await expect(paris!.getByText(`Press ${shortcut}, or right-click the Helium Max icon`)).toBeVisible();
 
   const panel = await context.newPage();
   await panel.goto(sw.url().replace('background.js', 'sidepanel.html'));
