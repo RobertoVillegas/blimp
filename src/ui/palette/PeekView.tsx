@@ -114,7 +114,7 @@ function CalendarList({ events, onOpen }: { events: CalendarEvent[]; onOpen: (ur
   );
 }
 
-function dayLabel(event: CalendarEvent): string {
+export function dayLabel(event: CalendarEvent): string {
   // All-day events are dates, not instants: read them in UTC so they don't shift a day.
   const date = new Date(event.start);
   const today = new Date();
@@ -126,12 +126,12 @@ function dayLabel(event: CalendarEvent): string {
   return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric', timeZone: event.allDay ? 'UTC' : undefined });
 }
 
-function timeRange(event: CalendarEvent): string {
+export function timeRange(event: CalendarEvent): string {
   const format = (iso: string) => new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
   return `${format(event.start)}–${format(event.end)}`;
 }
 
-function relativeTime(iso: string): string {
+export function relativeTime(iso: string): string {
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60_000);
   if (!Number.isFinite(minutes)) return '';
   if (minutes < 60) return `${Math.max(minutes, 1)}m`;

@@ -23,8 +23,14 @@ export async function runAutoArchive(now = Date.now()): Promise<number> {
   const maxAge = ARCHIVE_AFTER[settings.autoArchive];
   if (!maxAge) return 0;
   const tabs = await browser.tabs.query({ windowType: 'normal' });
-  const stale = staleTabs(tabs, now, maxAge);
-  if (stale.length === 0) return 0;
+  return archiveTabs(staleTabs(tabs, now, maxAge), now);
+}
+
+/** Close these tabs, keeping them in the archive to reopen (Arc's "Clear"). */
+export async function archiveTabs(tabs: Browser.tabs.Tab[], now = Date.now()): Promise<number> {
+  const stale = tabs.filter((tab) => tab.id !== undefined && isHttpUrl(tab.url ?? ''));
+  const others = tabs.filter((tab) => tab.id !== undefined && !stale.includes(tab));
+  if (stale.length === 0 && others.length === 0) return 0;
   const archived: ArchivedTab[] = stale.map((tab) => ({
     id: crypto.randomUUID(),
     url: tab.url!,
@@ -34,8 +40,9 @@ export async function runAutoArchive(now = Date.now()): Promise<number> {
   }));
   // Save first: a tab is only closed once it's safely in the archive.
   await save([...archived, ...(await load())]);
-  await browser.tabs.remove(stale.map((tab) => tab.id!));
-  return stale.length;
+  // New-tab pages and the like have nothing worth keeping; they just close.
+  await browser.tabs.remove([...stale, ...others].map((tab) => tab.id!));
+  return stale.length + others.length;
 }
 
 export function registerAutoArchive(): void {

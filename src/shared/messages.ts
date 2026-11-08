@@ -119,6 +119,8 @@ export const requestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('archive/list') }),
   z.object({ type: z.literal('archive/restore'), id: z.string().max(64), tabId: z.number().int().optional() }),
   z.object({ type: z.literal('archive/clear') }),
+  z.object({ type: z.literal('archive/tabs'), tabIds: z.array(z.number().int()).min(1).max(500) }),
+  z.object({ type: z.literal('palette/open'), windowId: z.number().int().optional() }),
   /** Runs auto-archive now; `now` lets e2e builds pretend time has passed. */
   z.object({ type: z.literal('archive/run'), now: z.number().optional() }),
   z.object({ type: z.literal('capture/visible') }),
@@ -183,6 +185,8 @@ export interface ResponseMap {
   'archive/list': ArchivedTab[];
   'archive/restore': null;
   'archive/clear': null;
+  'archive/tabs': number;
+  'palette/open': null;
   'archive/run': number;
   'capture/visible': string;
   'live/list': LiveFolderView[];

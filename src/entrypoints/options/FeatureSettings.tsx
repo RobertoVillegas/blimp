@@ -536,19 +536,19 @@ export function FeatureSettings({ settings, persist }: { settings: Settings; per
         )}
         {!updateStatus?.fromStore && (
           <>
-        <label className="inline">
-          <input
-            type="checkbox"
-            checked={settings.updateChecks}
-            onChange={(event) => void persist({ ...settings, updateChecks: event.target.checked })}
-          />
-          Tell me when a new version is out (checks GitHub twice a day)
-        </label>
-        <p className="hint">The check asks GitHub's public API for this project's releases. Nothing about you or your browsing is sent.</p>
-        <div className="actions">
-          <button onClick={() => void checkNow()}>Check now</button>
-          <button onClick={() => browser.runtime.reload()}>Reload Blimp</button>
-        </div>
+            <label className="inline">
+              <input
+                type="checkbox"
+                checked={settings.updateChecks}
+                onChange={(event) => void persist({ ...settings, updateChecks: event.target.checked })}
+              />
+              Tell me when a new version is out (checks GitHub twice a day)
+            </label>
+            <p className="hint">The check asks GitHub's public API for this project's releases. Nothing about you or your browsing is sent.</p>
+            <div className="actions">
+              <button onClick={() => void checkNow()}>Check now</button>
+              <button onClick={() => browser.runtime.reload()}>Reload Blimp</button>
+            </div>
           </>
         )}
         <Status notice={notices.updates} />

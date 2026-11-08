@@ -40,6 +40,11 @@ export default defineConfig({
         suggested_key: { default: 'Ctrl+Shift+K', mac: 'Command+Shift+K' },
         description: 'Open the command palette (fallback shortcut)',
       },
+      // Chromium opens the side panel only straight from a user action like this shortcut.
+      'open-sidebar': {
+        suggested_key: { default: 'Ctrl+Shift+S', mac: 'Command+Shift+S' },
+        description: 'Open the Blimp sidebar',
+      },
       'little-blimp': {
         suggested_key: { default: 'Alt+Shift+N', mac: 'Alt+Shift+N' },
         description: 'Open a Little Blimp window',

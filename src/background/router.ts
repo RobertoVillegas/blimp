@@ -3,7 +3,8 @@ import { askPage, forgetPage } from '@/features/ask-page';
 import { crossTabCandidates, missingOrigins, runCrossTab } from '@/features/cross-tab';
 import { browserSearch, instantSearch, openResult, openResults } from '@/features/instant-links';
 import { finishPreview, previewImage, startPreview } from '@/features/link-preview';
-import { clearArchive, listArchive, restoreArchived, runAutoArchive } from '@/features/archive';
+import { archiveTabs, clearArchive, listArchive, restoreArchived, runAutoArchive } from '@/features/archive';
+import { openPalette } from './palette';
 import { askAi } from '@/features/ask-ai';
 import { clearRank, loadRank, recordUse } from '@/features/ranking';
 import { openRecent, recentPages, recentSites } from '@/features/recent';
@@ -243,6 +244,18 @@ async function handle(
     case 'archive/clear':
       await clearArchive();
       return null;
+
+    case 'archive/tabs':
+      // Closes tabs by id, so only Blimp's own pages (the sidebar) may ask, never a content script.
+      if (!sender.url?.startsWith(browser.runtime.getURL('/'))) throw new UserFacingError('permission', 'Not allowed from a page.');
+      return archiveTabs(await Promise.all(request.tabIds.map((id) => browser.tabs.get(id))));
+
+    case 'palette/open': {
+      // From the sidebar: show ⌘K over the page the user is looking at.
+      const [tab] = await browser.tabs.query({ active: true, windowId: request.windowId ?? sender.tab?.windowId });
+      await openPalette(tab);
+      return null;
+    }
 
     case 'archive/run':
       return runAutoArchive(import.meta.env.MODE.startsWith('e2e') ? request.now : undefined);
