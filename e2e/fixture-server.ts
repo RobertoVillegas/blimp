@@ -182,7 +182,10 @@ navigator.mediaSession.metadata = new MediaMetadata({ title: 'Test Song', artist
 body { margin: 0; background: #ffffff; }
 #red { position: absolute; left: 100px; top: 100px; width: 200px; height: 100px; background: rgb(255, 0, 0); }
 #blue { position: absolute; left: 400px; top: 100px; width: 100px; height: 100px; background: rgb(0, 0, 255); }
-</style></head><body><div id="red"></div><div id="blue"></div></body></html>`);
+#card { position: absolute; left: 100px; top: 260px; width: 300px; height: 160px; background: rgb(0, 160, 0); }
+#card p { margin: 20px; font: 14px sans-serif; color: #fff; }
+</style></head><body><div id="red"></div><div id="blue"></div>
+<div id="card"><p>A caption with <span id="word">a word</span> in it.</p></div></body></html>`);
     }
     // A GitHub search API and an RSS feed, for Live Folders.
     if (req.method === 'GET' && url.pathname === '/gh/search/issues') {

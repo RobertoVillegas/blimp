@@ -2,7 +2,7 @@
   "name": "blimp",
   "description": "Arc's best features for the Helium browser, as one bring-your-own-key extension.",
   "private": true,
-  "version": "0.11.0",
+  "version": "0.12.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",

@@ -84,6 +84,7 @@ Every Arc feature we know of, from Arc's own docs and from the feature modules i
 ## Capture and notes
 
 - [x] Capture: drag over part of a page (or Enter for the whole view), copied to the clipboard with a Save button (v0.8.0)
+- [x] Capture an element: hover highlights the element Arc would pick (its scoring: images and big blocks win; small, inline and near-full-screen elements are skipped), a click takes it (v0.12.0). Only its visible part; Arc's full-page/scrolling capture isn't done
 - [ ] Easel: a whiteboard of captures and live page snippets (large; later, if ever)
 - [ ] Notes (Arc's documents)
 

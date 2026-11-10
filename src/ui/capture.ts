@@ -1,12 +1,15 @@
+import { pickElementAt } from '@/features/capture/pick';
 import { send } from '@/shared/send';
 import { showInTopLayer } from './top-layer';
 
 const CSS = `
 :host { all: initial; }
-.layer { position: fixed; inset: 0; cursor: crosshair; background: rgb(0 0 0 / 0.25); user-select: none; -webkit-user-select: none; }
+.layer { position: fixed; inset: 0; cursor: crosshair; background: transparent; user-select: none; -webkit-user-select: none; outline: none; }
 .hint { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); padding: 6px 12px; border-radius: 999px;
   background: rgb(20 20 22 / 0.85); color: #fff; font: 13px/1.4 -apple-system, system-ui, sans-serif; pointer-events: none; }
-.box { position: fixed; border: 2px solid #4da3ff; background: transparent; box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.35); pointer-events: none; }
+.box { position: fixed; border: 2px solid #4da3ff; border-radius: 3px; background: transparent; box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.35); pointer-events: none; }
+.box.element { transition: left 90ms ease-out, top 90ms ease-out, width 90ms ease-out, height 90ms ease-out; }
+@media (prefers-reduced-motion: reduce) { .box.element { transition: none; } }
 .done { position: fixed; right: 16px; bottom: 16px; width: 260px; padding: 10px; border-radius: 12px; display: grid; gap: 8px;
   background: #fff; color: #1d1d1f; box-shadow: 0 12px 36px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.08);
   font: 13px/1.4 -apple-system, system-ui, sans-serif; }
@@ -24,15 +27,15 @@ a, button { font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 6p
 type Rect = { x: number; y: number; width: number; height: number };
 
 /**
- * Arc's Capture: drag over the page to pick an area (Enter takes everything visible, Esc
- * cancels). The image is copied to the clipboard and can be saved.
+ * Arc's Capture: hover to highlight an element and click to take it, or drag to pick an area.
+ * Enter takes everything visible, Esc cancels. The image is copied to the clipboard and can be saved.
  */
 export function startCapture(pageTitle: string): void {
   const host = document.createElement('blimp-capture');
   const root = host.attachShadow({ mode: import.meta.env.MODE.startsWith('e2e') ? 'open' : 'closed' });
   const style = Object.assign(document.createElement('style'), { textContent: CSS });
   const layer = Object.assign(document.createElement('div'), { className: 'layer', tabIndex: -1 });
-  const hint = Object.assign(document.createElement('div'), { className: 'hint', textContent: 'Drag to capture an area · Enter for the whole view · Esc to cancel' });
+  const hint = Object.assign(document.createElement('div'), { className: 'hint', textContent: 'Click an element or drag an area · Enter for the whole view · Esc to cancel' });
   const box = Object.assign(document.createElement('div'), { className: 'box', hidden: true });
   root.append(style, layer, hint, box);
   host.style.cssText = 'position: fixed; inset: 0; z-index: 2147483647;';
@@ -42,6 +45,20 @@ export function startCapture(pageTitle: string): void {
 
   let start: { x: number; y: number } | null = null;
   let rect: Rect | null = null;
+  // The element under the cursor, as Arc picks it; a click captures it.
+  let hovered: Rect | null = null;
+  let frame = 0;
+  const showBox = (area: Rect, element: boolean) => {
+    box.classList.toggle('element', element);
+    Object.assign(box.style, { left: `${area.x}px`, top: `${area.y}px`, width: `${area.width}px`, height: `${area.height}px` });
+    box.hidden = false;
+  };
+  const hover = (x: number, y: number) => {
+    const element = pickElementAt(x, y, host);
+    hovered = element ? visiblePart(element.getBoundingClientRect()) : null;
+    if (hovered) showBox(hovered, true);
+    else box.hidden = true;
+  };
   const finish = () => {
     removeEventListener('keydown', onKey, true);
     host.remove();
@@ -67,24 +84,41 @@ export function startCapture(pageTitle: string): void {
     layer.setPointerCapture(event.pointerId);
   });
   layer.addEventListener('pointermove', (event) => {
-    if (!start) return;
+    if (!start) {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => hover(event.clientX, event.clientY));
+      return;
+    }
+    // Under 4px it's still a click on the highlighted element, not a drag.
+    if (!rect && Math.hypot(event.clientX - start.x, event.clientY - start.y) < 4) return;
     rect = {
       x: Math.min(start.x, event.clientX),
       y: Math.min(start.y, event.clientY),
       width: Math.abs(event.clientX - start.x),
       height: Math.abs(event.clientY - start.y),
     };
-    Object.assign(box.style, { left: `${rect.x}px`, top: `${rect.y}px`, width: `${rect.width}px`, height: `${rect.height}px` });
-    box.hidden = false;
+    showBox(rect, false);
     hint.hidden = true;
   });
-  layer.addEventListener('pointerup', () => {
-    const picked = rect && rect.width >= 4 && rect.height >= 4 ? rect : null;
+  layer.addEventListener('pointerup', (event) => {
+    const dragged = rect && rect.width >= 4 && rect.height >= 4 ? rect : null;
+    if (!dragged && !rect) hover(event.clientX, event.clientY);
+    const picked = dragged ?? (rect ? null : hovered);
     start = null;
+    cancelAnimationFrame(frame);
     finish();
-    // A click without a drag takes the whole view, like Enter.
+    // A click with nothing highlighted takes the whole view, like Enter.
     void take(picked, pageTitle);
   });
+}
+
+/** The part of an element that's on screen: only what's visible can be captured. */
+function visiblePart(bounds: DOMRect): Rect | null {
+  const x = Math.max(0, bounds.left);
+  const y = Math.max(0, bounds.top);
+  const width = Math.min(innerWidth, bounds.right) - x;
+  const height = Math.min(innerHeight, bounds.bottom) - y;
+  return width >= 4 && height >= 4 ? { x, y, width, height } : null;
 }
 
 async function take(rect: Rect | null, pageTitle: string): Promise<void> {

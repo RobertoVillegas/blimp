@@ -48,7 +48,7 @@ Like Arc's: folders that keep themselves up to date, in **⌘K › Live Folders*
 
 **Auto-archive** (off by default, Settings › Auto-archive) closes tabs you haven't used in 12 hours, a day, a week or a month, like Arc. Pinned tabs, tabs in groups, the tab you're on and tabs playing sound are never touched. Archived tabs wait in **⌘K › Archived Tabs** for 30 days; Enter reopens one.
 
-**Capture**: in ⌘K, run Capture, then drag over part of the page (or press Enter for everything you see). The image goes to the clipboard, with a Save button to keep it as a file.
+**Capture**: in ⌘K, run Capture, then click the element you want (it's highlighted as you move the mouse, picked the way Arc does), drag over any area, or press Enter for everything you see. The image goes to the clipboard, with a Save button to keep it as a file.
 
 ### Little Blimp
 

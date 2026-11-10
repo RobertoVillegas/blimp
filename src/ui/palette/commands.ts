@@ -190,8 +190,8 @@ export const COMMANDS: PaletteCommand[] = [
   {
     id: 'capture',
     title: 'Capture',
-    description: 'Screenshot part of this page: drag to select, or press Enter for everything you see.',
-    keywords: 'screenshot screen capture snip image copy',
+    description: 'Screenshot part of this page: click an element, drag over an area, or press Enter for everything you see.',
+    keywords: 'screenshot screen capture snip image copy element',
     icon: '⬚',
   },
   {
